@@ -8,38 +8,46 @@ import { cn } from "@/lib/utils";
 export function DownloadCta() {
   const hasRepo = Boolean(GITHUB_REPO_URL);
   const hasReleases = Boolean(GITHUB_RELEASES_URL);
+  const hasGuide = hasRepo;
+  const hasBios = hasRepo;
 
   return (
-    <section id="download" className="py-28 relative">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+    <section className="py-16 relative">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
         <ScrollReveal variant="blur">
-          <h2 className="font-heading text-3xl sm:text-5xl font-bold mb-4">
-            <span className="gradient-text">Download</span>
+          <h2 className="font-heading text-3xl sm:text-4xl font-bold mb-4">
+            Links
           </h2>
-          <p className="text-muted-foreground mb-10 max-w-md mx-auto">
-            Extract, right-click APPLY-EVERYTHING.ps1, and run the aggressive
-            full stack as Administrator.
+          <p className="text-muted-foreground mb-10 max-w-2xl mx-auto">
+            Use the guide as the starting point. Download and source links are
+            secondary. The file list above shows which script to open or run.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            {hasReleases ? (
+            {hasGuide && (
               <a
-                href={GITHUB_RELEASES_URL}
+                href={`${GITHUB_REPO_URL}/blob/main/GUIDE.md`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className={cn(
                   buttonVariants({ size: "lg" }),
-                  "bg-gaming-green hover:bg-gaming-green/90 text-black font-semibold px-8 text-base"
+                  "bg-gaming-cyan hover:bg-gaming-cyan/90 text-black font-semibold px-8 text-base"
                 )}
               >
-                Download Latest Release
+                Read Guide
               </a>
-            ) : (
-              <span
+            )}
+            {hasReleases && (
+              <a
+                href={GITHUB_RELEASES_URL}
+                target="_blank"
+                rel="noopener noreferrer"
                 className={cn(
-                  buttonVariants({ size: "lg", variant: "outline" }),
-                  "border-white/10 text-muted-foreground px-8 text-base cursor-default"
+                  buttonVariants({ variant: "outline", size: "lg" }),
+                  "border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/5 px-8 text-base"
                 )}
               >
-                Release Link Pending
-              </span>
+                Download
+              </a>
             )}
             {hasRepo && (
               <a
@@ -52,6 +60,19 @@ export function DownloadCta() {
                 )}
               >
                 View Source
+              </a>
+            )}
+            {hasBios && (
+              <a
+                href={`${GITHUB_REPO_URL}/blob/main/BIOS-CHECKLIST.md`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "lg" }),
+                  "border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/5 px-8 text-base"
+                )}
+              >
+                BIOS Checklist
               </a>
             )}
           </div>

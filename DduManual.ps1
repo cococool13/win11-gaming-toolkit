@@ -20,6 +20,7 @@ $launchLog = Join-Path $stageRoot "DDU-Auto.log"
 $sevenZipInstaller = Join-Path $env:TEMP "7zip-installer.exe"
 $dduInstaller = Join-Path $env:TEMP "DDU-setup.exe"
 $runOnceName = "*!GamingOpt-DDU"
+$expectedDduSha256 = "6073e6d311290d45b7a8ae4e832994c9487082531f89e4e01c99f86c0e38da6c"
 
 function Write-Info {
     param([string]$Message)
@@ -73,6 +74,16 @@ function Ensure-7Zip {
     return $sevenZipExe
 }
 
+function Test-FileSha256 {
+    param(
+        [string]$Path,
+        [string]$ExpectedHash
+    )
+
+    $actualHash = (Get-FileHash -Path $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+    return $actualHash -eq $ExpectedHash.ToLowerInvariant()
+}
+
 function Stage-DduPayload {
     Ensure-Directory -Path $stageRoot
     Ensure-Directory -Path $dduRoot
@@ -83,6 +94,9 @@ function Stage-DduPayload {
     Get-FileFromWeb -Url "https://www.wagnardsoft.com/DDU/download/DDU%20v18.1.4.2_setup.exe" -File $dduInstaller
     if (-not (Test-Path $dduInstaller) -or (Get-Item $dduInstaller).Length -lt 100000) {
         throw "DDU download failed"
+    }
+    if (-not (Test-FileSha256 -Path $dduInstaller -ExpectedHash $expectedDduSha256)) {
+        throw "DDU installer hash mismatch"
     }
 
     Remove-Item -Path (Join-Path $dduRoot "*") -Recurse -Force -ErrorAction SilentlyContinue

@@ -340,6 +340,18 @@ function Set-ToolkitServiceStartMode {
     }
 }
 
+function Convert-ToolkitServiceModeToScMode {
+    param([string]$Mode)
+
+    switch -Regex ($Mode) {
+        "^auto$|^automatic$" { return "auto" }
+        "^manual$|^demand$" { return "demand" }
+        "^disabled$" { return "disabled" }
+        "^delayed auto start$" { return "delayed-auto" }
+        default { throw "Unsupported service start mode: $Mode" }
+    }
+}
+
 function Restore-ToolkitServiceStartMode {
     param([string]$Name)
 
@@ -351,7 +363,8 @@ function Restore-ToolkitServiceStartMode {
     if (-not $entry.installed -or -not $entry.before) {
         return $true
     }
-    $output = sc.exe config $Name start= $entry.before 2>&1
+    $restoredMode = Convert-ToolkitServiceModeToScMode -Mode ([string]$entry.before)
+    $output = sc.exe config $Name start= $restoredMode 2>&1
     if ($LASTEXITCODE -ne 0) {
         throw "sc.exe config failed: $output"
     }
@@ -389,8 +402,20 @@ function Set-ToolkitDnsServers {
     Capture-ToolkitDnsState
     $activeAdapters = @(Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq "Up" })
     foreach ($adapter in $activeAdapters) {
-        Set-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -ServerAddresses $ServerAddresses -ErrorAction SilentlyContinue
-        Add-ToolkitStepResult -Key "dns:$($adapter.ifIndex)" -Tier $Tier -Status "applied" -Reason $Step
+        try {
+            Set-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -ServerAddresses $ServerAddresses -ErrorAction Stop
+            $current = Get-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -AddressFamily IPv4 -ErrorAction Stop
+            $currentServers = @($current.ServerAddresses)
+            $missingServers = @($ServerAddresses | Where-Object { $currentServers -notcontains $_ })
+
+            if ($missingServers.Count -eq 0) {
+                Add-ToolkitStepResult -Key "dns:$($adapter.ifIndex)" -Tier $Tier -Status "applied" -Reason $Step
+            } else {
+                Add-ToolkitStepResult -Key "dns:$($adapter.ifIndex)" -Tier $Tier -Status "skipped" -Reason "DNS verification failed on adapter $($adapter.Name)"
+            }
+        } catch {
+            Add-ToolkitStepResult -Key "dns:$($adapter.ifIndex)" -Tier $Tier -Status "skipped" -Reason "DNS apply failed on adapter $($adapter.Name): $($_.Exception.Message)"
+        }
     }
 }
 

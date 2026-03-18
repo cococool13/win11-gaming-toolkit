@@ -44,11 +44,13 @@ function Check {
     param(
         [string]$Label,
         [scriptblock]$Test,
-        [string]$StepKey = ""
+        [string]$StepKey = "",
+        [scriptblock]$StepKeyResolver = $null
     )
 
     try {
         $result = & $Test
+        $resolvedStepKey = if ($StepKeyResolver) { & $StepKeyResolver } else { $StepKey }
         if ($result -eq "SKIP") {
             Write-CheckStatus -Label $Label -Status "SKIPPED" -Color DarkYellow
             $script:unsupported++
@@ -60,7 +62,7 @@ function Check {
             return
         }
         if ($result) {
-            $recorded = if ($StepKey) { Get-ToolkitRecordedStatus -Key $StepKey } else { $null }
+            $recorded = if ($resolvedStepKey) { Get-ToolkitRecordedStatus -Key $resolvedStepKey } else { $null }
             if ($recorded -eq "applied") {
                 Write-CheckStatus -Label $Label -Status "APPLIED" -Color Green
                 $script:applied++
@@ -72,7 +74,7 @@ function Check {
             return
         }
 
-        if ($StepKey -and (Get-ToolkitRecordedStatus -Key $StepKey)) {
+        if ($resolvedStepKey -and (Get-ToolkitRecordedStatus -Key $resolvedStepKey)) {
             Write-CheckStatus -Label $Label -Status "DRIFTED" -Color Red
             $script:drifted++
         } else {
@@ -219,12 +221,14 @@ Check "Cloudflare / Google DNS present on at least one adapter" {
     foreach ($adapter in $adapters) {
         foreach ($dns in @($adapter.ServerAddresses)) {
             if ($optimized -contains $dns) {
+                $script:LastDnsMatchKey = "dns:$($adapter.InterfaceIndex)"
                 return $true
             }
         }
     }
+    $script:LastDnsMatchKey = $null
     return $false
-} "dns:1"
+} "" { $script:LastDnsMatchKey }
 
 # ============================================================
 # WINDOWS UPDATE + SECURITY TRADE-OFFS

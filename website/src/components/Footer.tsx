@@ -51,7 +51,7 @@ export function Footer() {
         </div>
 
         <p className="text-center text-xs text-muted-foreground/60 mt-6">
-          Aggressive, readable, source-available automation with attribution terms.
+          Script-based Windows guide with setup, revert, and verification steps.
         </p>
       </div>
     </footer>

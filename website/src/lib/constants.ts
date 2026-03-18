@@ -1,258 +1,125 @@
-export const GITHUB_REPO_URL = "";
-export const GITHUB_RELEASES_URL = "";
+export const GITHUB_REPO_URL = "https://github.com/cococool13/TweakEazy";
+export const GITHUB_RELEASES_URL =
+  "https://github.com/cococool13/TweakEazy/releases";
 
-export const HERO_STATS = [
-  "10-35% FPS gain",
-  "Aggressive full stack",
-  "Manifest-backed rollback",
-  "Unsupported tweaks skipped",
-];
+function repoFile(path: string) {
+  return GITHUB_REPO_URL ? `${GITHUB_REPO_URL}/blob/main/${path}` : "";
+}
 
-export const STEPS = [
+export const QUICK_START_STEPS = [
   {
-    number: 0,
-    name: "Prerequisites",
-    difficulty: "Easy" as const,
-    risk: "None" as const,
-    revertible: "N/A",
-    description: "VC++ Redistributables and DirectX runtime.",
-  },
-  {
-    number: 1,
-    name: "Backup",
-    difficulty: "Easy" as const,
-    risk: "None" as const,
-    revertible: "N/A",
-    description: "System restore point and registry backup.",
-  },
-  {
-    number: 2,
-    name: "Power Plan",
-    difficulty: "Easy" as const,
-    risk: "Safe" as const,
-    revertible: "Yes",
-    description: "Ultimate Performance plan, all cores unparked, no throttling.",
-  },
-  {
-    number: 3,
-    name: "Windows Settings",
-    difficulty: "Easy" as const,
-    risk: "Safe" as const,
-    revertible: "Yes",
+    title: "Read the guide",
     description:
-      "Disable transparency, background apps, notifications. Enable HAGS.",
+      "Start with the guide so you know which scripts are relevant to your PC and what each step changes.",
   },
   {
-    number: 4,
-    name: "Services",
-    difficulty: "Easy" as const,
-    risk: "Low" as const,
-    revertible: "Yes",
-    description: "Disable telemetry, phone service, geolocation, fax.",
-  },
-  {
-    number: 5,
-    name: "Registry Tweaks",
-    difficulty: "Medium" as const,
-    risk: "Low" as const,
-    revertible: "Yes",
+    title: "Create a backup",
     description:
-      "Game priority, mouse acceleration off, visual effects, privacy lockdown.",
+      "Make a restore point and back up the registry before changing anything.",
   },
   {
-    number: 6,
-    name: "Startup Cleanup",
-    difficulty: "Easy" as const,
-    risk: "Low" as const,
-    revertible: "Yes",
-    description: "Disable OneDrive, Teams, Widgets, Cortana, Copilot autostart.",
-  },
-  {
-    number: 7,
-    name: "GPU",
-    difficulty: "Medium" as const,
-    risk: "Safe" as const,
-    revertible: "Yes",
-    description: "MSI mode for lower interrupt latency.",
-  },
-  {
-    number: 8,
-    name: "Network",
-    difficulty: "Medium" as const,
-    risk: "Low" as const,
-    revertible: "Yes",
-    description: "Disable Nagle, enable RSS, Cloudflare DNS.",
-  },
-  {
-    number: 9,
-    name: "Customization",
-    difficulty: "Easy" as const,
-    risk: "Safe" as const,
-    revertible: "Yes",
+    title: "Run the scripts you want",
     description:
-      "Classic right-click menu, clean taskbar, dark mode, disable Bing search.",
-  },
-  {
-    number: 10,
-    name: "Defender Exclusions",
-    difficulty: "Easy" as const,
-    risk: "Safe" as const,
-    revertible: "Yes",
-    description:
-      "Add game folders (Steam, Epic, etc.) to Defender exclusions. Reduces scan overhead.",
-  },
-  {
-    number: 11,
-    name: "Debloat",
-    difficulty: "Easy" as const,
-    risk: "Low" as const,
-    revertible: "Partial",
-    description: "Remove Clipchamp, Solitaire, Maps, and 20+ other bundled apps.",
+      "Use the launcher or run individual scripts based on the sections you actually want to apply.",
   },
 ] as const;
 
-export type BentoSize = "large" | "small" | "full";
-
-export const FEATURES = [
+export const INCLUDED_SECTIONS = [
   {
-    title: "One Script",
+    title: "Backup and restore point",
+    description: "Scripts for restore points, registry backups, and revert paths.",
+  },
+  {
+    title: "Power and Windows settings",
     description:
-      "APPLY-EVERYTHING.ps1 runs the aggressive full stack across Safe, Advanced, and Security Trade-off tiers.",
-    icon: "zap",
-    size: "large" as BentoSize,
-    glowColor: "green",
+      "Power plan changes and common Windows settings used in the guide.",
   },
   {
-    title: "Win11 Cleanup",
+    title: "Services and registry tweaks",
     description:
-      "Classic right-click menu, clean taskbar, Bing gone, dark mode, no ads.",
-    icon: "terminal",
-    size: "small" as BentoSize,
-    glowColor: "cyan",
+      "Service changes, registry edits, and startup cleanup steps.",
   },
   {
-    title: "Debloat",
-    description: "Remove OneDrive, Teams, Widgets, Copilot, and 20+ apps.",
-    icon: "gamepad",
-    size: "small" as BentoSize,
-    glowColor: "magenta",
-  },
-  {
-    title: "Reversible",
+    title: "GPU and network tweaks",
     description:
-      "REVERT-EVERYTHING.ps1 uses captured machine state where deterministic rollback is possible.",
-    icon: "undo",
-    size: "small" as BentoSize,
-    glowColor: "cyan",
+      "GPU-related scripts, DDU helpers, and adapter-aware network changes.",
   },
   {
-    title: "Health Check",
-    description: "verify-tweaks.ps1 shows what's applied and what's missing.",
-    icon: "check",
-    size: "small" as BentoSize,
-    glowColor: "cyan",
-  },
-  {
-    title: "Script-First",
+    title: "Revert and verify tools",
     description:
-      "Readable PowerShell and batch scripts with bounded external tooling where needed.",
-    icon: "shield",
-    size: "full" as BentoSize,
-    glowColor: "cyan",
+      "Scripts for undoing changes and checking which tweaks are currently applied.",
   },
 ] as const;
 
-export const PERFORMANCE_DATA = [
+export const FILE_LINKS = [
   {
-    category: "Power Plan + Services",
-    gain: "2-5%",
-    risk: "Safe",
-    group: "windows",
+    title: "Main guide",
+    path: "GUIDE.md",
+    href: repoFile("GUIDE.md"),
+    instruction:
+      "Read this first. It explains the sections, order, and tradeoffs before you run anything.",
   },
   {
-    category: "Registry Tweaks",
-    gain: "1-3%",
-    risk: "Low",
-    group: "windows",
+    title: "Launcher",
+    path: "launcher.ps1",
+    href: repoFile("launcher.ps1"),
+    instruction:
+      "Use this if you want a menu for running individual parts of the guide instead of opening folders manually.",
   },
   {
-    category: "Timer Resolution Service",
-    gain: "1-3%",
-    risk: "Low",
-    group: "windows",
+    title: "Apply everything",
+    path: "APPLY-EVERYTHING.ps1",
+    href: repoFile("APPLY-EVERYTHING.ps1"),
+    instruction:
+      "Run this only after reading the guide. It applies the full scripted pass and includes higher-tradeoff changes.",
   },
   {
-    category: "GPU MSI Mode",
-    gain: "2-10%",
-    risk: "Safe",
-    group: "windows",
+    title: "Revert everything",
+    path: "REVERT-EVERYTHING.ps1",
+    href: repoFile("REVERT-EVERYTHING.ps1"),
+    instruction:
+      "Use this to undo the tracked full-apply path when you want to restore prior settings.",
   },
   {
-    category: "Network Optimization",
-    gain: "Lower ping",
-    risk: "Low",
-    group: "windows",
+    title: "Verification",
+    path: "10 verify/verify-tweaks.ps1",
+    href: repoFile("10%20verify/verify-tweaks.ps1"),
+    instruction:
+      "Run this after making changes to check which tweaks are currently applied and which ones drifted.",
   },
   {
-    category: "VBS/HVCI Disabled",
-    gain: "5-25%",
-    risk: "Moderate",
-    group: "windows",
+    title: "BIOS checklist",
+    path: "BIOS-CHECKLIST.md",
+    href: repoFile("BIOS-CHECKLIST.md"),
+    instruction:
+      "Read this separately for manual BIOS items like XMP, ReBAR, and other non-script changes.",
   },
-  {
-    category: "XMP/DOCP (RAM speed)",
-    gain: "10-30%",
-    risk: "Safe",
-    group: "bios",
-  },
-  {
-    category: "Resizable BAR",
-    gain: "5-15%",
-    risk: "Safe",
-    group: "bios",
-  },
-] as const;
-
-export const CUSTOMIZATIONS = [
-  "Classic right-click menu (Win10 style)",
-  "Clean taskbar — no Search, Widgets, or Chat",
-  "Bing and web results removed from Start search",
-  "Dark mode enabled",
-  "Lock screen ads and tips disabled",
-  "Start Menu suggestions removed",
-  "This PC shown on desktop",
-  "OneDrive, Teams, Widgets, Cortana, Copilot disabled",
 ] as const;
 
 export const FAQ_ITEMS = [
   {
-    question: "What gives the biggest FPS gain?",
+    question: "Do I need to run every step?",
     answer:
-      "VBS/HVCI disable gives 5-25%. XMP in BIOS gives 10-30% in CPU-bound games. APPLY-EVERYTHING includes the Windows-side trade-offs when supported; BIOS changes stay manual.",
+      "No. The guide is organized so you can read the sections and choose the scripts that fit your system and goals.",
   },
   {
-    question: "Is this safe?",
+    question: "How do I undo changes?",
     answer:
-      "No. It is intentionally aggressive. Apply Everything includes security and convenience trade-offs, and rollback quality varies by tweak.",
+      "Use REVERT-EVERYTHING.ps1 for the tracked full revert path, or the individual revert scripts for specific areas.",
   },
   {
-    question: "Do I need to run all steps?",
+    question: "Is this safe for laptops?",
     answer:
-      "No. APPLY-EVERYTHING.ps1 handles the maximal supported stack automatically. Or use launcher.ps1 to run selective steps.",
+      "Some steps work on laptops, but not every tweak is a good fit for every machine. Read the tradeoffs before running everything.",
   },
   {
-    question: "How do I undo?",
+    question: "What should I read before running everything?",
     answer:
-      "Run REVERT-EVERYTHING.ps1 as Administrator. Or restore from the system restore point created in Step 1.",
+      "Read the main guide first, then the BIOS checklist and any section README that applies to the scripts you plan to run.",
   },
   {
-    question: "Will this break anti-cheat?",
+    question: "What is DDU for?",
     answer:
-      "The main script is fine. VBS disable may conflict with Vanguard or FACEIT — re-enable VBS for those games.",
-  },
-  {
-    question: "Why no .exe files?",
-    answer:
-      "The main toolkit is readable script code. Some bounded helper flows still stage external tools from official sources when needed.",
+      "DDU is used for clean GPU driver removal before reinstalling drivers. The repo includes helpers for staging and launching that workflow.",
   },
 ] as const;

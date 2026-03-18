@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { GITHUB_REPO_URL } from "@/lib/constants";
 
 const NAV_LINKS = [
-  { label: "Features", href: "#features" },
-  { label: "Download", href: "#download" },
+  { label: "Guide", href: "#guide" },
+  { label: "What's included", href: "#included" },
   { label: "FAQ", href: "#faq" },
 ];
 

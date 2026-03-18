@@ -15,7 +15,7 @@ export function FaqAccordion() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6">
         <ScrollReveal>
           <h2 className="font-heading text-3xl sm:text-4xl font-bold mb-10">
-            Questions
+            FAQ
           </h2>
         </ScrollReveal>
 

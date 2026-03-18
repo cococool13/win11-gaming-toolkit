@@ -339,7 +339,7 @@ Run-Step "Accessibility shortcuts disabled (Sticky/Toggle/Filter keys)" {
 Write-Host ""
 
 # ============================================================
-# STEP 6: STARTUP OPTIMIZATION (permanent gaming-mode)
+# STEP 6: STARTUP OPTIMIZATION
 # ============================================================
 Write-Host "============================================================" -ForegroundColor DarkGray
 Write-Host "  STEP 6: Disabling Startup Bloat" -ForegroundColor White

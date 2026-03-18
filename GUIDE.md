@@ -28,7 +28,7 @@ This applies Steps 1-2, 4-7, and 9 automatically (backup, power plan, services, 
 - **Every tweak is reversible.** Each step includes revert scripts or instructions.
 - **Read the warnings.** Some tweaks (especially Step 8) have real trade-offs.
 - **Check your BIOS first.** See [BIOS-CHECKLIST.md](BIOS-CHECKLIST.md) — enabling XMP alone can give 10-30% more FPS.
-- **Gaming session mode.** Before a gaming session, run `gaming-mode.ps1` to close background apps, silence notifications, and pause updates. Run `gaming-mode-off.ps1` when done (or just reboot).
+- **No separate gaming mode needed.** APPLY-EVERYTHING.ps1 permanently disables startup bloat, notifications, and background apps.
 
 ---
 
@@ -114,25 +114,20 @@ Settings > System > Power > Power mode > select "Balanced"
 
 ---
 
-## Step 3: Windows Settings
+## Step 3: Windows Settings (Automated)
 
-📁 **Folder:** `3 windows settings/`
+Now handled automatically by `APPLY-EVERYTHING.ps1`:
 
-### How to use:
-1. Open the **CHECKLIST.md** file in this folder
-2. Double-click each `.url` shortcut to jump directly to the right Settings page
-3. Follow the checklist to change each setting
+| Setting | What the script does |
+|---------|---------------------|
+| HAGS | Enabled via registry |
+| Transparency | Disabled |
+| Background apps | Disabled globally |
+| Notifications | Suppressed (Do Not Disturb) |
+| Mouse acceleration | Disabled (Step 5 registry tweaks) |
+| Visual effects | Set to performance mode (Step 5) |
 
-### Key changes:
-| Setting | Change to | Why |
-|---------|-----------|-----|
-| Monitor refresh rate | Highest available | Smoother gameplay |
-| HAGS | On | Lower input lag |
-| Enhance pointer precision | **OFF** | Removes mouse acceleration |
-| Startup apps | Disable unneeded | Frees RAM and CPU |
-| Game Mode | On | Prioritizes game processes |
-| Visual Effects | Best performance | Frees GPU resources |
-| Do Not Disturb | On during gaming | No popup interruptions |
+> **Monitor refresh rate** must still be set manually in Display Settings — it's hardware-specific.
 
 ---
 
@@ -405,9 +400,7 @@ Run **`REVERT-EVERYTHING.ps1`** as Administrator — this undoes everything APPL
 APPLY-EVERYTHING.ps1              ← One-click apply all safe tweaks
 REVERT-EVERYTHING.ps1             ← One-click undo all tweaks
 GUIDE.md                          ← This document
-BIOS-CHECKLIST.md                 ← NEW — BIOS optimization (XMP, ReBAR, etc.)
-gaming-mode.ps1                   ← NEW — Pre-gaming session optimizer
-gaming-mode-off.ps1               ← NEW — Restore normal mode after gaming
+BIOS-CHECKLIST.md                 ← BIOS optimization (XMP, ReBAR, etc.)
 0 prerequisites/
   ├── install-runtimes.ps1        ← C++ Runtimes & DirectX
   └── README.txt
@@ -418,9 +411,6 @@ gaming-mode-off.ps1               ← NEW — Restore normal mode after gaming
   ├── enable-ultimate-performance.bat
   ├── configure-power-plan.ps1    ← Advanced power settings
   └── README.txt
-3 windows settings/
-  ├── *.url                       ← Settings page shortcuts
-  └── CHECKLIST.md
 4 services/
   ├── apply-all.bat
   ├── revert-all.bat
@@ -504,9 +494,6 @@ A: Run `10 verify/verify-tweaks.ps1` as Administrator. It checks every tweak and
 
 **Q: How do I stop Windows from restarting during a gaming session?**
 A: Apply `disable-auto-restart.reg` (Step 5) to prevent forced restarts. For full control, run `disable-windows-update.ps1` to permanently disable Windows Update. Run `enable-windows-update.ps1` monthly to check for updates, then disable again.
-
-**Q: What's Gaming Mode (gaming-mode.ps1)?**
-A: A session launcher you run before gaming. It closes resource hogs (browsers, OneDrive, etc.), silences notifications, clears RAM, and pauses Windows Update. Nothing is permanent — everything restores on reboot or by running `gaming-mode-off.ps1`.
 
 **Q: Should I change BIOS settings?**
 A: Yes! See `BIOS-CHECKLIST.md`. Enabling XMP/DOCP alone can give 10-30% more FPS in CPU-bound games because your RAM is probably running at half its rated speed.

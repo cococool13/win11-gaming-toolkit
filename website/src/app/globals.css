@@ -228,3 +228,21 @@
   transform: translate(0, 0);
   filter: blur(0);
 }
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .reveal-up,
+  .reveal-left,
+  .reveal-right,
+  .reveal-blur {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: none;
+  }
+
+  .typing-animation {
+    animation: none;
+    border-right: none;
+  }
+}

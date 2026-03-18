@@ -1,1 +1,1 @@
-& "$PSScriptRoot\DduManual.ps1" -PrepareSafeMode
+& "$PSScriptRoot\DduManual.ps1" -PrepareSafeMode -Automatic

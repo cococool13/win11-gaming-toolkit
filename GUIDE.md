@@ -237,7 +237,11 @@ Open the subfolder for your GPU brand: **nvidia/**, **amd/**, or **intel/**
 Each contains a README with clean driver installation, recommended settings, and Resizable BAR / Smart Access Memory setup.
 
 ### DDU (Display Driver Uninstaller):
-For the cleanest possible driver install, use DDU to completely remove old drivers before installing new ones. Download from the official site — see the GPU READMEs for links.
+For the cleanest possible driver install, use DDU to completely remove old drivers before installing new ones.
+
+- `DduAuto.ps1` stages DDU, configures it, schedules a Safe Mode reboot, and auto-runs the cleanup pass after the next admin login.
+- `DduManual.ps1` stages DDU and launches it in the current session, or can prepare a Safe Mode handoff without the automatic cleanup arguments.
+- The automation no longer hijacks `Winlogon\Userinit`; it uses a one-shot Safe Mode `RunOnce` handoff and clears `safeboot` before launching DDU to avoid boot loops.
 
 ---
 
@@ -275,7 +279,7 @@ See the README.txt in this folder for router QoS tips, port forwarding for popul
 - **`enable-vbs.bat`** — Re-enables everything (requires reboot)
 
 ### Note:
-The APPLY-EVERYTHING.ps1 script does NOT include this step. You must run it manually after reading the trade-offs.
+`APPLY-EVERYTHING.ps1` includes this step when the machine supports it. Read the trade-offs first because this is an intentional security reduction.
 
 ---
 
@@ -498,7 +502,7 @@ A: Windows normally ticks at ~15.6ms intervals. The service forces ~0.5ms ticks,
 A: An open-source GUI tool from YouTuber Chris Titus Tech that debloats Windows, installs programs, and applies tweaks. We include a launcher script — it downloads and runs directly from GitHub each time (nothing permanently installed).
 
 **Q: What about DDU?**
-A: DDU (Display Driver Uninstaller) is the gold standard for clean GPU driver installs. The repo now stages a bounded guided automation that downloads, configures, and prepares Safe Mode without hijacking the login chain.
+A: DDU (Display Driver Uninstaller) is the gold standard for clean GPU driver installs. `DduAuto.ps1` now stages DDU, reboots into Safe Mode, and auto-runs the cleanup pass after the next admin login without hijacking the login chain.
 
 **Q: Do I need to run all steps?**
 A: No. Each step is still independent, but `APPLY-EVERYTHING` is the flagship path and intentionally runs the maximal supported stack.

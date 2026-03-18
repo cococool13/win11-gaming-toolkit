@@ -5,6 +5,8 @@
 # Run as Administrator in PowerShell.
 # ============================================================
 
+. "$PSScriptRoot\lib\toolkit-state.ps1"
+
 $Host.UI.RawUI.WindowTitle = "Windows 11 Gaming Optimization — Launcher"
 $Host.UI.RawUI.BackgroundColor = "Black"
 $Host.UI.RawUI.ForegroundColor = "White"
@@ -22,11 +24,17 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 
 function Show-Menu {
     Clear-Host
+    $profile = Get-ToolkitMachineProfile
     Write-Host ""
     Write-Host "  ============================================================" -ForegroundColor Cyan
     Write-Host "    WINDOWS 11 GAMING OPTIMIZATION" -ForegroundColor Cyan
     Write-Host "    Interactive Launcher" -ForegroundColor Cyan
     Write-Host "  ============================================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  Detected PC: $($profile.manufacturer) $($profile.model)" -ForegroundColor White
+    Write-Host "  Power:       $($profile.powerState)" -ForegroundColor Gray
+    Write-Host "  GPUs:        $($profile.gpuCount) (hybrid: $($profile.isHybridGraphics))" -ForegroundColor Gray
+    Write-Host "  Domain:      $($profile.partOfDomain)" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  --- SETUP ---" -ForegroundColor DarkGray
     Write-Host "    [0]  Create Restore Point & Registry Backup" -ForegroundColor White
@@ -43,7 +51,7 @@ function Show-Menu {
     Write-Host "    [9]  Cleanup & Debloat" -ForegroundColor White
     Write-Host ""
     Write-Host "  --- ALL-IN-ONE ---" -ForegroundColor DarkGray
-    Write-Host "    [A]  APPLY EVERYTHING" -ForegroundColor Green
+    Write-Host "    [A]  APPLY EVERYTHING (Aggressive Full Stack)" -ForegroundColor Green
     Write-Host "    [R]  REVERT EVERYTHING" -ForegroundColor Red
     Write-Host ""
     Write-Host "  --- TOOLS ---" -ForegroundColor DarkGray

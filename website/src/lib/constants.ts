@@ -1,11 +1,11 @@
-export const GITHUB_REPO_URL = "#"; // Replace with actual repo URL
-export const GITHUB_RELEASES_URL = "#"; // Replace with actual releases URL
+export const GITHUB_REPO_URL = "";
+export const GITHUB_RELEASES_URL = "";
 
 export const HERO_STATS = [
   "10-35% FPS gain",
-  "Fully reversible",
-  "No .exe files",
-  "Open source",
+  "Aggressive full stack",
+  "Manifest-backed rollback",
+  "Unsupported tweaks skipped",
 ];
 
 export const STEPS = [
@@ -94,6 +94,15 @@ export const STEPS = [
   },
   {
     number: 10,
+    name: "Defender Exclusions",
+    difficulty: "Easy" as const,
+    risk: "Safe" as const,
+    revertible: "Yes",
+    description:
+      "Add game folders (Steam, Epic, etc.) to Defender exclusions. Reduces scan overhead.",
+  },
+  {
+    number: 11,
     name: "Debloat",
     difficulty: "Easy" as const,
     risk: "Low" as const,
@@ -107,7 +116,8 @@ export type BentoSize = "large" | "small" | "full";
 export const FEATURES = [
   {
     title: "One Script",
-    description: "APPLY-EVERYTHING.ps1 runs all steps. Takes about 2 minutes.",
+    description:
+      "APPLY-EVERYTHING.ps1 runs the aggressive full stack across Safe, Advanced, and Security Trade-off tiers.",
     icon: "zap",
     size: "large" as BentoSize,
     glowColor: "green",
@@ -129,7 +139,8 @@ export const FEATURES = [
   },
   {
     title: "Reversible",
-    description: "REVERT-EVERYTHING.ps1 undoes all changes.",
+    description:
+      "REVERT-EVERYTHING.ps1 uses captured machine state where deterministic rollback is possible.",
     icon: "undo",
     size: "small" as BentoSize,
     glowColor: "cyan",
@@ -142,9 +153,9 @@ export const FEATURES = [
     glowColor: "cyan",
   },
   {
-    title: "No Executables",
+    title: "Script-First",
     description:
-      "PowerShell and batch scripts only. Read the source before you run it.",
+      "Readable PowerShell and batch scripts with bounded external tooling where needed.",
     icon: "shield",
     size: "full" as BentoSize,
     glowColor: "cyan",
@@ -217,17 +228,17 @@ export const FAQ_ITEMS = [
   {
     question: "What gives the biggest FPS gain?",
     answer:
-      "VBS/HVCI disable gives 5-25%. XMP in BIOS gives 10-30% in CPU-bound games. Both are optional and separate from the main script.",
+      "VBS/HVCI disable gives 5-25%. XMP in BIOS gives 10-30% in CPU-bound games. APPLY-EVERYTHING includes the Windows-side trade-offs when supported; BIOS changes stay manual.",
   },
   {
     question: "Is this safe?",
     answer:
-      "Every tweak is reversible. Run REVERT-EVERYTHING.ps1 to undo. VBS is the only real trade-off and it's optional.",
+      "No. It is intentionally aggressive. Apply Everything includes security and convenience trade-offs, and rollback quality varies by tweak.",
   },
   {
     question: "Do I need to run all steps?",
     answer:
-      "No. APPLY-EVERYTHING.ps1 handles everything automatically. Or use launcher.ps1 to pick individual steps.",
+      "No. APPLY-EVERYTHING.ps1 handles the maximal supported stack automatically. Or use launcher.ps1 to run selective steps.",
   },
   {
     question: "How do I undo?",
@@ -242,6 +253,6 @@ export const FAQ_ITEMS = [
   {
     question: "Why no .exe files?",
     answer:
-      "Scripts are readable. You can check every line before running. Downloads come from official sources.",
+      "The main toolkit is readable script code. Some bounded helper flows still stage external tools from official sources when needed.",
   },
 ] as const;

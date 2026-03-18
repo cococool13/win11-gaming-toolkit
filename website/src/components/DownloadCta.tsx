@@ -6,6 +6,9 @@ import { GITHUB_RELEASES_URL, GITHUB_REPO_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 export function DownloadCta() {
+  const hasRepo = Boolean(GITHUB_REPO_URL);
+  const hasReleases = Boolean(GITHUB_RELEASES_URL);
+
   return (
     <section id="download" className="py-28 relative">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
@@ -14,29 +17,43 @@ export function DownloadCta() {
             <span className="gradient-text">Download</span>
           </h2>
           <p className="text-muted-foreground mb-10 max-w-md mx-auto">
-            Extract, right-click APPLY-EVERYTHING.ps1, run as Admin.
+            Extract, right-click APPLY-EVERYTHING.ps1, and run the aggressive
+            full stack as Administrator.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a
-              href={GITHUB_RELEASES_URL}
-              className={cn(
-                buttonVariants({ size: "lg" }),
-                "bg-gaming-green hover:bg-gaming-green/90 text-black font-semibold px-8 text-base"
-              )}
-            >
-              Download Latest Release
-            </a>
-            <a
-              href={GITHUB_REPO_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn(
-                buttonVariants({ variant: "outline", size: "lg" }),
-                "border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/5 px-8 text-base"
-              )}
-            >
-              View Source
-            </a>
+            {hasReleases ? (
+              <a
+                href={GITHUB_RELEASES_URL}
+                className={cn(
+                  buttonVariants({ size: "lg" }),
+                  "bg-gaming-green hover:bg-gaming-green/90 text-black font-semibold px-8 text-base"
+                )}
+              >
+                Download Latest Release
+              </a>
+            ) : (
+              <span
+                className={cn(
+                  buttonVariants({ size: "lg", variant: "outline" }),
+                  "border-white/10 text-muted-foreground px-8 text-base cursor-default"
+                )}
+              >
+                Release Link Pending
+              </span>
+            )}
+            {hasRepo && (
+              <a
+                href={GITHUB_REPO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "lg" }),
+                  "border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/5 px-8 text-base"
+                )}
+              >
+                View Source
+              </a>
+            )}
           </div>
         </ScrollReveal>
       </div>

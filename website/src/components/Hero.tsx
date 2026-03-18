@@ -2,7 +2,11 @@
 
 import { buttonVariants } from "@/components/ui/button";
 import { Terminal } from "@/components/Terminal";
-import { GITHUB_REPO_URL, GITHUB_RELEASES_URL, HERO_STATS } from "@/lib/constants";
+import {
+  GITHUB_REPO_URL,
+  GITHUB_RELEASES_URL,
+  HERO_STATS,
+} from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 export function Hero() {
@@ -16,30 +20,34 @@ export function Hero() {
               <span className="gradient-text">Win11.</span>
             </h1>
             <p className="text-lg text-muted-foreground mb-8 max-w-md">
-              One script. More FPS, less bloat, cleaner desktop.
-              Fully reversible.
+              One script. Full stack. Aggressive Windows tuning with
+              compatibility-aware skips and manifest-backed rollback.
             </p>
             <div className="flex flex-wrap gap-4 mb-8">
-              <a
-                href={GITHUB_RELEASES_URL}
-                className={cn(
-                  buttonVariants({ size: "lg" }),
-                  "bg-gaming-green hover:bg-gaming-green/90 text-black font-semibold px-6"
-                )}
-              >
-                Download Toolkit
-              </a>
-              <a
-                href={GITHUB_REPO_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={cn(
-                  buttonVariants({ variant: "outline", size: "lg" }),
-                  "border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/5 px-6"
-                )}
-              >
-                View Source
-              </a>
+              {GITHUB_RELEASES_URL && (
+                <a
+                  href={GITHUB_RELEASES_URL}
+                  className={cn(
+                    buttonVariants({ size: "lg" }),
+                    "bg-gaming-green hover:bg-gaming-green/90 text-black font-semibold px-6"
+                  )}
+                >
+                  Download Toolkit
+                </a>
+              )}
+              {GITHUB_REPO_URL && (
+                <a
+                  href={GITHUB_REPO_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "lg" }),
+                    "border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/5 px-6"
+                  )}
+                >
+                  View Source
+                </a>
+              )}
             </div>
 
             {/* Inline trust stats */}

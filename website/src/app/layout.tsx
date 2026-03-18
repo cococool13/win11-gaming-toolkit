@@ -20,11 +20,11 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Win11 Gaming Toolkit — Maximum Performance on Windows 11",
   description:
-    "A modern, safe, comprehensive guide to maximum gaming performance on Windows 11. No bundled executables. No bloatware. No harmful tweaks. Just clean scripts you can read and verify yourself.",
+    "An aggressive, automation-first Windows 11 gaming toolkit. Apply Everything runs the full stack, skips only unsupported tweaks, and uses captured machine state to improve rollback.",
   openGraph: {
     title: "Win11 Gaming Toolkit",
     description:
-      "10-35% FPS improvement with safe, reversible Windows 11 optimizations.",
+      "Aggressive Windows 11 gaming optimizations with manifest-backed rollback and compatibility-aware skips.",
     type: "website",
   },
 };

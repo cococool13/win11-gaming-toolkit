@@ -3,12 +3,16 @@
 # Windows 11 Gaming Optimization Guide
 # ============================================================
 #
-# Checks every tweak from the guide and reports which are
-# applied (green) vs default/missing (red).
+# Reports current tweak state with manifest awareness:
+#   - APPLIED BY TOOLKIT
+#   - ALREADY PRESENT
+#   - SKIPPED UNSUPPORTED
+#   - DRIFTED / FAILED
 #
-# Does NOT change anything — read-only script.
-# Run as Administrator for full results.
+# Does NOT change anything.
 # ============================================================
+
+. "$PSScriptRoot\..\lib\toolkit-state.ps1"
 
 $Host.UI.RawUI.WindowTitle = "Gaming Optimization — Verification Report"
 
@@ -18,37 +22,87 @@ Write-Host "  GAMING OPTIMIZATION — HEALTH CHECK" -ForegroundColor Cyan
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
 
+$manifest = Get-ToolkitState
 $pass = 0
 $fail = 0
 $warn = 0
+$applied = 0
+$preexisting = 0
+$unsupported = 0
+$drifted = 0
 
-function Check($name, [scriptblock]$test) {
+function Write-CheckStatus {
+    param(
+        [string]$Label,
+        [string]$Status,
+        [ConsoleColor]$Color
+    )
+    Write-Host ("  [{0}] {1}" -f $Status, $Label) -ForegroundColor $Color
+}
+
+function Check {
+    param(
+        [string]$Label,
+        [scriptblock]$Test,
+        [string]$StepKey = ""
+    )
+
     try {
-        $result = & $test
-        if ($result -eq $true) {
-            Write-Host "  [PASS] $name" -ForegroundColor Green
-            $script:pass++
-        } elseif ($result -eq "WARN") {
-            Write-Host "  [WARN] $name" -ForegroundColor Yellow
-            $script:warn++
-        } else {
-            Write-Host "  [FAIL] $name" -ForegroundColor Red
-            $script:fail++
+        $result = & $Test
+        if ($result -eq "SKIP") {
+            Write-CheckStatus -Label $Label -Status "SKIPPED" -Color DarkYellow
+            $script:unsupported++
+            return
         }
+        if ($result -eq "WARN") {
+            Write-CheckStatus -Label $Label -Status "WARN" -Color Yellow
+            $script:warn++
+            return
+        }
+        if ($result) {
+            $recorded = if ($StepKey) { Get-ToolkitRecordedStatus -Key $StepKey } else { $null }
+            if ($recorded -eq "applied") {
+                Write-CheckStatus -Label $Label -Status "APPLIED" -Color Green
+                $script:applied++
+            } else {
+                Write-CheckStatus -Label $Label -Status "PREEXISTING" -Color Cyan
+                $script:preexisting++
+            }
+            $script:pass++
+            return
+        }
+
+        if ($StepKey -and (Get-ToolkitRecordedStatus -Key $StepKey)) {
+            Write-CheckStatus -Label $Label -Status "DRIFTED" -Color Red
+            $script:drifted++
+        } else {
+            Write-CheckStatus -Label $Label -Status "FAIL" -Color Red
+        }
+        $script:fail++
     } catch {
-        Write-Host "  [????] $name — Could not check: $($_.Exception.Message)" -ForegroundColor DarkGray
+        Write-CheckStatus -Label "$Label — $($_.Exception.Message)" -Status "ERROR" -Color DarkGray
     }
 }
 
+Write-Host "--- Manifest ---" -ForegroundColor White
+if ($manifest) {
+    Write-Host "  Manifest found: $(Get-ToolkitManifestPath)" -ForegroundColor Gray
+    Write-Host "  Created: $($manifest.createdAt)" -ForegroundColor Gray
+    Write-Host "  Package removals tracked: $(@($manifest.packages.removed).Count)" -ForegroundColor Gray
+} else {
+    Write-Host "  No manifest found. Existing settings will be treated as preexisting." -ForegroundColor Yellow
+}
+
 # ============================================================
-# STEP 2: POWER PLAN
+# POWER PLAN
 # ============================================================
-Write-Host "--- Power Plan (Step 2) ---" -ForegroundColor White
+Write-Host ""
+Write-Host "--- Power Plan ---" -ForegroundColor White
 
 Check "Ultimate Performance plan is active" {
     $active = powercfg /getactivescheme 2>&1
     $active -match "Ultimate Performance" -or $active -match "99999999-9999-9999-9999-999999999999"
-}
+} "power:plan"
 
 Check "Hibernate is disabled" {
     $val = (Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\Power" -Name "HibernateEnabled" -ErrorAction SilentlyContinue).HibernateEnabled
@@ -60,217 +114,178 @@ Check "Fast Startup is disabled" {
     $val -eq 0
 }
 
-Check "Power throttling is disabled" {
-    $val = (Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" -Name "PowerThrottlingOff" -ErrorAction SilentlyContinue).PowerThrottlingOff
-    $val -eq 1
-}
-
 # ============================================================
-# STEP 4: SERVICES
+# WINDOWS SETTINGS
 # ============================================================
 Write-Host ""
-Write-Host "--- Services (Step 4) ---" -ForegroundColor White
+Write-Host "--- Windows Settings ---" -ForegroundColor White
 
-$servicesToCheck = @(
-    @("DiagTrack", "Connected User Experiences and Telemetry"),
+Check "Transparency effects disabled" {
+    (Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" -Name "EnableTransparency" -ErrorAction SilentlyContinue).EnableTransparency -eq 0
+} "reg:EnableTransparency"
+
+Check "Background apps disabled" {
+    (Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" -Name "GlobalUserDisabled" -ErrorAction SilentlyContinue).GlobalUserDisabled -eq 1
+} "reg:GlobalUserDisabled"
+
+Check "Hardware Accelerated GPU Scheduling enabled" {
+    (Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" -Name "HwSchMode" -ErrorAction SilentlyContinue).HwSchMode -eq 2
+} "reg:HwSchMode"
+
+Check "Notifications suppressed" {
+    (Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings" -Name "NOC_GLOBAL_SETTING_TOASTS_ENABLED" -ErrorAction SilentlyContinue).NOC_GLOBAL_SETTING_TOASTS_ENABLED -eq 0
+} "reg:ToastsEnabled"
+
+# ============================================================
+# SERVICES
+# ============================================================
+Write-Host ""
+Write-Host "--- Services ---" -ForegroundColor White
+
+foreach ($svc in @(
+    @("DiagTrack", "DiagTrack"),
     @("PhoneSvc", "Phone Service"),
     @("lfsvc", "Geolocation Service"),
-    @("RetailDemo", "Retail Demo Service"),
+    @("RetailDemo", "Retail Demo"),
     @("MapsBroker", "Downloaded Maps Manager"),
-    @("Fax", "Fax Service")
-)
-
-foreach ($svc in $servicesToCheck) {
-    Check "$($svc[1]) ($($svc[0])) is disabled" {
+    @("Fax", "Fax"),
+    @("Spooler", "Print Spooler"),
+    @("WSearch", "Windows Search")
+)) {
+    Check "$($svc[1]) disabled" {
         $service = Get-Service -Name $svc[0] -ErrorAction SilentlyContinue
-        if ($null -eq $service) { return $true }  # Not installed = good
+        if (-not $service) { return "SKIP" }
         $service.StartType -eq "Disabled"
-    }
-}
-
-# Optional services (warn if enabled, don't fail)
-Check "Print Spooler (optional — disable if no printer)" {
-    $service = Get-Service -Name "Spooler" -ErrorAction SilentlyContinue
-    if ($service -and $service.StartType -ne "Disabled") { return "WARN" }
-    return $true
-}
-
-Check "Windows Search (optional — disable if not needed)" {
-    $service = Get-Service -Name "WSearch" -ErrorAction SilentlyContinue
-    if ($service -and $service.StartType -ne "Disabled") { return "WARN" }
-    return $true
+    } "service:$($svc[0])"
 }
 
 # ============================================================
-# STEP 5: REGISTRY TWEAKS
+# REGISTRY + STARTUP
 # ============================================================
 Write-Host ""
-Write-Host "--- Registry Tweaks (Step 5) ---" -ForegroundColor White
+Write-Host "--- Registry + Startup ---" -ForegroundColor White
 
-Check "MenuShowDelay = 0 (instant menus)" {
-    $val = (Get-ItemProperty "HKCU:\Control Panel\Desktop" -Name "MenuShowDelay" -ErrorAction SilentlyContinue).MenuShowDelay
-    $val -eq "0"
+Check "MenuShowDelay = 0" {
+    (Get-ItemProperty "HKCU:\Control Panel\Desktop" -Name "MenuShowDelay" -ErrorAction SilentlyContinue).MenuShowDelay -eq "0"
 }
-
-Check "MouseHoverTime = 10 (instant tooltips)" {
-    $val = (Get-ItemProperty "HKCU:\Control Panel\Mouse" -Name "MouseHoverTime" -ErrorAction SilentlyContinue).MouseHoverTime
-    $val -eq "10"
+Check "MouseHoverTime = 10" {
+    (Get-ItemProperty "HKCU:\Control Panel\Mouse" -Name "MouseHoverTime" -ErrorAction SilentlyContinue).MouseHoverTime -eq "10"
 }
-
-Check "Startup delay disabled" {
-    $val = (Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize" -Name "StartupDelayInMSec" -ErrorAction SilentlyContinue).StartupDelayInMSec
-    $val -eq 0
-}
-
-Check "Auto driver searching disabled" {
-    $val = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching" -Name "SearchOrderConfig" -ErrorAction SilentlyContinue).SearchOrderConfig
-    $val -eq 0
-}
-
-Check "Fullscreen optimizations disabled" {
-    $val = (Get-ItemProperty "HKCU:\System\GameConfigStore" -Name "GameDVR_FSEBehaviorMode" -ErrorAction SilentlyContinue).GameDVR_FSEBehaviorMode
-    $val -eq 2
-}
-
-Check "Game CPU/GPU priority set to High" {
-    $val = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" -Name "GPU Priority" -ErrorAction SilentlyContinue)."GPU Priority"
-    $val -eq 8
-}
-
 Check "Network throttling disabled" {
     $val = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" -Name "NetworkThrottlingIndex" -ErrorAction SilentlyContinue).NetworkThrottlingIndex
     $val -eq 0xFFFFFFFF -or $val -eq 4294967295
 }
-
 Check "Game Bar / DVR disabled" {
-    $val = (Get-ItemProperty "HKCU:\System\GameConfigStore" -Name "GameDVR_Enabled" -ErrorAction SilentlyContinue).GameDVR_Enabled
-    $val -eq 0
+    (Get-ItemProperty "HKCU:\System\GameConfigStore" -Name "GameDVR_Enabled" -ErrorAction SilentlyContinue).GameDVR_Enabled -eq 0
 }
-
-Check "Game Mode still enabled" {
-    $val = (Get-ItemProperty "HKCU:\Software\Microsoft\GameBar" -Name "AutoGameModeEnabled" -ErrorAction SilentlyContinue).AutoGameModeEnabled
-    $val -eq 1
+Check "OneDrive autostart policy disabled" {
+    (Get-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft\Windows\OneDrive" -Name "DisableFileSyncNGSC" -ErrorAction SilentlyContinue).DisableFileSyncNGSC -eq 1
 }
-
-Check "Mouse acceleration disabled" {
-    $val = (Get-ItemProperty "HKCU:\Control Panel\Mouse" -Name "MouseSpeed" -ErrorAction SilentlyContinue).MouseSpeed
-    $val -eq "0"
+Check "Widgets disabled" {
+    (Get-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft\Dsh" -Name "AllowNewsAndInterests" -ErrorAction SilentlyContinue).AllowNewsAndInterests -eq 0
 }
-
-Check "Visual effects set to performance" {
-    $val = (Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" -Name "VisualFXSetting" -ErrorAction SilentlyContinue).VisualFXSetting
-    $val -eq 3
-}
-
-Check "Advertising ID disabled" {
-    $val = (Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo" -Name "Enabled" -ErrorAction SilentlyContinue).Enabled
-    $val -eq 0
-}
-
-Check "Telemetry set to minimum" {
-    $val = (Get-ItemProperty "HKLM:\Software\Policies\Microsoft\Windows\DataCollection" -Name "AllowTelemetry" -ErrorAction SilentlyContinue).AllowTelemetry
-    $val -eq 0
-}
-
-Check "Accessibility shortcuts disabled (Sticky Keys)" {
-    $val = (Get-ItemProperty "HKCU:\Control Panel\Accessibility\StickyKeys" -Name "Flags" -ErrorAction SilentlyContinue).Flags
-    $val -eq "2"
+Check "Copilot disabled" {
+    (Get-ItemProperty "HKCU:\Software\Policies\Microsoft\Windows\WindowsCopilot" -Name "TurnOffWindowsCopilot" -ErrorAction SilentlyContinue).TurnOffWindowsCopilot -eq 1
 }
 
 # ============================================================
-# STEP 6: GPU
+# GPU + NETWORK
 # ============================================================
 Write-Host ""
-Write-Host "--- GPU (Step 6) ---" -ForegroundColor White
+Write-Host "--- GPU + Network ---" -ForegroundColor White
 
-$gpuDevices = Get-PnpDevice -Class Display -ErrorAction SilentlyContinue
-foreach ($gpu in $gpuDevices) {
-    Check "MSI mode enabled for $($gpu.FriendlyName)" {
-        $id = $gpu.InstanceId
-        $regPath = "HKLM:\SYSTEM\CurrentControlSet\Enum\$id\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
-        $val = (Get-ItemProperty $regPath -Name "MSISupported" -ErrorAction SilentlyContinue).MSISupported
-        $val -eq 1
+$gpuDevices = @(Get-PnpDevice -Class Display -ErrorAction SilentlyContinue)
+if ($gpuDevices.Count -eq 0) {
+    Write-CheckStatus -Label "No display adapters found" -Status "SKIPPED" -Color DarkYellow
+    $unsupported++
+} else {
+    foreach ($gpu in $gpuDevices) {
+        Check "MSI mode enabled for $($gpu.FriendlyName)" {
+            $regPath = "HKLM:\SYSTEM\CurrentControlSet\Enum\$($gpu.InstanceId)\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
+            (Get-ItemProperty $regPath -Name "MSISupported" -ErrorAction SilentlyContinue).MSISupported -eq 1
+        } "gpu:$($gpu.InstanceId)"
     }
 }
 
-# ============================================================
-# STEP 7: NETWORK
-# ============================================================
-Write-Host ""
-Write-Host "--- Network (Step 7) ---" -ForegroundColor White
-
-Check "TCP Timestamps disabled" {
-    $out = netsh int tcp show global 2>&1
-    $out -match "Timestamps\s*:\s*disabled"
+Check "TCP timestamps disabled" {
+    (netsh int tcp show global 2>&1) -match "Timestamps\s*:\s*disabled"
 }
-
 Check "RSS enabled" {
-    $out = netsh int tcp show global 2>&1
-    $out -match "Receive-Side Scaling State\s*:\s*enabled"
+    (netsh int tcp show global 2>&1) -match "Receive-Side Scaling State\s*:\s*enabled"
 }
-
-Check "Nagle's Algorithm disabled (at least one adapter)" {
-    $interfaces = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces"
-    $found = $false
-    Get-ChildItem $interfaces | ForEach-Object {
-        $val = (Get-ItemProperty $_.PSPath -Name "TCPNoDelay" -ErrorAction SilentlyContinue).TCPNoDelay
-        if ($val -eq 1) { $found = $true }
-    }
-    $found
-}
-
-Check "DNS set to optimized servers (Cloudflare or Google)" {
+Check "Cloudflare / Google DNS present on at least one adapter" {
     $adapters = Get-DnsClientServerAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue
     $optimized = @("1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4")
-    $found = $false
-    foreach ($a in $adapters) {
-        foreach ($dns in $a.ServerAddresses) {
-            if ($dns -in $optimized) { $found = $true; break }
+    foreach ($adapter in $adapters) {
+        foreach ($dns in @($adapter.ServerAddresses)) {
+            if ($optimized -contains $dns) {
+                return $true
+            }
         }
-        if ($found) { break }
     }
-    if (-not $found) { return "WARN" }
-    return $true
-}
+    return $false
+} "dns:1"
 
 # ============================================================
-# STEP 8: VBS / SECURITY
+# WINDOWS UPDATE + SECURITY TRADE-OFFS
 # ============================================================
 Write-Host ""
-Write-Host "--- Security vs Performance (Step 8) ---" -ForegroundColor White
-
-Check "VBS disabled (better FPS, but reduced kernel security)" {
-    $vbs = Get-CimInstance -ClassName Win32_DeviceGuard -Namespace root\Microsoft\Windows\DeviceGuard -ErrorAction SilentlyContinue
-    if ($null -eq $vbs) { return "WARN" }
-    # Report as WARN either way — this is a trade-off, not a binary good/bad
-    if ($vbs.VirtualizationBasedSecurityStatus -eq 0) { return "WARN" }
-    return $false
-}
-
-Check "HVCI disabled (better FPS, but reduced kernel security)" {
-    $val = (Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity" -Name "Enabled" -ErrorAction SilentlyContinue).Enabled
-    if ($null -eq $val) { return "WARN" }
-    # Report as WARN — security trade-off, user should consciously decide
-    if ($val -eq 0) { return "WARN" }
-    return $false
-}
-
-# ============================================================
-# BONUS CHECKS
-# ============================================================
-Write-Host ""
-Write-Host "--- System Info ---" -ForegroundColor White
-
-Check "Timer Resolution Service (STR) installed" {
-    $service = Get-Service -Name "STR" -ErrorAction SilentlyContinue
-    if ($null -eq $service) { return "WARN" }
-    $service.Status -eq "Running"
-}
+Write-Host "--- Windows Update + Security Trade-offs ---" -ForegroundColor White
 
 Check "Windows Update auto-restart blocked" {
-    $val = (Get-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "NoAutoRebootWithLoggedOnUsers" -ErrorAction SilentlyContinue).NoAutoRebootWithLoggedOnUsers
-    if ($null -eq $val) { return "WARN" }
-    $val -eq 1
+    (Get-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "NoAutoRebootWithLoggedOnUsers" -ErrorAction SilentlyContinue).NoAutoRebootWithLoggedOnUsers -eq 1
+} "reg:NoAutoRebootWithLoggedOnUsers"
+
+Check "Windows Update service disabled" {
+    $service = Get-Service -Name "wuauserv" -ErrorAction SilentlyContinue
+    if (-not $service) { return "SKIP" }
+    $service.StartType -eq "Disabled"
+} "service:wuauserv"
+
+Check "VBS disabled" {
+    $vbs = Get-CimInstance -ClassName Win32_DeviceGuard -Namespace root\Microsoft\Windows\DeviceGuard -ErrorAction SilentlyContinue
+    if (-not $vbs) { return "SKIP" }
+    $vbs.VirtualizationBasedSecurityStatus -eq 0
+} "reg:EnableVBS"
+
+Check "HVCI disabled" {
+    $val = (Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity" -Name "Enabled" -ErrorAction SilentlyContinue).Enabled
+    if ($null -eq $val) { return "SKIP" }
+    $val -eq 0
+} "reg:HVCIEnabled"
+
+Check "Toolkit-added Defender exclusions are still present" {
+    if (-not $manifest -or -not $manifest.defender -or @($manifest.defender.added).Count -eq 0) {
+        return "SKIP"
+    }
+    $current = @((Get-MpPreference -ErrorAction SilentlyContinue).ExclusionPath)
+    foreach ($path in @($manifest.defender.added)) {
+        if ($current -notcontains $path) {
+            return $false
+        }
+    }
+    return $true
+} "defender:manifest"
+
+# ============================================================
+# CUSTOMIZATION + BONUS
+# ============================================================
+Write-Host ""
+Write-Host "--- Customization + Bonus ---" -ForegroundColor White
+
+Check "Classic right-click menu enabled" {
+    Test-Path "HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32"
+}
+Check "Bing / web results disabled" {
+    (Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" -Name "BingSearchEnabled" -ErrorAction SilentlyContinue).BingSearchEnabled -eq 0
+}
+Check "Dark mode enabled" {
+    (Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" -Name "AppsUseLightTheme" -ErrorAction SilentlyContinue).AppsUseLightTheme -eq 0
+}
+Check "Timer Resolution Service installed" {
+    $service = Get-Service -Name "STR" -ErrorAction SilentlyContinue
+    if (-not $service) { return "SKIP" }
+    $service.Status -eq "Running"
 }
 
 # ============================================================
@@ -281,28 +296,30 @@ Write-Host "============================================================" -Foreg
 Write-Host "  HEALTH CHECK RESULTS" -ForegroundColor Cyan
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  PASS: $pass" -ForegroundColor Green
+Write-Host "  PASS:                $pass" -ForegroundColor Green
+Write-Host "  APPLIED BY TOOLKIT:  $applied" -ForegroundColor Green
+Write-Host "  ALREADY PRESENT:     $preexisting" -ForegroundColor Cyan
+Write-Host "  SKIPPED UNSUPPORTED: $unsupported" -ForegroundColor DarkYellow
 if ($warn -gt 0) {
-    Write-Host "  WARN: $warn (optional tweaks not applied)" -ForegroundColor Yellow
+    Write-Host "  WARN:                $warn" -ForegroundColor Yellow
+}
+if ($drifted -gt 0) {
+    Write-Host "  DRIFTED:             $drifted" -ForegroundColor Red
 }
 if ($fail -gt 0) {
-    Write-Host "  FAIL: $fail (tweaks missing or reverted)" -ForegroundColor Red
-}
-$total = $pass + $fail
-if ($total -gt 0) {
-    $pct = [math]::Round(($pass / $total) * 100)
-    Write-Host ""
-    Write-Host "  Optimization Score: $pct% ($pass/$total required tweaks applied)" -ForegroundColor White
+    Write-Host "  FAIL:                $fail" -ForegroundColor Red
 }
 Write-Host ""
 
-if ($fail -gt 0) {
-    Write-Host "  To fix FAIL items: re-run APPLY-EVERYTHING.ps1 as Administrator" -ForegroundColor Gray
-    Write-Host "  Or apply individual tweaks from the relevant step folders." -ForegroundColor Gray
+$total = $pass + $fail
+if ($total -gt 0) {
+    $pct = [math]::Round(($pass / $total) * 100)
+    Write-Host "  Apply Everything coverage: $pct% ($pass/$total tracked checks passing)" -ForegroundColor White
 }
-if ($warn -gt 0) {
-    Write-Host "  WARN items are optional — apply them manually if desired." -ForegroundColor Gray
+if ($manifest) {
+    Write-Host "  Manifest: $(Get-ToolkitManifestPath)" -ForegroundColor Gray
+    Write-Host "  Recorded package removals: $(@($manifest.packages.removed).Count)" -ForegroundColor Gray
 }
-
+Write-Host "  Security-tradeoff items are intentional in APPLY-EVERYTHING." -ForegroundColor Gray
 Write-Host ""
 Read-Host "Press Enter to exit"

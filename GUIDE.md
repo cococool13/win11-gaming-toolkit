@@ -1,13 +1,13 @@
 # Windows 11 Ultimate Gaming Optimization Guide
 
-> A modern, safe, comprehensive guide to maximum gaming performance on Windows 11.
-> No bundled executables. No bloatware. No harmful tweaks. Just clean scripts you can read and verify yourself.
+> A modern, aggressive, automation-first guide to maximum gaming performance on Windows 11.
+> `APPLY-EVERYTHING.ps1` runs the full stack, including security and convenience trade-offs when they are automatable on your machine.
 
 ---
 
 ## Quick Start — One-Click Apply
 
-**Don't want to go step by step?** Run the master script to apply all safe tweaks at once:
+**Don't want to go step by step?** Run the master script to apply the aggressive full stack at once:
 
 ```powershell
 # Open PowerShell as Administrator, then:
@@ -15,7 +15,7 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 .\APPLY-EVERYTHING.ps1
 ```
 
-This applies Steps 1-2, 4-7, and 9 automatically (backup, power plan, services, registry, GPU MSI mode, network, debloat, cleanup). It skips Step 3 (manual Windows Settings) and Step 8 (VBS — security trade-off). To undo: run `REVERT-EVERYTHING.ps1`.
+This applies backup, power plan, Windows settings, services, registry tweaks, startup cleanup, GPU MSI mode, network changes, Windows Update suppression, VBS/HVCI/LSA changes, customization, Defender exclusions, debloat, and cleanup. Unsupported tweaks are skipped. To undo what can be restored deterministically, run `REVERT-EVERYTHING.ps1`.
 
 ---
 
@@ -25,10 +25,27 @@ This applies Steps 1-2, 4-7, and 9 automatically (backup, power plan, services, 
 - **Run scripts as Administrator.** Right-click > "Run as administrator" for every `.bat` file.
 - **PowerShell scripts** may need you to allow execution first:
   Open PowerShell as Admin and run: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
-- **Every tweak is reversible.** Each step includes revert scripts or instructions.
-- **Read the warnings.** Some tweaks (especially Step 8) have real trade-offs.
+- **Not every tweak is perfectly reversible.** The toolkit now captures machine state to improve rollback, but removed apps and some system policies may still need manual recovery.
+- **Read the warnings.** This guide is intentionally aggressive and includes real trade-offs.
 - **Check your BIOS first.** See [BIOS-CHECKLIST.md](BIOS-CHECKLIST.md) — enabling XMP alone can give 10-30% more FPS.
-- **No separate gaming mode needed.** APPLY-EVERYTHING.ps1 permanently disables startup bloat, notifications, and background apps.
+- **No separate gaming mode needed.** APPLY-EVERYTHING.ps1 aggressively disables startup bloat, notifications, background apps, and several Windows conveniences.
+
+## Compatibility Model
+
+`APPLY-EVERYTHING.ps1` is designed to run on desktops, laptops, handheld Windows gaming devices, OEM prebuilts, and mixed-use PCs.
+
+- It does **not** downgrade itself to a safe preset on laptops or workstations.
+- It applies every tweak that is technically automatable on the current machine.
+- Unsupported tweaks are skipped and recorded in the manifest.
+- Security trade-off tweaks are intentional in the full-stack run.
+
+## Risk Tiers
+
+The repo still uses tiers so you can understand what `APPLY-EVERYTHING` includes:
+
+- **Safe**: broad Windows changes with lower compatibility risk
+- **Advanced**: stronger performance changes with system-level side effects
+- **Security Trade-off**: changes that reduce protection or Windows conveniences
 
 ---
 
@@ -397,7 +414,7 @@ Run **`REVERT-EVERYTHING.ps1`** as Administrator — this undoes everything APPL
 ## File Map
 
 ```
-APPLY-EVERYTHING.ps1              ← One-click apply all safe tweaks
+APPLY-EVERYTHING.ps1              ← One-click apply the aggressive full stack
 REVERT-EVERYTHING.ps1             ← One-click undo all tweaks
 GUIDE.md                          ← This document
 BIOS-CHECKLIST.md                 ← BIOS optimization (XMP, ReBAR, etc.)
@@ -466,13 +483,13 @@ BIOS-CHECKLIST.md                 ← BIOS optimization (XMP, ReBAR, etc.)
 ## FAQ
 
 **Q: What's the single biggest FPS gain?**
-A: Disabling VBS/HVCI (Step 8). It's 5-25% but has a security trade-off.
+A: Disabling VBS/HVCI (Step 8). It's 5-25% and `APPLY-EVERYTHING` includes it when the machine supports it, but it has a security trade-off.
 
 **Q: What if I just want to run one thing?**
-A: Run `APPLY-EVERYTHING.ps1` as Administrator. It does everything except VBS (manual choice).
+A: Run `APPLY-EVERYTHING.ps1` as Administrator. It runs the aggressive full stack, including security trade-off tweaks, and skips only unsupported items.
 
 **Q: Is this safe?**
-A: Every tweak is reversible. We removed harmful tweaks from the original guides (disabling BITS, SysMain, Prefetch). The only real trade-off is Step 8 (VBS), clearly documented.
+A: No blanket promise. This toolkit is intentionally aggressive. `APPLY-EVERYTHING` includes security and convenience trade-offs, and rollback quality varies by tweak.
 
 **Q: What's the Timer Resolution Service?**
 A: Windows normally ticks at ~15.6ms intervals. The service forces ~0.5ms ticks, which improves frame pacing and reduces input lag. It's used by competitive gamers. Install via `install-timer-resolution-service.ps1`.
@@ -481,13 +498,13 @@ A: Windows normally ticks at ~15.6ms intervals. The service forces ~0.5ms ticks,
 A: An open-source GUI tool from YouTuber Chris Titus Tech that debloats Windows, installs programs, and applies tweaks. We include a launcher script — it downloads and runs directly from GitHub each time (nothing permanently installed).
 
 **Q: What about DDU?**
-A: DDU (Display Driver Uninstaller) is the gold standard for clean GPU driver installs. See the GPU READMEs in Step 6 for download links and instructions. We don't automate the safe-mode DDU process because it requires a reboot into Safe Mode and user interaction.
+A: DDU (Display Driver Uninstaller) is the gold standard for clean GPU driver installs. The repo now stages a bounded guided automation that downloads, configures, and prepares Safe Mode without hijacking the login chain.
 
 **Q: Do I need to run all steps?**
-A: No. Each step is independent. Steps 2, 5, and 8 give the biggest gains for the least effort.
+A: No. Each step is still independent, but `APPLY-EVERYTHING` is the flagship path and intentionally runs the maximal supported stack.
 
 **Q: I have a laptop. Should I do all of this?**
-A: Skip the advanced power plan tuning on battery. Everything else is fine.
+A: It will still run. On battery-capable systems the script does not downgrade itself to a safe preset, so read the trade-offs first.
 
 **Q: How do I check if my tweaks are still applied?**
 A: Run `10 verify/verify-tweaks.ps1` as Administrator. It checks every tweak and gives you a color-coded health report with an optimization score.
@@ -498,8 +515,8 @@ A: Apply `disable-auto-restart.reg` (Step 5) to prevent forced restarts. For ful
 **Q: Should I change BIOS settings?**
 A: Yes! See `BIOS-CHECKLIST.md`. Enabling XMP/DOCP alone can give 10-30% more FPS in CPU-bound games because your RAM is probably running at half its rated speed.
 
-**Q: Why don't you bundle any .exe tools?**
-A: Bundled executables go stale, can be tampered with, and create licensing issues. We link to official download pages so you always get the latest verified version.
+**Q: Why don't you bundle every .exe tool directly in the repo?**
+A: Bundled executables go stale, can be tampered with, and create licensing issues. The main toolkit stays readable and script-first, while bounded helper flows download official tools when needed.
 
 ---
 

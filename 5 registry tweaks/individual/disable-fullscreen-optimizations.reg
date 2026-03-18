@@ -1,0 +1,11 @@
+Windows Registry Editor Version 5.00
+
+; Disable fullscreen optimizations globally (default: not set)
+; Fullscreen optimizations force games into a borderless window mode.
+; Disabling this can reduce input lag in some games.
+
+[HKEY_CURRENT_USER\System\GameConfigStore]
+"GameDVR_FSEBehaviorMode"=dword:00000002
+"GameDVR_HonorUserFSEBehaviorMode"=dword:00000001
+"GameDVR_FSEBehavior"=dword:00000002
+"GameDVR_DXGIHonorFSEWindowsCompatible"=dword:00000001

@@ -1,0 +1,32 @@
+Windows Registry Editor Version 5.00
+
+; ============================================================
+; Disable Game Bar & Game DVR
+; Windows 11 Gaming Optimization Guide
+; ============================================================
+; Game Bar and DVR run in the background recording gameplay.
+; Disabling these frees GPU resources and reduces input lag.
+; Note: Game MODE is still enabled (this only disables the overlay).
+; ============================================================
+
+; --- Disable Game DVR ---
+[HKEY_CURRENT_USER\System\GameConfigStore]
+"GameDVR_Enabled"=dword:00000000
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\GameDVR]
+"AppCaptureEnabled"=dword:00000000
+"AudioCaptureEnabled"=dword:00000000
+"HistoricalCaptureEnabled"=dword:00000000
+"CursorCaptureEnabled"=dword:00000000
+"MicrophoneCaptureEnabled"=dword:00000000
+"VKToggleGameBar"=dword:00000000
+"VKMToggleGameBar"=dword:00000000
+
+; --- Disable Xbox Game Bar controller shortcut ---
+[HKEY_CURRENT_USER\Software\Microsoft\GameBar]
+"UseNexusForGameBarEnabled"=dword:00000000
+"GamepadNexusChordEnabled"=dword:00000000
+
+; --- Keep Game Mode ON (this is good for performance) ---
+[HKEY_CURRENT_USER\Software\Microsoft\GameBar]
+"AutoGameModeEnabled"=dword:00000001

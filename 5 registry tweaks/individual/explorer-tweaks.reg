@@ -1,0 +1,41 @@
+Windows Registry Editor Version 5.00
+
+; ============================================================
+; File Explorer Optimizations
+; Windows 11 Gaming Optimization Guide
+; ============================================================
+; Quality-of-life tweaks for File Explorer. Not performance
+; related, but makes your system feel snappier and cleaner.
+; ============================================================
+
+; --- Open File Explorer to "This PC" instead of Quick Access ---
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced]
+"LaunchTo"=dword:00000001
+
+; --- Show file extensions ---
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced]
+"HideFileExt"=dword:00000000
+
+; --- Show full path in title bar ---
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\CabinetState]
+"FullPath"=dword:00000001
+
+; --- Hide frequent folders in Quick Access ---
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer]
+"ShowFrequent"=dword:00000000
+
+; --- Disable "Show files from Office.com" ---
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer]
+"ShowCloudFilesInQuickAccess"=dword:00000000
+
+; --- Disable sync provider notifications (OneDrive ads) ---
+[HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced]
+"ShowSyncProviderNotifications"=dword:00000000
+
+; --- Disable autoplay ---
+[HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers]
+"DisableAutoplay"=dword:00000001
+
+; --- Disable remote assistance ---
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Remote Assistance]
+"fAllowToGetHelp"=dword:00000000

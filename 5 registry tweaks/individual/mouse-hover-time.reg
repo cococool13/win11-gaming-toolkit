@@ -1,0 +1,7 @@
+Windows Registry Editor Version 5.00
+
+; Faster tooltip hover time (default: 400, set to: 10)
+; Tooltips appear almost instantly on hover.
+
+[HKEY_CURRENT_USER\Control Panel\Mouse]
+"MouseHoverTime"="10"

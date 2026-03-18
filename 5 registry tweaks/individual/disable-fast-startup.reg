@@ -1,0 +1,12 @@
+Windows Registry Editor Version 5.00
+
+; Disable Fast Startup / Hibernation (default: 1)
+; Fast Startup saves a hibernation image on shutdown and reloads it.
+; Disabling this:
+;   - Gives a true clean shutdown/boot (fixes many issues)
+;   - Reduces SSD writes from hibernation file
+;   - Fixes dual-boot issues
+;   - May slightly increase boot time (2-5 seconds on SSD)
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Power]
+"HiberbootEnabled"=dword:00000000

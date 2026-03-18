@@ -1,0 +1,13 @@
+Windows Registry Editor Version 5.00
+
+; ============================================================
+; Disable Power Throttling
+; Windows 11 Gaming Optimization Guide
+; ============================================================
+; Windows 11 throttles background processes to save power.
+; This can affect game performance if Windows incorrectly
+; classifies a game process. Disabling ensures full CPU power.
+; ============================================================
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling]
+"PowerThrottlingOff"=dword:00000001

@@ -1,0 +1,7 @@
+Windows Registry Editor Version 5.00
+
+; Disable the startup delay for desktop apps (default: not set)
+; Windows normally waits ~10 seconds before launching startup apps.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize]
+"StartupDelayInMSec"=dword:00000000

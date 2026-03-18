@@ -1,0 +1,8 @@
+Windows Registry Editor Version 5.00
+
+; Disable automatic driver searching via Windows Update (default: 1)
+; Prevents Windows from auto-installing generic drivers over your
+; manually installed GPU/audio drivers.
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching]
+"SearchOrderConfig"=dword:00000000

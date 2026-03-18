@@ -1,0 +1,27 @@
+Windows Registry Editor Version 5.00
+
+; ============================================================
+; Disable Automatic Restart for Windows Update
+; Windows 11 Gaming Optimization Guide
+; ============================================================
+; Prevents Windows from restarting your PC automatically
+; after installing updates. You'll still get updates, but
+; YOU choose when to restart.
+;
+; To revert: run revert-auto-restart.reg
+; ============================================================
+
+; Disable auto-restart when users are logged on
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU]
+"NoAutoRebootWithLoggedOnUsers"=dword:00000001
+"AUOptions"=dword:00000003
+
+; Set active hours to maximum range (8 AM to 2 AM = 18 hours)
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings]
+"ActiveHoursStart"=dword:00000008
+"ActiveHoursEnd"=dword:00000002
+"IsActiveHoursEnabled"=dword:00000001
+
+; Disable restart notifications (less nagging)
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate]
+"SetAutoRestartNotificationDisable"=dword:00000001

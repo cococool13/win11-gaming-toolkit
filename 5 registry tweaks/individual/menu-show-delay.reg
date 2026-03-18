@@ -1,0 +1,7 @@
+Windows Registry Editor Version 5.00
+
+; Faster menu animations (default: 400, set to: 0)
+; Makes right-click menus and Start menu appear instantly.
+
+[HKEY_CURRENT_USER\Control Panel\Desktop]
+"MenuShowDelay"="0"

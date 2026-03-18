@@ -1,0 +1,49 @@
+Windows Registry Editor Version 5.00
+
+; ============================================================
+; Visual Effects — Optimize for Performance
+; Windows 11 Gaming Optimization Guide
+; ============================================================
+; Disables most visual animations while keeping smooth fonts.
+; Frees GPU/CPU resources that Windows uses for eye candy.
+; ============================================================
+
+; --- Set visual effects to Custom ---
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects]
+"VisualFXSetting"=dword:00000003
+
+; --- Disable most animations, keep smooth fonts ---
+; Enabled: animate controls, smooth fonts
+; Disabled: fade menus, slide tooltips, shadows, slide combos, smooth scroll
+[HKEY_CURRENT_USER\Control Panel\Desktop]
+"UserPreferencesMask"=hex(2):90,12,03,80,12,00,00,00
+"FontSmoothing"="2"
+"DragFullWindows"="0"
+
+; --- Disable window minimize/maximize animation ---
+[HKEY_CURRENT_USER\Control Panel\Desktop\WindowMetrics]
+"MinAnimate"="0"
+
+; --- Disable taskbar animations ---
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced]
+"TaskbarAnimations"=dword:00000000
+
+; --- Disable Aero Peek ---
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\DWM]
+"EnableAeroPeek"=dword:00000000
+
+; --- Disable taskbar thumbnail caching ---
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\DWM]
+"AlwaysHibernateThumbnails"=dword:00000000
+
+; --- Disable translucent selection rectangle ---
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced]
+"ListviewAlphaSelect"=dword:00000000
+
+; --- Disable icon label drop shadows ---
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced]
+"ListviewShadow"=dword:00000000
+
+; --- Adjust for best performance of programs ---
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\PriorityControl]
+"Win32PrioritySeparation"=dword:00000026

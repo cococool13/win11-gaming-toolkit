@@ -145,6 +145,34 @@
   code, pre, kbd {
     font-family: var(--font-jetbrains-mono), monospace;
   }
+  ::selection {
+    background: rgba(6, 182, 212, 0.3);
+    color: #f1f5f9;
+  }
+}
+
+/* Gradient text — cyan to magenta */
+.gradient-text {
+  background: linear-gradient(135deg, #06b6d4, #d946ef);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Noise texture overlay — procedural, no image file */
+.noise-bg {
+  position: relative;
+}
+.noise-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* Terminal typing animation */
@@ -167,31 +195,36 @@
     blink-caret 0.75s step-end infinite;
 }
 
-/* Scroll reveal */
-.reveal {
+/* Scroll reveal variants */
+.reveal-up {
   opacity: 0;
   transform: translateY(20px);
   transition: opacity 0.6s ease-out, transform 0.6s ease-out;
 }
 
-.reveal.visible {
+.reveal-left {
+  opacity: 0;
+  transform: translateX(-40px);
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+}
+
+.reveal-right {
+  opacity: 0;
+  transform: translateX(40px);
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+}
+
+.reveal-blur {
+  opacity: 0;
+  filter: blur(4px);
+  transition: opacity 0.8s ease-out, filter 0.8s ease-out;
+}
+
+.reveal-up.visible,
+.reveal-left.visible,
+.reveal-right.visible,
+.reveal-blur.visible {
   opacity: 1;
-  transform: translateY(0);
-}
-
-/* Grid background pattern */
-.grid-bg {
-  background-image:
-    linear-gradient(rgba(6, 182, 212, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(6, 182, 212, 0.03) 1px, transparent 1px);
-  background-size: 60px 60px;
-}
-
-/* Glow effects */
-.glow-cyan {
-  box-shadow: 0 0 30px rgba(6, 182, 212, 0.15);
-}
-
-.glow-magenta {
-  box-shadow: 0 0 30px rgba(217, 70, 239, 0.15);
+  transform: translate(0, 0);
+  filter: blur(0);
 }

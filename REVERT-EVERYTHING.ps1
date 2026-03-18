@@ -75,10 +75,34 @@ Run-Step "Removing power throttling override" {
 }
 
 # ============================================================
+# WINDOWS SETTINGS
+# ============================================================
+Write-Host ""
+Write-Host "[1.5/9] Restoring Windows Settings..." -ForegroundColor White
+
+Run-Step "Re-enabling transparency" {
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v "EnableTransparency" /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+}
+
+Run-Step "Re-enabling background apps" {
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" /v "GlobalUserDisabled" /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" /v "BackgroundAppGlobalToggle" /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+}
+
+Run-Step "Restoring HAGS to default" {
+    reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "HwSchMode" /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+}
+
+Run-Step "Re-enabling notifications" {
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings" /v "NOC_GLOBAL_SETTING_TOASTS_ENABLED" /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+    reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings" /v "NOC_GLOBAL_SETTING_ALLOW_NOTIFICATION_SOUND" /f 2>&1 | Out-Null
+}
+
+# ============================================================
 # SERVICES
 # ============================================================
 Write-Host ""
-Write-Host "[2/7] Restoring Services..." -ForegroundColor White
+Write-Host "[2/9] Restoring Services..." -ForegroundColor White
 
 $serviceDefaults = @(
     @("DiagTrack", "auto"),
@@ -190,10 +214,77 @@ Run-Step "Restoring privacy defaults" {
 }
 
 # ============================================================
+# STARTUP BLOAT
+# ============================================================
+Write-Host ""
+Write-Host "[3.5/9] Restoring Startup Apps..." -ForegroundColor White
+
+Run-Step "Re-enabling OneDrive startup" {
+    reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\OneDrive" /v "DisableFileSyncNGSC" /f 2>&1 | Out-Null
+}
+
+Run-Step "Re-enabling Teams startup" {
+    reg delete "HKLM\SOFTWARE\Policies\Microsoft\Office\16.0\common\officeupdate" /v "preventteamsinstall" /f 2>&1 | Out-Null
+}
+
+Run-Step "Re-enabling Widgets" {
+    reg delete "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v "AllowNewsAndInterests" /f 2>&1 | Out-Null
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarDa" /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+}
+
+Run-Step "Re-enabling Cortana" {
+    reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v "AllowCortana" /f 2>&1 | Out-Null
+}
+
+Run-Step "Re-enabling Copilot" {
+    reg delete "HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot" /v "TurnOffWindowsCopilot" /f 2>&1 | Out-Null
+    reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot" /v "TurnOffWindowsCopilot" /f 2>&1 | Out-Null
+}
+
+# ============================================================
+# WINDOWS CUSTOMIZATION
+# ============================================================
+Write-Host ""
+Write-Host "[3.7/9] Reverting Windows Customization..." -ForegroundColor White
+
+Run-Step "Restoring Win11 context menu" {
+    reg delete "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" /f 2>&1 | Out-Null
+}
+
+Run-Step "Re-enabling Bing search" {
+    reg delete "HKCU\Software\Policies\Microsoft\Windows\Explorer" /v "DisableSearchBoxSuggestions" /f 2>&1 | Out-Null
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Search" /v "BingSearchEnabled" /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+}
+
+Run-Step "Restoring taskbar defaults" {
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Search" /v "SearchboxTaskbarMode" /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ShowTaskViewButton" /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarMn" /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+}
+
+Run-Step "Re-enabling lock screen tips" {
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "RotatingLockScreenOverlayEnabled" /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "SubscribedContent-338387Enabled" /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "SubscribedContent-310093Enabled" /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+}
+
+Run-Step "Re-enabling suggested content" {
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "SubscribedContent-338393Enabled" /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "SubscribedContent-353694Enabled" /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "SubscribedContent-353696Enabled" /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "Start_IrisRecommendations" /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+}
+
+Run-Step "Restoring light mode" {
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v "AppsUseLightTheme" /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v "SystemUsesLightTheme" /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+}
+
+# ============================================================
 # NETWORK
 # ============================================================
 Write-Host ""
-Write-Host "[4/7] Reverting Network Settings..." -ForegroundColor White
+Write-Host "[4/9] Reverting Network Settings..." -ForegroundColor White
 
 Run-Step "Restoring TCP timestamps" { netsh int tcp set global timestamps=enabled 2>&1 | Out-Null }
 
@@ -300,8 +391,8 @@ if ($failed -gt 0) {
 Write-Host ""
 Write-Host "  NOT reverted (must be done manually):" -ForegroundColor Yellow
 Write-Host "    - Removed apps: reinstall from Microsoft Store" -ForegroundColor Gray
-Write-Host "    - Windows Settings: change back via Settings app" -ForegroundColor Gray
 Write-Host "    - VBS/HVCI: run '8 security vs performance\enable-vbs.bat'" -ForegroundColor Gray
+Write-Host "    - This PC desktop icon: remove manually if unwanted" -ForegroundColor Gray
 Write-Host ""
 Write-Host "  ============================================" -ForegroundColor Yellow
 Write-Host "  REBOOT REQUIRED for all changes to take effect" -ForegroundColor Yellow

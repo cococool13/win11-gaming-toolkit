@@ -1,46 +1,39 @@
 # ============================================================
-# APPLY EVERYTHING — One-Click Gaming Optimization
-# Windows 11 Gaming Optimization Guide
+# APPLY EVERYTHING — One-Click Windows 11 Optimization
 # ============================================================
 #
-# This script applies ALL safe tweaks from the guide in one run.
-# It combines Steps 1-2, 4-7, and 9 into a single automated process.
-# (Step 3 is manual Windows Settings — use the checklist.)
+# Applies all optimizations in one run. No manual steps needed.
 #
 # What it does:
 #   1. Creates a system restore point + registry backup
-#   2. Enables Ultimate Performance power plan + detailed tuning
-#   3. Disables unnecessary services
-#   4. Applies all registry tweaks (performance, privacy, visual)
-#   5. Enables MSI mode for GPUs
-#   6. Optimizes network settings + DNS (Cloudflare 1.1.1.1)
-#   6.5. Blocks auto-restart for Windows Update + sets active hours
-#   7. Removes bloatware apps
-#   8. Cleans temp files
+#   2. Enables Ultimate Performance power plan
+#   3. Automates Windows Settings (transparency, background apps, HAGS)
+#   4. Disables unnecessary services
+#   5. Applies registry tweaks (performance, privacy, visual)
+#   6. Disables startup bloat (OneDrive, Teams, Widgets)
+#   7. Enables MSI mode for GPUs
+#   8. Optimizes network settings + DNS
+#   9. Customizes Windows (classic context menu, clean taskbar, dark mode)
+#   10. Removes bloatware apps
+#   11. Cleans temp files
 #
-# What it does NOT do (run these manually if you want them):
-#   - Step 3:  Windows Settings (manual — see CHECKLIST.md)
-#   - Step 8:  Disable VBS/HVCI (security trade-off, your choice)
-#   - Step 0:  Install C++ Runtimes/DirectX (run separately)
-#   - BIOS:    See BIOS-CHECKLIST.md (XMP, ReBAR, etc.)
-#   - Advanced: Timer Resolution Service
-#   - Advanced: GPU driver installation/DDU (requires restart)
-#   - Tool:    Chris Titus WinUtil (separate GUI tool)
-#   - Session: gaming-mode.ps1 (run before each gaming session)
+# NOT included (optional, run separately):
+#   - VBS/HVCI disable (security trade-off — see 8 security vs performance/)
+#   - BIOS tweaks (XMP, ReBAR — see BIOS-CHECKLIST.md)
+#   - Timer Resolution Service
+#   - GPU driver clean install (DDU)
+#   - C++ Runtimes / DirectX install
 #
-# Must be run as Administrator. Requires reboot after completion.
-# To undo: run REVERT-EVERYTHING.ps1
-#
-# Usage: Right-click > Run with PowerShell
-#   OR: Open PowerShell as Admin, run: .\APPLY-EVERYTHING.ps1
+# Run as Administrator. Reboot after.
+# Undo: REVERT-EVERYTHING.ps1
 # ============================================================
 
 $Host.UI.RawUI.WindowTitle = "Windows 11 Gaming Optimization — Applying All Tweaks"
 
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "  WINDOWS 11 GAMING OPTIMIZATION" -ForegroundColor Cyan
-Write-Host "  Applying All Safe Tweaks" -ForegroundColor Cyan
+Write-Host "  WINDOWS 11 OPTIMIZATION" -ForegroundColor Cyan
+Write-Host "  Applying All Tweaks" -ForegroundColor Cyan
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -54,8 +47,8 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 }
 
 # ---- Confirmation ----
-Write-Host "This will apply ALL gaming optimizations from the guide." -ForegroundColor Yellow
-Write-Host "A restore point will be created first so you can revert." -ForegroundColor Yellow
+Write-Host "This will optimize Windows 11 for performance." -ForegroundColor Yellow
+Write-Host "A restore point is created first so you can revert." -ForegroundColor Yellow
 Write-Host ""
 Write-Host "Press Ctrl+C to cancel, or" -ForegroundColor Yellow
 Read-Host "Press Enter to continue"
@@ -173,10 +166,37 @@ Run-Step "Configuring detailed power settings" {
 Write-Host ""
 
 # ============================================================
-# STEP 3: DISABLE SERVICES
+# STEP 3: WINDOWS SETTINGS (automated)
 # ============================================================
 Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 3: Disabling Unnecessary Services" -ForegroundColor White
+Write-Host "  STEP 3: Windows Settings" -ForegroundColor White
+Write-Host "============================================================" -ForegroundColor DarkGray
+
+Run-Step "Disable transparency effects" {
+    Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v "EnableTransparency" /t REG_DWORD /d 0 /f
+}
+
+Run-Step "Disable background apps" {
+    Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" /v "GlobalUserDisabled" /t REG_DWORD /d 1 /f
+    Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" /v "BackgroundAppGlobalToggle" /t REG_DWORD /d 0 /f
+}
+
+Run-Step "Enable Hardware Accelerated GPU Scheduling" {
+    Reg-Add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "HwSchMode" /t REG_DWORD /d 2 /f
+}
+
+Run-Step "Suppress notifications (Do Not Disturb)" {
+    Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings" /v "NOC_GLOBAL_SETTING_TOASTS_ENABLED" /t REG_DWORD /d 0 /f
+    Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings" /v "NOC_GLOBAL_SETTING_ALLOW_NOTIFICATION_SOUND" /t REG_DWORD /d 0 /f
+}
+
+Write-Host ""
+
+# ============================================================
+# STEP 4: DISABLE SERVICES
+# ============================================================
+Write-Host "============================================================" -ForegroundColor DarkGray
+Write-Host "  STEP 4: Disabling Unnecessary Services" -ForegroundColor White
 Write-Host "============================================================" -ForegroundColor DarkGray
 
 $services = @("DiagTrack", "PhoneSvc", "lfsvc", "RetailDemo", "MapsBroker", "Fax")
@@ -194,10 +214,10 @@ Write-Host "  (disable manually if you don't use them)" -ForegroundColor Gray
 Write-Host ""
 
 # ============================================================
-# STEP 4: REGISTRY TWEAKS
+# STEP 5: REGISTRY TWEAKS
 # ============================================================
 Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 4: Applying Registry Tweaks" -ForegroundColor White
+Write-Host "  STEP 5: Applying Registry Tweaks" -ForegroundColor White
 Write-Host "============================================================" -ForegroundColor DarkGray
 
 # Performance tweaks
@@ -319,10 +339,45 @@ Run-Step "Accessibility shortcuts disabled (Sticky/Toggle/Filter keys)" {
 Write-Host ""
 
 # ============================================================
-# STEP 5: GPU — MSI MODE
+# STEP 6: STARTUP OPTIMIZATION (permanent gaming-mode)
 # ============================================================
 Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 5: GPU — Enabling MSI Mode" -ForegroundColor White
+Write-Host "  STEP 6: Disabling Startup Bloat" -ForegroundColor White
+Write-Host "============================================================" -ForegroundColor DarkGray
+
+Run-Step "Disable OneDrive autostart" {
+    reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "OneDrive" /f 2>&1 | Out-Null
+    reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "OneDriveSetup" /f 2>&1 | Out-Null
+    # Prevent OneDrive from reinstalling itself
+    Reg-Add "HKLM\SOFTWARE\Policies\Microsoft\Windows\OneDrive" /v "DisableFileSyncNGSC" /t REG_DWORD /d 1 /f
+}
+
+Run-Step "Disable Teams autostart" {
+    reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "com.squirrel.Teams.Teams" /f 2>&1 | Out-Null
+    Reg-Add "HKLM\SOFTWARE\Policies\Microsoft\Office\16.0\common\officeupdate" /v "preventteamsinstall" /t REG_DWORD /d 1 /f
+}
+
+Run-Step "Disable Widgets" {
+    Reg-Add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v "AllowNewsAndInterests" /t REG_DWORD /d 0 /f
+    Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarDa" /t REG_DWORD /d 0 /f
+}
+
+Run-Step "Disable Cortana" {
+    Reg-Add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v "AllowCortana" /t REG_DWORD /d 0 /f
+}
+
+Run-Step "Disable Copilot" {
+    Reg-Add "HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot" /v "TurnOffWindowsCopilot" /t REG_DWORD /d 0 /f
+    Reg-Add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot" /v "TurnOffWindowsCopilot" /t REG_DWORD /d 1 /f
+}
+
+Write-Host ""
+
+# ============================================================
+# STEP 7: GPU — MSI MODE
+# ============================================================
+Write-Host "============================================================" -ForegroundColor DarkGray
+Write-Host "  STEP 7: GPU — Enabling MSI Mode" -ForegroundColor White
 Write-Host "============================================================" -ForegroundColor DarkGray
 
 $gpuDevices = Get-PnpDevice -Class Display -ErrorAction SilentlyContinue
@@ -337,10 +392,10 @@ foreach ($gpu in $gpuDevices) {
 Write-Host ""
 
 # ============================================================
-# STEP 6: NETWORK
+# STEP 8: NETWORK
 # ============================================================
 Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 6: Network Optimization" -ForegroundColor White
+Write-Host "  STEP 8: Network Optimization" -ForegroundColor White
 Write-Host "============================================================" -ForegroundColor DarkGray
 
 Run-Step "TCP Auto-Tuning: normal" {
@@ -399,10 +454,10 @@ if ($dnsChoice -ne "3") {
 Write-Host ""
 
 # ============================================================
-# STEP 6.5: WINDOWS UPDATE MANAGEMENT
+# STEP 8.5: WINDOWS UPDATE MANAGEMENT
 # ============================================================
 Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 6.5: Windows Update Management" -ForegroundColor White
+Write-Host "  STEP 8.5: Windows Update Management" -ForegroundColor White
 Write-Host "============================================================" -ForegroundColor DarkGray
 
 Run-Step "Disable auto-restart for updates" {
@@ -422,10 +477,56 @@ Run-Step "Set active hours 8AM-2AM" {
 Write-Host ""
 
 # ============================================================
-# STEP 7: DEBLOAT
+# STEP 9: WINDOWS CUSTOMIZATION
 # ============================================================
 Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 7: Removing Bloatware Apps" -ForegroundColor White
+Write-Host "  STEP 9: Windows Customization" -ForegroundColor White
+Write-Host "============================================================" -ForegroundColor DarkGray
+
+Run-Step "Restore classic right-click menu (Win10 style)" {
+    Reg-Add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /ve /t REG_SZ /d "" /f
+}
+
+Run-Step "Disable Bing/web results in Start Menu search" {
+    Reg-Add "HKCU\Software\Policies\Microsoft\Windows\Explorer" /v "DisableSearchBoxSuggestions" /t REG_DWORD /d 1 /f
+    Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Search" /v "BingSearchEnabled" /t REG_DWORD /d 0 /f
+}
+
+Run-Step "Clean taskbar (hide Search, Task View, Chat)" {
+    Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Search" /v "SearchboxTaskbarMode" /t REG_DWORD /d 0 /f
+    Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ShowTaskViewButton" /t REG_DWORD /d 0 /f
+    Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarMn" /t REG_DWORD /d 0 /f
+}
+
+Run-Step "Disable lock screen tips and ads" {
+    Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "RotatingLockScreenOverlayEnabled" /t REG_DWORD /d 0 /f
+    Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "SubscribedContent-338387Enabled" /t REG_DWORD /d 0 /f
+    Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "SubscribedContent-310093Enabled" /t REG_DWORD /d 0 /f
+}
+
+Run-Step "Disable suggested content in Settings and Start" {
+    Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "SubscribedContent-338393Enabled" /t REG_DWORD /d 0 /f
+    Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "SubscribedContent-353694Enabled" /t REG_DWORD /d 0 /f
+    Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "SubscribedContent-353696Enabled" /t REG_DWORD /d 0 /f
+    Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "Start_IrisRecommendations" /t REG_DWORD /d 0 /f
+}
+
+Run-Step "Show This PC on desktop" {
+    Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{20D04FE0-3AEA-1069-A2D8-08002B30309D}" /t REG_DWORD /d 0 /f
+}
+
+Run-Step "Enable dark mode" {
+    Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v "AppsUseLightTheme" /t REG_DWORD /d 0 /f
+    Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v "SystemUsesLightTheme" /t REG_DWORD /d 0 /f
+}
+
+Write-Host ""
+
+# ============================================================
+# STEP 10: DEBLOAT
+# ============================================================
+Write-Host "============================================================" -ForegroundColor DarkGray
+Write-Host "  STEP 10: Removing Bloatware Apps" -ForegroundColor White
 Write-Host "============================================================" -ForegroundColor DarkGray
 
 $appsToRemove = @(
@@ -464,10 +565,10 @@ if ($removeFailed -gt 0) {
 Write-Host ""
 
 # ============================================================
-# STEP 8: CLEANUP
+# STEP 11: CLEANUP
 # ============================================================
 Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 8: Cleaning Temp Files" -ForegroundColor White
+Write-Host "  STEP 11: Cleaning Temp Files" -ForegroundColor White
 Write-Host "============================================================" -ForegroundColor DarkGray
 
 Run-Step "Clearing user temp" {
@@ -517,16 +618,14 @@ Write-Host "  ============================================" -ForegroundColor Yel
 Write-Host "  REBOOT REQUIRED for all changes to take effect" -ForegroundColor Yellow
 Write-Host "  ============================================" -ForegroundColor Yellow
 Write-Host ""
-Write-Host "  Optional steps to run manually:" -ForegroundColor Gray
-Write-Host "    - Step 0:  install-runtimes.ps1 (C++ & DirectX)" -ForegroundColor Gray
-Write-Host "    - Step 3:  Windows Settings (see CHECKLIST.md)" -ForegroundColor Gray
-Write-Host "    - Step 6:  GPU driver clean install (see 6 gpu/ READMEs)" -ForegroundColor Gray
-Write-Host "    - Step 8:  disable-vbs.bat (security trade-off)" -ForegroundColor Gray
-Write-Host "    - BIOS:    See BIOS-CHECKLIST.md (XMP, ReBAR, etc.)" -ForegroundColor Gray
-Write-Host "    - Advanced: install-timer-resolution-service.ps1" -ForegroundColor Gray
-Write-Host "    - Tool:    chris-titus-winutil.bat (GUI debloater)" -ForegroundColor Gray
-Write-Host "    - Gaming:  gaming-mode.ps1 (run before gaming sessions)" -ForegroundColor Gray
-Write-Host "    - Verify:  10 verify\verify-tweaks.ps1 (health check)" -ForegroundColor Gray
+Write-Host "  Optional (run separately if you want them):" -ForegroundColor Gray
+Write-Host "    - VBS/HVCI:   8 security vs performance\disable-vbs.bat" -ForegroundColor Gray
+Write-Host "    - BIOS:       See BIOS-CHECKLIST.md (XMP, ReBAR)" -ForegroundColor Gray
+Write-Host "    - Timer:      5 registry tweaks\individual\install-timer-resolution-service.ps1" -ForegroundColor Gray
+Write-Host "    - Runtimes:   0 prerequisites\install-runtimes.ps1" -ForegroundColor Gray
+Write-Host "    - GPU driver: See 6 gpu\ READMEs" -ForegroundColor Gray
+Write-Host "    - WinUtil:    9 cleanup\chris-titus-winutil.bat" -ForegroundColor Gray
+Write-Host "    - Verify:     10 verify\verify-tweaks.ps1" -ForegroundColor Gray
 Write-Host ""
 Write-Host "  To revert everything:" -ForegroundColor Gray
 Write-Host "    Run REVERT-EVERYTHING.ps1 as Administrator" -ForegroundColor White

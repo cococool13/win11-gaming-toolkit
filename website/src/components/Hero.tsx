@@ -2,34 +2,29 @@
 
 import { buttonVariants } from "@/components/ui/button";
 import { Terminal } from "@/components/Terminal";
-import { GITHUB_REPO_URL, GITHUB_RELEASES_URL } from "@/lib/constants";
+import { GITHUB_REPO_URL, GITHUB_RELEASES_URL, HERO_STATS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 export function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center grid-bg overflow-hidden">
-      {/* Gradient glow */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gaming-cyan/10 rounded-full blur-[128px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gaming-magenta/10 rounded-full blur-[128px] pointer-events-none" />
-
-      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-24 pb-16">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+    <section className="relative min-h-screen flex items-center noise-bg overflow-hidden">
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-24 pb-16 w-full">
+        <div className="grid lg:grid-cols-[1.2fr_1fr] gap-12 lg:gap-16 items-center">
           <div>
-            <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-              Maximum{" "}
-              <span className="text-gaming-cyan">Gaming Performance</span> on
-              Windows 11
+            <h1 className="font-heading text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-[1.05]">
+              Optimize{" "}
+              <span className="gradient-text">Win11.</span>
             </h1>
-            <p className="text-lg text-muted-foreground mb-8 max-w-lg">
-              No bundled executables. No bloatware. No harmful tweaks. Just
-              clean scripts you can read and verify yourself.
+            <p className="text-lg text-muted-foreground mb-8 max-w-md">
+              One script. More FPS, less bloat, cleaner desktop.
+              Fully reversible.
             </p>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-4 mb-8">
               <a
                 href={GITHUB_RELEASES_URL}
                 className={cn(
                   buttonVariants({ size: "lg" }),
-                  "bg-gaming-green hover:bg-gaming-green/90 text-black font-semibold"
+                  "bg-gaming-green hover:bg-gaming-green/90 text-black font-semibold px-6"
                 )}
               >
                 Download Toolkit
@@ -40,15 +35,29 @@ export function Hero() {
                 rel="noopener noreferrer"
                 className={cn(
                   buttonVariants({ variant: "outline", size: "lg" }),
-                  "border-gaming-cyan/30 text-gaming-cyan hover:bg-gaming-cyan/10"
+                  "border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/5 px-6"
                 )}
               >
-                View on GitHub
+                View Source
               </a>
+            </div>
+
+            {/* Inline trust stats */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+              {HERO_STATS.map((stat, i) => (
+                <span key={stat} className="flex items-center gap-4">
+                  {i > 0 && (
+                    <span className="text-white/15 select-none" aria-hidden>
+                      /
+                    </span>
+                  )}
+                  {stat}
+                </span>
+              ))}
             </div>
           </div>
 
-          <div className="hidden lg:block">
+          <div className="hidden md:block -rotate-1 translate-y-2">
             <Terminal
               typing
               lines={[

@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { GITHUB_REPO_URL } from "@/lib/constants";
 
 const NAV_LINKS = [
-  { label: "Steps", href: "#steps" },
   { label: "Features", href: "#features" },
   { label: "Download", href: "#download" },
   { label: "FAQ", href: "#faq" },
@@ -27,9 +26,12 @@ export function Navbar() {
           : "bg-transparent"
       }`}
     >
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        <a href="#" className="font-heading text-lg font-bold text-gaming-cyan">
-          Win11 Gaming Toolkit
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+        <a
+          href="#"
+          className="font-mono text-sm font-semibold text-gaming-cyan"
+        >
+          win11-gaming-toolkit
         </a>
 
         <div className="hidden md:flex items-center gap-6">
@@ -37,7 +39,7 @@ export function Navbar() {
             <a
               key={link.href}
               href={link.href}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               {link.label}
             </a>
@@ -46,10 +48,10 @@ export function Navbar() {
             href={GITHUB_REPO_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
           >
             <svg
-              className="w-4 h-4"
+              className="w-3.5 h-3.5"
               fill="currentColor"
               viewBox="0 0 24 24"
               aria-hidden="true"

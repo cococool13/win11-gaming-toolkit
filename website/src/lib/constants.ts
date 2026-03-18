@@ -1,24 +1,29 @@
 export const GITHUB_REPO_URL = "#"; // Replace with actual repo URL
 export const GITHUB_RELEASES_URL = "#"; // Replace with actual releases URL
 
+export const HERO_STATS = [
+  "10-35% FPS gain",
+  "Fully reversible",
+  "No .exe files",
+  "Open source",
+];
+
 export const STEPS = [
   {
     number: 0,
-    name: "Install Gaming Prerequisites",
+    name: "Prerequisites",
     difficulty: "Easy" as const,
     risk: "None" as const,
     revertible: "N/A",
-    description:
-      "Downloads and installs all Visual C++ Redistributables (2005-2022) and DirectX runtime. Prevents 'DLL not found' errors.",
+    description: "VC++ Redistributables and DirectX runtime.",
   },
   {
     number: 1,
-    name: "Backup & Restore Point",
+    name: "Backup",
     difficulty: "Easy" as const,
     risk: "None" as const,
     revertible: "N/A",
-    description:
-      "Creates a system restore point and registry backup before any changes. Your safety net.",
+    description: "System restore point and registry backup.",
   },
   {
     number: 2,
@@ -26,26 +31,24 @@ export const STEPS = [
     difficulty: "Easy" as const,
     risk: "Safe" as const,
     revertible: "Yes",
-    description:
-      "Activates the hidden Ultimate Performance power plan. Keeps CPU at max clock speed and eliminates micro-stutters.",
+    description: "Ultimate Performance plan, all cores unparked, no throttling.",
   },
   {
     number: 3,
     name: "Windows Settings",
     difficulty: "Easy" as const,
     risk: "Safe" as const,
-    revertible: "Yes (manual)",
+    revertible: "Yes",
     description:
-      "Manual UI tweaks via guided checklist. Disable animations, transparency, background apps, and Game Bar.",
+      "Disable transparency, background apps, notifications. Enable HAGS.",
   },
   {
     number: 4,
-    name: "Disable Unnecessary Services",
+    name: "Services",
     difficulty: "Easy" as const,
     risk: "Low" as const,
     revertible: "Yes",
-    description:
-      "Stops telemetry, phone service, geolocation, print spooler, and other resource-draining background services.",
+    description: "Disable telemetry, phone service, geolocation, fax.",
   },
   {
     number: 5,
@@ -54,100 +57,98 @@ export const STEPS = [
     risk: "Low" as const,
     revertible: "Yes",
     description:
-      "20+ tweaks: visual effects, game priority, disable power throttling, privacy/telemetry, explorer optimizations.",
+      "Game priority, mouse acceleration off, visual effects, privacy lockdown.",
   },
   {
     number: 6,
-    name: "GPU Optimization",
-    difficulty: "Medium" as const,
-    risk: "Safe" as const,
+    name: "Startup Cleanup",
+    difficulty: "Easy" as const,
+    risk: "Low" as const,
     revertible: "Yes",
-    description:
-      "Enables MSI mode for your GPU (NVIDIA/AMD/Intel) for lower interrupt latency. Includes driver guides.",
+    description: "Disable OneDrive, Teams, Widgets, Cortana, Copilot autostart.",
   },
   {
     number: 7,
-    name: "Network Optimization",
+    name: "GPU",
     difficulty: "Medium" as const,
-    risk: "Low" as const,
+    risk: "Safe" as const,
     revertible: "Yes",
-    description:
-      "Disables Nagle's Algorithm, enables RSS, configures DNS (Cloudflare/Google). Reduces online gaming latency.",
+    description: "MSI mode for lower interrupt latency.",
   },
   {
     number: 8,
-    name: "Security vs Performance",
+    name: "Network",
     difficulty: "Medium" as const,
-    risk: "Moderate" as const,
+    risk: "Low" as const,
     revertible: "Yes",
-    description:
-      "Disables VBS/HVCI for 5-25% FPS gain. Honest security trade-off explained in detail. Your choice.",
+    description: "Disable Nagle, enable RSS, Cloudflare DNS.",
   },
   {
     number: 9,
-    name: "Cleanup & Debloat",
+    name: "Customization",
     difficulty: "Easy" as const,
-    risk: "Low" as const,
-    revertible: "Partial",
+    risk: "Safe" as const,
+    revertible: "Yes",
     description:
-      "Removes Windows bloatware, clears temp files and caches. Includes Chris Titus WinUtil launcher.",
+      "Classic right-click menu, clean taskbar, dark mode, disable Bing search.",
   },
   {
     number: 10,
-    name: "Verify & Benchmark",
+    name: "Debloat",
     difficulty: "Easy" as const,
-    risk: "None" as const,
-    revertible: "N/A",
-    description:
-      "Automated health check with color-coded report. Verifies every tweak is applied and shows optimization score.",
+    risk: "Low" as const,
+    revertible: "Partial",
+    description: "Remove Clipchamp, Solitaire, Maps, and 20+ other bundled apps.",
   },
 ] as const;
+
+export type BentoSize = "large" | "small" | "full";
 
 export const FEATURES = [
   {
-    title: "One-Click Apply",
-    description:
-      "Run APPLY-EVERYTHING.ps1 as Administrator. All safe tweaks applied in under 2 minutes.",
+    title: "One Script",
+    description: "APPLY-EVERYTHING.ps1 runs all steps. Takes about 2 minutes.",
     icon: "zap",
+    size: "large" as BentoSize,
+    glowColor: "green",
   },
   {
-    title: "Gaming Mode",
+    title: "Win11 Cleanup",
     description:
-      "Pre-session optimizer closes browsers, OneDrive, and background apps. Silences notifications. Restores on reboot.",
-    icon: "gamepad",
-  },
-  {
-    title: "Interactive Launcher",
-    description:
-      "24+ options in a color-coded terminal menu. Pick and choose exactly which optimizations you want.",
+      "Classic right-click menu, clean taskbar, Bing gone, dark mode, no ads.",
     icon: "terminal",
+    size: "small" as BentoSize,
+    glowColor: "cyan",
   },
   {
-    title: "100% Reversible",
-    description:
-      "Every tweak has a revert script. REVERT-EVERYTHING.ps1 undoes all changes with one click.",
+    title: "Debloat",
+    description: "Remove OneDrive, Teams, Widgets, Copilot, and 20+ apps.",
+    icon: "gamepad",
+    size: "small" as BentoSize,
+    glowColor: "magenta",
+  },
+  {
+    title: "Reversible",
+    description: "REVERT-EVERYTHING.ps1 undoes all changes.",
     icon: "undo",
+    size: "small" as BentoSize,
+    glowColor: "cyan",
   },
   {
-    title: "Verification Report",
-    description:
-      "Run verify-tweaks.ps1 for a color-coded health check. See exactly what's applied and your optimization score.",
+    title: "Health Check",
+    description: "verify-tweaks.ps1 shows what's applied and what's missing.",
     icon: "check",
+    size: "small" as BentoSize,
+    glowColor: "cyan",
   },
   {
-    title: "Zero Executables",
+    title: "No Executables",
     description:
-      "Pure PowerShell and batch scripts you can read and audit. No compiled binaries. No hidden code.",
+      "PowerShell and batch scripts only. Read the source before you run it.",
     icon: "shield",
+    size: "full" as BentoSize,
+    glowColor: "cyan",
   },
-] as const;
-
-export const TRUST_STATS = [
-  { value: "10-35%", label: "FPS Gain" },
-  { value: "24+", label: "Options" },
-  { value: "100%", label: "Reversible" },
-  { value: "0", label: "Executables" },
-  { value: "Open", label: "Source" },
 ] as const;
 
 export const PERFORMANCE_DATA = [
@@ -155,97 +156,92 @@ export const PERFORMANCE_DATA = [
     category: "Power Plan + Services",
     gain: "2-5%",
     risk: "Safe",
+    group: "windows",
   },
   {
     category: "Registry Tweaks",
     gain: "1-3%",
     risk: "Low",
+    group: "windows",
   },
   {
     category: "Timer Resolution Service",
     gain: "1-3%",
     risk: "Low",
+    group: "windows",
   },
   {
-    category: "GPU MSI Mode + Optimization",
+    category: "GPU MSI Mode",
     gain: "2-10%",
     risk: "Safe",
+    group: "windows",
   },
   {
     category: "Network Optimization",
     gain: "Lower ping",
     risk: "Low",
+    group: "windows",
   },
   {
     category: "VBS/HVCI Disabled",
     gain: "5-25%",
     risk: "Moderate",
+    group: "windows",
   },
   {
-    category: "BIOS: XMP/DOCP",
+    category: "XMP/DOCP (RAM speed)",
     gain: "10-30%",
     risk: "Safe",
+    group: "bios",
   },
   {
-    category: "BIOS: Resizable BAR",
+    category: "Resizable BAR",
     gain: "5-15%",
     risk: "Safe",
+    group: "bios",
   },
 ] as const;
 
-export const GAMING_MODE_FEATURES = [
-  "Closes resource-hungry apps (browsers, OneDrive, Teams)",
-  "Silences all Windows notifications",
-  "Clears standby RAM for more available memory",
-  "Pauses Windows Update during your session",
-  "Sets game process priority to High",
-  "Everything restores on reboot or gaming-mode-off.ps1",
+export const CUSTOMIZATIONS = [
+  "Classic right-click menu (Win10 style)",
+  "Clean taskbar — no Search, Widgets, or Chat",
+  "Bing and web results removed from Start search",
+  "Dark mode enabled",
+  "Lock screen ads and tips disabled",
+  "Start Menu suggestions removed",
+  "This PC shown on desktop",
+  "OneDrive, Teams, Widgets, Cortana, Copilot disabled",
 ] as const;
 
 export const FAQ_ITEMS = [
   {
-    question: "What's the single biggest FPS gain?",
+    question: "What gives the biggest FPS gain?",
     answer:
-      "Disabling VBS/HVCI (Step 8). It's 5-25% but has a security trade-off. For a risk-free boost, enabling XMP in your BIOS gives 10-30% in CPU-bound games.",
+      "VBS/HVCI disable gives 5-25%. XMP in BIOS gives 10-30% in CPU-bound games. Both are optional and separate from the main script.",
   },
   {
     question: "Is this safe?",
     answer:
-      "Every tweak is reversible. We removed harmful tweaks from common guides (disabling BITS, SysMain, Prefetch). The only real trade-off is Step 8 (VBS), which is clearly documented and optional.",
-  },
-  {
-    question: "What if I just want to run one thing?",
-    answer:
-      "Run APPLY-EVERYTHING.ps1 as Administrator. It applies all safe tweaks at once and skips the VBS trade-off (that's a manual choice).",
+      "Every tweak is reversible. Run REVERT-EVERYTHING.ps1 to undo. VBS is the only real trade-off and it's optional.",
   },
   {
     question: "Do I need to run all steps?",
     answer:
-      "No. Each step is independent. Steps 2 (Power Plan), 5 (Registry), and 8 (VBS) give the biggest gains for the least effort.",
+      "No. APPLY-EVERYTHING.ps1 handles everything automatically. Or use launcher.ps1 to pick individual steps.",
   },
   {
-    question: "I have a laptop. Should I do all of this?",
+    question: "How do I undo?",
     answer:
-      "Skip the advanced power plan tuning on battery. Everything else is fine. The toolkit detects your system and adjusts accordingly.",
+      "Run REVERT-EVERYTHING.ps1 as Administrator. Or restore from the system restore point created in Step 1.",
   },
   {
-    question: "How do I undo everything?",
+    question: "Will this break anti-cheat?",
     answer:
-      "Run REVERT-EVERYTHING.ps1 as Administrator — it undoes everything. Or use the System Restore point created in Step 1.",
+      "The main script is fine. VBS disable may conflict with Vanguard or FACEIT — re-enable VBS for those games.",
   },
   {
-    question: "Why don't you bundle any .exe tools?",
+    question: "Why no .exe files?",
     answer:
-      "Bundled executables go stale, can be tampered with, and create licensing issues. We link to official download pages so you always get the latest verified version.",
-  },
-  {
-    question: "Will this break anti-cheat software?",
-    answer:
-      "Most tweaks are fine. Disabling VBS (Step 8) may conflict with some anti-cheat systems like Vanguard or FACEIT. Re-enable VBS for those games.",
-  },
-  {
-    question: "How do I verify my tweaks are still applied?",
-    answer:
-      "Run verify-tweaks.ps1 as Administrator. It checks every tweak and gives you a color-coded health report with an optimization score.",
+      "Scripts are readable. You can check every line before running. Downloads come from official sources.",
   },
 ] as const;

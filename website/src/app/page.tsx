@@ -1,10 +1,8 @@
 import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
-import { TrustBar } from "@/components/TrustBar";
 import { StepsTimeline } from "@/components/StepsTimeline";
-import { FeaturesGrid } from "@/components/FeaturesGrid";
-import { GamingMode } from "@/components/GamingMode";
-import { BiosCallout } from "@/components/BiosCallout";
+import { BentoFeatures } from "@/components/BentoFeatures";
+import { Customizations } from "@/components/Customizations";
 import { PerformanceTable } from "@/components/PerformanceTable";
 import { DownloadCta } from "@/components/DownloadCta";
 import { FaqAccordion } from "@/components/FaqAccordion";
@@ -16,11 +14,9 @@ export default function Home() {
       <Navbar />
       <main>
         <Hero />
-        <TrustBar />
+        <BentoFeatures />
         <StepsTimeline />
-        <FeaturesGrid />
-        <GamingMode />
-        <BiosCallout />
+        <Customizations />
         <PerformanceTable />
         <DownloadCta />
         <FaqAccordion />

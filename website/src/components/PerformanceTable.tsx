@@ -9,20 +9,19 @@ const RISK_COLORS: Record<string, string> = {
 };
 
 export function PerformanceTable() {
+  const windowsRows = PERFORMANCE_DATA.filter((r) => r.group === "windows");
+  const biosRows = PERFORMANCE_DATA.filter((r) => r.group === "bios");
+
   return (
     <section className="py-20">
       <div className="max-w-3xl mx-auto px-4 sm:px-6">
         <ScrollReveal>
-          <h2 className="font-heading text-3xl sm:text-4xl font-bold text-center mb-4">
-            Expected <span className="text-gaming-cyan">Performance Gains</span>
+          <h2 className="font-heading text-3xl sm:text-4xl font-bold mb-10">
+            FPS gains
           </h2>
-          <p className="text-center text-muted-foreground mb-12 max-w-lg mx-auto">
-            Real numbers from independent benchmarks. Results vary by hardware
-            and game.
-          </p>
         </ScrollReveal>
 
-        <ScrollReveal>
+        <ScrollReveal variant="up" delay={100}>
           <div className="rounded-xl border border-white/10 overflow-hidden">
             <table className="w-full text-sm">
               <thead>
@@ -39,7 +38,7 @@ export function PerformanceTable() {
                 </tr>
               </thead>
               <tbody>
-                {PERFORMANCE_DATA.map((row) => (
+                {windowsRows.map((row) => (
                   <tr
                     key={row.category}
                     className="border-b border-white/5 hover:bg-white/[0.02] transition-colors"
@@ -58,6 +57,37 @@ export function PerformanceTable() {
                     </td>
                   </tr>
                 ))}
+
+                {/* BIOS group header */}
+                <tr className="border-b border-white/5">
+                  <td
+                    colSpan={3}
+                    className="px-4 sm:px-6 py-2 text-xs font-mono text-gaming-yellow/70 uppercase tracking-wider bg-gaming-yellow/[0.03]"
+                  >
+                    BIOS — not scripted, do these manually
+                  </td>
+                </tr>
+
+                {biosRows.map((row) => (
+                  <tr
+                    key={row.category}
+                    className="border-b border-white/5 hover:bg-white/[0.02] transition-colors border-l-2 border-l-gaming-yellow/30"
+                  >
+                    <td className="px-4 sm:px-6 py-3">{row.category}</td>
+                    <td className="px-4 sm:px-6 py-3 text-right font-mono font-semibold text-gaming-green">
+                      {row.gain}
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 text-right hidden sm:table-cell">
+                      <Badge
+                        variant="outline"
+                        className={RISK_COLORS[row.risk]}
+                      >
+                        {row.risk}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+
                 <tr className="bg-gaming-green/5">
                   <td className="px-4 sm:px-6 py-3 font-heading font-bold text-gaming-green">
                     Total Combined

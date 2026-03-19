@@ -26,62 +26,30 @@
 # ============================================================
 
 . "$PSScriptRoot\lib\toolkit-state.ps1"
+. "$PSScriptRoot\lib\ui-helpers.ps1"
 
 $Host.UI.RawUI.WindowTitle = "Windows 11 Gaming Optimization — Apply Everything"
-
-Write-Host ""
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "  WINDOWS 11 OPTIMIZATION" -ForegroundColor Cyan
-Write-Host "  APPLY EVERYTHING (Aggressive Full Stack)" -ForegroundColor Cyan
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host ""
-
-if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host "[ERROR] This script must be run as Administrator." -ForegroundColor Red
-    Write-Host "Right-click the script > 'Run with PowerShell' (as Admin)" -ForegroundColor Red
-    Write-Host ""
-    Read-Host "Press Enter to exit"
-    exit 1
-}
+UI-Header -Title "Windows 11 Optimization" -Subtitle "Apply Everything - aggressive full-stack run"
+UI-RequireAdmin -ScriptName "Apply Everything"
 
 $state = Initialize-ToolkitState -ForceNew
 $profile = $state.context
 
-Write-Host "This will run the AGGRESSIVE full-stack optimization pass." -ForegroundColor Yellow
-Write-Host "It includes security/functionality trade-offs when they are automatable." -ForegroundColor Yellow
-Write-Host "Rollback is manifest-backed where prior state capture exists." -ForegroundColor Yellow
-Write-Host ""
-Write-Host "Detected profile:" -ForegroundColor Gray
-Write-Host "  Model:           $($profile.manufacturer) $($profile.model)" -ForegroundColor White
-Write-Host "  Power profile:   $($profile.powerState)" -ForegroundColor White
-Write-Host "  GPUs:            $($profile.gpuCount) (hybrid: $($profile.isHybridGraphics))" -ForegroundColor White
-Write-Host "  Active adapters: $($profile.activeAdapterCount)" -ForegroundColor White
-Write-Host "  Printers found:  $($profile.printerCount)" -ForegroundColor White
-Write-Host "  Domain joined:   $($profile.partOfDomain)" -ForegroundColor White
-Write-Host ""
-Write-Host "Press Ctrl+C to cancel, or" -ForegroundColor Yellow
-Read-Host "Press Enter to continue"
-Write-Host ""
+UI-ShowProfile -Profile $profile
+UI-Confirm -Message "This path applies every automatable tweak, including security and convenience trade-offs." -Warnings @(
+    "Rollback is strongest where the manifest captured prior state.",
+    "Use the launcher or GUIDE.md if you want a narrower path."
+)
 
 $startTime = Get-Date
-$succeeded = 0
-$failed = 0
-$skipped = 0
+UI-ResetCounters
 
 function Run-Step {
     param(
         [string]$Description,
         [scriptblock]$Action
     )
-    Write-Host "  $Description..." -NoNewline
-    try {
-        & $Action
-        Write-Host " Done" -ForegroundColor Green
-        $script:succeeded++
-    } catch {
-        Write-Host " Failed: $($_.Exception.Message)" -ForegroundColor Red
-        $script:failed++
-    }
+    UI-Step -Label $Description -Action $Action
 }
 
 function Skip-Step {
@@ -90,8 +58,7 @@ function Skip-Step {
         [string]$Reason,
         [string]$Tier = "Advanced"
     )
-    Write-Host "  $Description... Skipped ($Reason)" -ForegroundColor DarkYellow
-    $script:skipped++
+    UI-Skip -Label $Description -Reason $Reason
     Add-ToolkitStepResult -Key $Description -Tier $Tier -Status "skipped" -Reason $Reason
 }
 
@@ -131,9 +98,7 @@ function Set-TrackedService {
 # ============================================================
 # STEP 1: BACKUP
 # ============================================================
-Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 1: Backup" -ForegroundColor White
-Write-Host "============================================================" -ForegroundColor DarkGray
+UI-Section -Title "Phase 1: Safety Baseline" -Context "Create rollback points before tuning"
 
 Run-Step "Creating system restore point" {
     Enable-ComputerRestore -Drive "C:\" -ErrorAction SilentlyContinue
@@ -142,7 +107,7 @@ Run-Step "Creating system restore point" {
 
 $backupDir = "$env:USERPROFILE\Documents\GamingOptBackup_$(Get-Date -Format 'yyyyMMdd_HHmm')"
 New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
-Write-Host "  Backing up registry to: $backupDir" -ForegroundColor Gray
+UI-Note -Message "Backing up registry to: $backupDir"
 $regKeys = @(
     @("HKCU\Control Panel\Desktop", "Desktop.reg"),
     @("HKCU\Control Panel\Mouse", "Mouse.reg"),
@@ -160,15 +125,12 @@ foreach ($rk in $regKeys) {
         $backupCount++
     }
 }
-Write-Host "  Registry backup complete ($backupCount/$($regKeys.Count) keys exported)." -ForegroundColor Green
-Write-Host ""
+UI-Note -Message "Registry backup complete ($backupCount/$($regKeys.Count) keys exported)." -Color $script:UI_Success
 
 # ============================================================
 # STEP 2: POWER PLAN
 # ============================================================
-Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 2: Power Plan" -ForegroundColor White
-Write-Host "============================================================" -ForegroundColor DarkGray
+UI-Section -Title "Phase 2: Power and Core Windows Settings" -Context "Set a high-performance baseline"
 
 $planGuid = "99999999-9999-9999-9999-999999999999"
 
@@ -200,14 +162,11 @@ Run-Step "Configuring detailed power settings" {
     Set-PowerIdx "7516b95f-f776-4464-8c53-06167f40cc99" "3c0bc021-c8a8-4e07-a973-6b14cbcb2b7e" "600"
     Set-PowerIdx "7516b95f-f776-4464-8c53-06167f40cc99" "fbd9aa66-9553-4097-ba44-ed6e9d65eab8" "000"
 }
-Write-Host ""
 
 # ============================================================
 # STEP 3: WINDOWS SETTINGS
 # ============================================================
-Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 3: Windows Settings" -ForegroundColor White
-Write-Host "============================================================" -ForegroundColor DarkGray
+UI-Section -Title "Phase 3: Windows Settings" -Context "Disable common desktop overhead"
 
 Run-Step "Disable transparency effects" {
     Set-TrackedRegistry -Id "reg:EnableTransparency" -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" -Name "EnableTransparency" -Value 0 -Type "DWord" -Tier "Safe" -Step "windows-settings"
@@ -226,14 +185,11 @@ Run-Step "Suppress notifications" {
     Set-TrackedRegistry -Id "reg:ToastsEnabled" -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings" -Name "NOC_GLOBAL_SETTING_TOASTS_ENABLED" -Value 0 -Type "DWord" -Tier "Safe" -Step "windows-settings"
     Set-TrackedRegistry -Id "reg:NotificationSound" -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings" -Name "NOC_GLOBAL_SETTING_ALLOW_NOTIFICATION_SOUND" -Value 0 -Type "DWord" -Tier "Safe" -Step "windows-settings"
 }
-Write-Host ""
 
 # ============================================================
 # STEP 4: SERVICES
 # ============================================================
-Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 4: Services" -ForegroundColor White
-Write-Host "============================================================" -ForegroundColor DarkGray
+UI-Section -Title "Phase 4: Services" -Context "Disable background services that are not required for gaming"
 
 foreach ($svc in @("DiagTrack", "PhoneSvc", "lfsvc", "RetailDemo", "MapsBroker", "Fax")) {
     Run-Step "Disabling $svc" {
@@ -247,14 +203,11 @@ foreach ($svc in @("Spooler", "WSearch")) {
         sc.exe stop $svc 2>&1 | Out-Null
     }
 }
-Write-Host ""
 
 # ============================================================
 # STEP 5: REGISTRY TWEAKS
 # ============================================================
-Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 5: Registry Tweaks" -ForegroundColor White
-Write-Host "============================================================" -ForegroundColor DarkGray
+UI-Section -Title "Phase 5: Registry Pack" -Context "Apply low-level latency, UI, and privacy defaults"
 
 Run-Step "MenuShowDelay = 0" { Reg-Add "HKCU\Control Panel\Desktop" /v "MenuShowDelay" /t REG_SZ /d "0" /f }
 Run-Step "MouseHoverTime = 10" { Reg-Add "HKCU\Control Panel\Mouse" /v "MouseHoverTime" /t REG_SZ /d "10" /f }
@@ -334,14 +287,11 @@ Run-Step "Accessibility shortcut popups disabled" {
     Reg-Add "HKCU\Control Panel\Accessibility\ToggleKeys" /v "Flags" /t REG_SZ /d "34" /f
     Reg-Add "HKCU\Control Panel\Accessibility\Keyboard Response" /v "Flags" /t REG_SZ /d "2" /f
 }
-Write-Host ""
 
 # ============================================================
 # STEP 6: STARTUP
 # ============================================================
-Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 6: Startup Cleanup" -ForegroundColor White
-Write-Host "============================================================" -ForegroundColor DarkGray
+UI-Section -Title "Phase 6: Startup Cleanup" -Context "Trim launch-at-boot noise"
 
 Run-Step "Disable OneDrive autostart" {
     reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "OneDrive" /f 2>&1 | Out-Null
@@ -363,14 +313,11 @@ Run-Step "Disable Copilot" {
     Reg-Add "HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot" /v "TurnOffWindowsCopilot" /t REG_DWORD /d 1 /f
     Reg-Add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot" /v "TurnOffWindowsCopilot" /t REG_DWORD /d 1 /f
 }
-Write-Host ""
 
 # ============================================================
 # STEP 7: GPU MSI MODE
 # ============================================================
-Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 7: GPU MSI Mode" -ForegroundColor White
-Write-Host "============================================================" -ForegroundColor DarkGray
+UI-Section -Title "Phase 7: GPU and Network Prep" -Context "Apply device-level latency changes"
 
 $gpuDevices = @(Get-PnpDevice -Class Display -ErrorAction SilentlyContinue)
 if ($gpuDevices.Count -eq 0) {
@@ -388,26 +335,20 @@ if ($gpuDevices.Count -eq 0) {
         }
     }
 }
-Write-Host ""
 
 # ============================================================
 # STEP 7.5: GPU DRIVER INSTALL (requires DDU — skip with note)
 # ============================================================
-Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 7.5: GPU Driver Install" -ForegroundColor White
-Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  [SKIP] GPU driver install requires DDU flow." -ForegroundColor Yellow
-Write-Host "         Run DduAuto.ps1 or use launcher [G] separately." -ForegroundColor Yellow
+UI-Section -Title "Phase 7.5: GPU Driver Flow" -Context "Kept separate so DDU can own the risky driver handoff"
+UI-Note -Message "[SKIP] GPU driver install requires DDU flow." -Color $script:UI_Warning
+UI-Note -Message "Run DduAuto.ps1 or launcher [G] separately." -Color $script:UI_Warning
 Add-ToolkitStepResult -Key "gpu-driver-install" -Tier "Advanced" -Status "skipped" `
     -Reason "Requires DDU flow. Run DduAuto.ps1 or launcher [G] separately."
-Write-Host ""
 
 # ============================================================
 # STEP 8: NETWORK
 # ============================================================
-Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 8: Network" -ForegroundColor White
-Write-Host "============================================================" -ForegroundColor DarkGray
+UI-Section -Title "Phase 8: Network" -Context "Apply adapter-aware network defaults"
 
 Run-Step "TCP Auto-Tuning = normal" { netsh int tcp set global autotuninglevel=normal 2>&1 | Out-Null }
 Run-Step "RSS enabled" { netsh int tcp set global rss=enabled 2>&1 | Out-Null }
@@ -431,14 +372,11 @@ Run-Step "DNS set to Cloudflare on active adapters" {
     Set-ToolkitDnsServers -ServerAddresses @("1.1.1.1","1.0.0.1","2606:4700:4700::1111","2606:4700:4700::1001") -Tier "Advanced" -Step "network"
     Clear-DnsClientCache -ErrorAction SilentlyContinue
 }
-Write-Host ""
 
 # ============================================================
 # STEP 9: WINDOWS UPDATE
 # ============================================================
-Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 9: Windows Update Suppression" -ForegroundColor White
-Write-Host "============================================================" -ForegroundColor DarkGray
+UI-Section -Title "Phase 9: Windows Update Suppression" -Context "Intentional security trade-off for dedicated gaming setups"
 
 Run-Step "Disable auto-restart for updates" {
     Set-TrackedRegistry -Id "reg:NoAutoRebootWithLoggedOnUsers" -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "NoAutoRebootWithLoggedOnUsers" -Value 1 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
@@ -459,14 +397,11 @@ foreach ($updateSvc in @("wuauserv", "UsoSvc", "DoSvc")) {
 Run-Step "Disable WaaSMedicSvc (best effort)" {
     Set-TrackedRegistry -Id "reg:WaaSMedicSvcStart" -Path "HKLM:\SYSTEM\CurrentControlSet\Services\WaaSMedicSvc" -Name "Start" -Value 4 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
 }
-Write-Host ""
 
 # ============================================================
 # STEP 10: SECURITY TRADE-OFFS
 # ============================================================
-Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 10: Security Trade-off Tweaks" -ForegroundColor White
-Write-Host "============================================================" -ForegroundColor DarkGray
+UI-Section -Title "Phase 10: Security Trade-offs" -Context "Reduce Windows protections that add overhead"
 
 Run-Step "Disable Memory Integrity (HVCI)" {
     Set-TrackedRegistry -Id "reg:HVCIEnabled" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity" -Name "Enabled" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
@@ -478,14 +413,11 @@ Run-Step "Disable LSA protection" {
     Set-TrackedRegistry -Id "reg:RunAsPPL" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name "RunAsPPL" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
     Set-TrackedRegistry -Id "reg:LsaCfgFlags" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name "LsaCfgFlags" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
 }
-Write-Host ""
 
 # ============================================================
 # STEP 11: CUSTOMIZATION
 # ============================================================
-Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 11: Windows Customization" -ForegroundColor White
-Write-Host "============================================================" -ForegroundColor DarkGray
+UI-Section -Title "Phase 11: Windows Customization" -Context "Clean up the shell and desktop defaults"
 
 Run-Step "Restore classic right-click menu" { Reg-Add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /ve /t REG_SZ /d "" /f }
 Run-Step "Disable Bing / web results in Start search" {
@@ -522,14 +454,11 @@ Run-Step "Restart Explorer" {
         Start-Process explorer.exe
     }
 }
-Write-Host ""
 
 # ============================================================
 # STEP 12: DEFENDER EXCLUSIONS
 # ============================================================
-Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 12: Defender Exclusions" -ForegroundColor White
-Write-Host "============================================================" -ForegroundColor DarkGray
+UI-Section -Title "Phase 12: Defender Exclusions" -Context "Best-effort exclusions for common game library paths"
 
 $gamePaths = @(
     "C:\Program Files (x86)\Steam",
@@ -552,14 +481,11 @@ foreach ($path in $gamePaths) {
         Skip-Step -Description "Defender exclusion: $path" -Reason "Path not present" -Tier "Security Trade-off"
     }
 }
-Write-Host ""
 
 # ============================================================
 # STEP 13: DEBLOAT
 # ============================================================
-Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 13: Debloat" -ForegroundColor White
-Write-Host "============================================================" -ForegroundColor DarkGray
+UI-Section -Title "Phase 13: Debloat" -Context "Remove non-essential bundled apps"
 
 $appsToRemove = @(
     "Clipchamp.Clipchamp", "Microsoft.BingNews", "Microsoft.BingWeather",
@@ -594,18 +520,15 @@ foreach ($app in $appsToRemove) {
             Record-ToolkitPackageRemoval -PackageName $app -Provisioned
         }
 }
-Write-Host "  Removed $removed bloatware apps." -ForegroundColor Green
+UI-Note -Message "Removed $removed bloatware apps." -Color $script:UI_Success
 if ($removeFailed -gt 0) {
-    Write-Host "  $removeFailed apps failed to remove (manual cleanup may be needed)." -ForegroundColor Yellow
+    UI-Note -Message "$removeFailed apps failed to remove (manual cleanup may be needed)." -Color $script:UI_Warning
 }
-Write-Host ""
 
 # ============================================================
 # STEP 14: CLEANUP
 # ============================================================
-Write-Host "============================================================" -ForegroundColor DarkGray
-Write-Host "  STEP 14: Cleanup" -ForegroundColor White
-Write-Host "============================================================" -ForegroundColor DarkGray
+UI-Section -Title "Phase 14: Cleanup" -Context "Clear temp files and leftover folders"
 
 Run-Step "Clearing user temp" { Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue }
 Run-Step "Clearing Windows temp" { Remove-Item -Path "$env:SystemRoot\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue }
@@ -624,41 +547,20 @@ Write-Host ""
 # SUMMARY
 # ============================================================
 $elapsed = (Get-Date) - $startTime
+UI-Summary -DoneMessage "Apply Everything complete" -Details @(
+    "Elapsed:    $([math]::Round($elapsed.TotalSeconds)) seconds",
+    "Backup:     $backupDir",
+    "Manifest:   $(Get-ToolkitManifestPath)",
+    "Follow-up:  BIOS-CHECKLIST.md, Verify, optional DDU / WinUtil"
+) -RevertHint "Run REVERT-EVERYTHING.ps1 after the reboot if you want to undo the tracked path."
+UI-Note -Message "This run included Windows Update suppression and security trade-off tweaks." -Color $script:UI_Warning
+UI-Note -Message "Reboot is required before judging results." -Color $script:UI_Warning
 
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "  COMPLETE" -ForegroundColor Cyan
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "  Succeeded: $succeeded operations" -ForegroundColor Green
-Write-Host "  Skipped:   $skipped operations" -ForegroundColor DarkYellow
-if ($failed -gt 0) {
-    Write-Host "  Failed:    $failed operations" -ForegroundColor Red
-}
-Write-Host "  Completed in $([math]::Round($elapsed.TotalSeconds)) seconds." -ForegroundColor Gray
-Write-Host ""
-Write-Host "  Registry backup:" -ForegroundColor Gray
-Write-Host "    $backupDir" -ForegroundColor White
-Write-Host "  Manifest:" -ForegroundColor Gray
-Write-Host "    $(Get-ToolkitManifestPath)" -ForegroundColor White
-Write-Host ""
-Write-Host "  This run included Windows Update suppression and security trade-off tweaks." -ForegroundColor Yellow
-Write-Host "  Reboot is required for all changes to take full effect." -ForegroundColor Yellow
-Write-Host ""
-Write-Host "  Optional follow-up tools:" -ForegroundColor Gray
-Write-Host "    - BIOS:       See BIOS-CHECKLIST.md (XMP, ReBAR)" -ForegroundColor Gray
-Write-Host "    - Timer:      5 registry tweaks\individual\install-timer-resolution-service.ps1" -ForegroundColor Gray
-Write-Host "    - Runtimes:   0 prerequisites\install-runtimes.ps1" -ForegroundColor Gray
-Write-Host "    - GPU driver: DduAuto.ps1 or DduManual.ps1" -ForegroundColor Gray
-Write-Host "    - WinUtil:    9 cleanup\chris-titus-winutil.bat" -ForegroundColor Gray
-Write-Host "    - Verify:     10 verify\verify-tweaks.ps1" -ForegroundColor Gray
-Write-Host ""
-
-$reboot = Read-Host "Reboot now? (Y/N)"
-if ($reboot -eq "Y" -or $reboot -eq "y") {
-    Write-Host "Rebooting in 5 seconds..." -ForegroundColor Yellow
+if (UI-AskYesNo -Prompt "Reboot now?") {
+    UI-Note -Message "Rebooting in 5 seconds..." -Color $script:UI_Warning
     Start-Sleep -Seconds 5
     Restart-Computer -Force
 } else {
-    Write-Host "Remember to reboot before judging results." -ForegroundColor Yellow
-    Read-Host "Press Enter to exit"
+    UI-Note -Message "Remember to reboot before judging results." -Color $script:UI_Warning
+    UI-Exit
 }

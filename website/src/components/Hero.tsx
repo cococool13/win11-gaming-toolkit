@@ -9,24 +9,24 @@ import { cn } from "@/lib/utils";
 import { Cpu, Gpu, RotateCcw, ShieldCheck } from "lucide-react";
 
 const STATS = [
-  { icon: Cpu, label: "14 optimization steps" },
-  { icon: Gpu, label: "3 GPU vendors" },
-  { icon: RotateCcw, label: "Full rollback" },
-  { icon: ShieldCheck, label: "Manifest-tracked" },
+  { icon: Cpu, label: "Guide-first workflow" },
+  { icon: Gpu, label: "GPU and network flows" },
+  { icon: RotateCcw, label: "Tracked rollback path" },
+  { icon: ShieldCheck, label: "Manifest-backed state" },
 ] as const;
 
 const TERMINAL_LINES = [
   { type: "cmd", text: "PS> .\\launcher.ps1" },
   { type: "plain", text: "" },
   { type: "accent", text: "  WINDOWS 11 GAMING OPTIMIZATION" },
-  { type: "accent", text: "  Interactive Launcher" },
+  { type: "accent", text: "  Primary entrypoint for setup, tuning, revert, and verification" },
   { type: "plain", text: "" },
-  { type: "ok", text: "  [0]  Create Restore Point & Backup" },
-  { type: "ok", text: "  [1]  Install Prerequisites (VC++, DirectX)" },
-  { type: "ok", text: "  [2]  Power Plan (Ultimate Performance)" },
-  { type: "ok", text: "  [3]  Disable Services" },
-  { type: "warn", text: "  [8]  Disable VBS / Memory Integrity" },
-  { type: "ok", text: "  [G]  GPU Driver — Clean Install + Optimize" },
+  { type: "ok", text: "  [0]  Checkpoint          Restore point and registry backup" },
+  { type: "ok", text: "  [2]  Power plan          Ultimate Performance and power tuning" },
+  { type: "ok", text: "  [7]  Network             Adapter-aware optimization" },
+  { type: "warn", text: "  [8]  Security trade-off  Disable VBS / Memory Integrity" },
+  { type: "ok", text: "  [V]  Verify              Check what is applied now" },
+  { type: "warn", text: "  [A]  Apply everything    Aggressive full-stack run" },
 ] as const;
 
 export function Hero() {
@@ -40,15 +40,16 @@ export function Hero() {
           {/* Left — copy */}
           <div>
             <p className="font-mono text-xs uppercase tracking-[0.2em] text-gaming-cyan mb-4">
-              Gaming Performance Toolkit
+              Windows Optimization Toolkit
             </p>
             <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-5 leading-[1.05] max-w-xl">
-              <span className="gradient-text">Optimize</span> Windows 11{" "}
-              for Gaming
+              <span className="gradient-text">Guide</span> first, then tune{" "}
+              Windows 11 for gaming
             </h1>
             <p className="text-base sm:text-lg text-muted-foreground mb-8 max-w-lg leading-relaxed">
-              Script-based tweaks, cleanup, and revert tools. Read the guide
-              first, then run only what fits your system.
+              One launcher, one guide, one rollback path. Start with the guide,
+              use the launcher as the primary entrypoint, and verify changes
+              after each tuning phase.
             </p>
             <div className="flex flex-wrap gap-3">
               <a

@@ -13,14 +13,10 @@
 # ============================================================
 
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"
+. "$PSScriptRoot\..\lib\ui-helpers.ps1"
 
 $Host.UI.RawUI.WindowTitle = "Gaming Optimization — Verification Report"
-
-Write-Host ""
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "  GAMING OPTIMIZATION — HEALTH CHECK" -ForegroundColor Cyan
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host ""
+UI-Header -Title "Gaming Optimization Health Check" -Subtitle "Verify the same phases exposed by the launcher and guide"
 
 $manifest = Get-ToolkitState
 $pass = 0
@@ -86,20 +82,19 @@ function Check {
     }
 }
 
-Write-Host "--- Manifest ---" -ForegroundColor White
+UI-Section -Title "Manifest"
 if ($manifest) {
-    Write-Host "  Manifest found: $(Get-ToolkitManifestPath)" -ForegroundColor Gray
-    Write-Host "  Created: $($manifest.createdAt)" -ForegroundColor Gray
-    Write-Host "  Package removals tracked: $(@($manifest.packages.removed).Count)" -ForegroundColor Gray
+    UI-Note -Message "Manifest found: $(Get-ToolkitManifestPath)"
+    UI-Note -Message "Created: $($manifest.createdAt)"
+    UI-Note -Message "Package removals tracked: $(@($manifest.packages.removed).Count)"
 } else {
-    Write-Host "  No manifest found. Existing settings will be treated as preexisting." -ForegroundColor Yellow
+    UI-Note -Message "No manifest found. Existing settings will be treated as preexisting." -Color $script:UI_Warning
 }
 
 # ============================================================
 # POWER PLAN
 # ============================================================
-Write-Host ""
-Write-Host "--- Power Plan ---" -ForegroundColor White
+UI-Section -Title "Phase 1: Power Baseline"
 
 Check "Ultimate Performance plan is active" {
     $active = powercfg /getactivescheme 2>&1
@@ -119,8 +114,7 @@ Check "Fast Startup is disabled" {
 # ============================================================
 # WINDOWS SETTINGS
 # ============================================================
-Write-Host ""
-Write-Host "--- Windows Settings ---" -ForegroundColor White
+UI-Section -Title "Phase 2: Windows Settings"
 
 Check "Transparency effects disabled" {
     (Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" -Name "EnableTransparency" -ErrorAction SilentlyContinue).EnableTransparency -eq 0
@@ -141,8 +135,7 @@ Check "Notifications suppressed" {
 # ============================================================
 # SERVICES
 # ============================================================
-Write-Host ""
-Write-Host "--- Services ---" -ForegroundColor White
+UI-Section -Title "Phase 3: Services"
 
 foreach ($svc in @(
     @("DiagTrack", "DiagTrack"),
@@ -164,8 +157,7 @@ foreach ($svc in @(
 # ============================================================
 # REGISTRY + STARTUP
 # ============================================================
-Write-Host ""
-Write-Host "--- Registry + Startup ---" -ForegroundColor White
+UI-Section -Title "Phase 4 and 5: Registry Pack and Startup Cleanup"
 
 Check "MenuShowDelay = 0" {
     (Get-ItemProperty "HKCU:\Control Panel\Desktop" -Name "MenuShowDelay" -ErrorAction SilentlyContinue).MenuShowDelay -eq "0"
@@ -193,8 +185,7 @@ Check "Copilot disabled" {
 # ============================================================
 # GPU + NETWORK
 # ============================================================
-Write-Host ""
-Write-Host "--- GPU + Network ---" -ForegroundColor White
+UI-Section -Title "Phase 6 to 8: GPU, Network, and Update Path"
 
 $gpuDevices = @(Get-PnpDevice -Class Display -ErrorAction SilentlyContinue)
 if ($gpuDevices.Count -eq 0) {
@@ -233,9 +224,6 @@ Check "Cloudflare / Google DNS present on at least one adapter" {
 # ============================================================
 # WINDOWS UPDATE + SECURITY TRADE-OFFS
 # ============================================================
-Write-Host ""
-Write-Host "--- Windows Update + Security Trade-offs ---" -ForegroundColor White
-
 Check "Windows Update auto-restart blocked" {
     (Get-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "NoAutoRebootWithLoggedOnUsers" -ErrorAction SilentlyContinue).NoAutoRebootWithLoggedOnUsers -eq 1
 } "reg:NoAutoRebootWithLoggedOnUsers"
@@ -274,8 +262,7 @@ Check "Toolkit-added Defender exclusions are still present" {
 # ============================================================
 # CUSTOMIZATION + BONUS
 # ============================================================
-Write-Host ""
-Write-Host "--- Customization + Bonus ---" -ForegroundColor White
+UI-Section -Title "Phase 9 to 12: Customization, Defender, and Bonus Checks"
 
 Check "Classic right-click menu enabled" {
     Test-Path "HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32"
@@ -295,11 +282,7 @@ Check "Timer Resolution Service installed" {
 # ============================================================
 # SUMMARY
 # ============================================================
-Write-Host ""
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "  HEALTH CHECK RESULTS" -ForegroundColor Cyan
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host ""
+UI-Header -Title "Health Check Results"
 Write-Host "  PASS:                $pass" -ForegroundColor Green
 Write-Host "  APPLIED BY TOOLKIT:  $applied" -ForegroundColor Green
 Write-Host "  ALREADY PRESENT:     $preexisting" -ForegroundColor Cyan
@@ -321,9 +304,8 @@ if ($total -gt 0) {
     Write-Host "  Apply Everything coverage: $pct% ($pass/$total tracked checks passing)" -ForegroundColor White
 }
 if ($manifest) {
-    Write-Host "  Manifest: $(Get-ToolkitManifestPath)" -ForegroundColor Gray
-    Write-Host "  Recorded package removals: $(@($manifest.packages.removed).Count)" -ForegroundColor Gray
+    UI-Note -Message "Manifest: $(Get-ToolkitManifestPath)"
+    UI-Note -Message "Recorded package removals: $(@($manifest.packages.removed).Count)"
 }
-Write-Host "  Security-tradeoff items are intentional in APPLY-EVERYTHING." -ForegroundColor Gray
-Write-Host ""
-Read-Host "Press Enter to exit"
+UI-Note -Message "Security-tradeoff items are intentional in Apply Everything."
+UI-Exit

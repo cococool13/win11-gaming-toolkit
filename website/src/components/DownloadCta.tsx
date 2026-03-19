@@ -49,8 +49,8 @@ export function DownloadCta() {
             Get started
           </h2>
           <p className="text-muted-foreground mb-10 max-w-2xl mx-auto">
-            Start with the guide, then download and run the scripts that match
-            your system.
+            Read the guide first, use the launcher as the primary entrypoint,
+            and keep the revert and verify paths close at hand.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             {availableLinks.map((link) => {

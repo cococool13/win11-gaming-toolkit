@@ -1,534 +1,239 @@
-# Windows 11 Ultimate Gaming Optimization Guide
+# Windows 11 Gaming Optimization Guide
 
-> A modern, aggressive, automation-first guide to maximum gaming performance on Windows 11.
-> `APPLY-EVERYTHING.ps1` runs the full stack, including security and convenience trade-offs when they are automatable on your machine.
+This repo is a Windows optimization toolkit with one primary path:
 
----
+1. Read this guide.
+2. Launch `launcher.ps1`.
+3. Run only the phases that match your machine and your tolerance for trade-offs.
 
-## Quick Start — One-Click Apply
-
-**Don't want to go step by step?** Run the master script to apply the aggressive full stack at once:
-
-```powershell
-# Open PowerShell as Administrator, then:
-Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
-.\APPLY-EVERYTHING.ps1
-```
-
-This applies backup, power plan, Windows settings, services, registry tweaks, startup cleanup, GPU MSI mode, network changes, Windows Update suppression, VBS/HVCI/LSA changes, customization, Defender exclusions, debloat, and cleanup. Unsupported tweaks are skipped. To undo what can be restored deterministically, run `REVERT-EVERYTHING.ps1`.
-
----
+`APPLY-EVERYTHING.ps1` is still available, but it is the aggressive path, not the default recommendation.
 
 ## Before You Start
 
-- **Back up first.** Step 1 exists for a reason. Don't skip it.
-- **Run scripts as Administrator.** Right-click > "Run as administrator" for every `.bat` file.
-- **PowerShell scripts** may need you to allow execution first:
-  Open PowerShell as Admin and run: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
-- **Not every tweak is perfectly reversible.** The toolkit now captures machine state to improve rollback, but removed apps and some system policies may still need manual recovery.
-- **Read the warnings.** This guide is intentionally aggressive and includes real trade-offs.
-- **Check your BIOS first.** See [BIOS-CHECKLIST.md](BIOS-CHECKLIST.md) — enabling XMP alone can give 10-30% more FPS.
-- **No separate gaming mode needed.** APPLY-EVERYTHING.ps1 aggressively disables startup bloat, notifications, background apps, and several Windows conveniences.
+- Run PowerShell scripts as Administrator.
+- If PowerShell blocks local scripts, run `Set-ExecutionPolicy RemoteSigned -Scope CurrentUser` in an elevated shell.
+- Create a backup first. The toolkit has a checkpoint path for a reason.
+- Laptops, hybrid-GPU systems, and work-managed PCs need extra care.
+- Not every change is perfectly reversible. The manifest improves rollback, but removed apps and some system policies can still require manual recovery.
 
-## Compatibility Model
+## Choose Your Path
 
-`APPLY-EVERYTHING.ps1` is designed to run on desktops, laptops, handheld Windows gaming devices, OEM prebuilts, and mixed-use PCs.
+### Recommended path: launcher first
 
-- It does **not** downgrade itself to a safe preset on laptops or workstations.
-- It applies every tweak that is technically automatable on the current machine.
-- Unsupported tweaks are skipped and recorded in the manifest.
-- Security trade-off tweaks are intentional in the full-stack run.
+Run:
 
-## Risk Tiers
-
-The repo still uses tiers so you can understand what `APPLY-EVERYTHING` includes:
-
-- **Safe**: broad Windows changes with lower compatibility risk
-- **Advanced**: stronger performance changes with system-level side effects
-- **Security Trade-off**: changes that reduce protection or Windows conveniences
-
----
-
-## Table of Contents
-
-| Step | Name | Difficulty | Risk | Revertible? |
-|------|------|-----------|------|-------------|
-| [0](#step-0-install-gaming-prerequisites) | Install Gaming Prerequisites | Easy | None | N/A |
-| [1](#step-1-backup--restore-point) | Backup & Restore Point | Easy | None | N/A |
-| [2](#step-2-power-plan) | Power Plan (Basic + Advanced) | Easy | Safe | Yes |
-| [3](#step-3-windows-settings) | Windows Settings | Easy | Safe | Yes (manual) |
-| [4](#step-4-disable-unnecessary-services) | Disable Unnecessary Services | Easy | Low | Yes |
-| [5](#step-5-registry-tweaks) | Registry Tweaks (Expanded) | Medium | Low | Yes |
-| [6](#step-6-gpu-optimization) | GPU Optimization + MSI Mode | Medium | Safe | Yes |
-| [7](#step-7-network-optimization) | Network Optimization | Medium | Low | Yes |
-| [8](#step-8-security-vs-performance) | Security vs Performance (VBS) | Medium | Moderate | Yes |
-| [9](#step-9-cleanup--debloat) | Cleanup, Debloat & WinUtil | Easy | Low | Partial |
-| [10](#step-10-verify--benchmark) | Verify & Benchmark | Easy | None | N/A |
-
-**Difficulty:** Easy = just run a script or toggle a setting. Medium = may need to understand what you're changing.
-**Risk:** Safe = no downside. Low = minor side effects possible. Moderate = security trade-off (explained in detail).
-
----
-
-## Step 0: Install Gaming Prerequisites
-
-📁 **Folder:** `0 prerequisites/`
-
-Many games require Visual C++ Redistributables and the legacy DirectX runtime. Without them, you get errors like "VCRUNTIME140.dll not found" or "d3dx9_43.dll not found".
-
-### What to run:
-- **`install-runtimes.ps1`** — Downloads and installs ALL Visual C++ runtimes (2005-2022) and the DirectX June 2010 legacy runtime
-
-### What it installs:
-- Visual C++ 2005, 2008, 2010, 2012, 2013, 2015-2022 (x86 + x64)
-- DirectX June 2010 redistributable (D3DX9, D3DX10, D3DX11, XInput, etc.)
-
-### Requirements:
-- Internet connection (~200MB download)
-- ~5 minutes to complete
-
----
-
-## Step 1: Backup & Restore Point
-
-📁 **Folder:** `1 backup/`
-
-**Do this first.** Before changing anything, create a safety net.
-
-### What to run:
-1. **`create-restore-point.bat`** — Creates a Windows System Restore point
-2. **`backup-registry.bat`** — Exports all registry keys we'll modify to your Desktop
-
-### How to restore:
-- **System Restore:** Start Menu > search "Create a restore point" > System Restore > select "Before Gaming Optimization"
-- **Registry:** Double-click any `.reg` file in the backup folder on your Desktop
-
----
-
-## Step 2: Power Plan
-
-📁 **Folder:** `2 power plan/`
-
-### What to run:
-1. **`enable-ultimate-performance.bat`** — Unhides and activates the "Ultimate Performance" power plan
-2. **`configure-power-plan.ps1`** *(NEW — Advanced)* — Fine-tunes every power sub-setting
-
-### What the advanced script adds:
-| Setting | Value | Why |
-|---------|-------|-----|
-| CPU min/max state | 100% / 100% | No downclocking |
-| Core parking | All cores unparked | All CPU cores always active |
-| PCI-E link state | Off | Full GPU bus speed |
-| USB selective suspend | Off | Prevents peripheral disconnects |
-| USB 3 link power mgmt | Off | Full USB bandwidth |
-| Hibernate / Sleep | Off | No unexpected interruptions |
-| Power throttling | Off | Prevents background throttling |
-| Adaptive brightness | Off | Consistent display brightness |
-| Wireless adapter | Max performance | Full WiFi speed |
-
-### To revert:
-Settings > System > Power > Power mode > select "Balanced"
-
----
-
-## Step 3: Windows Settings (Automated)
-
-Now handled automatically by `APPLY-EVERYTHING.ps1`:
-
-| Setting | What the script does |
-|---------|---------------------|
-| HAGS | Enabled via registry |
-| Transparency | Disabled |
-| Background apps | Disabled globally |
-| Notifications | Suppressed (Do Not Disturb) |
-| Mouse acceleration | Disabled (Step 5 registry tweaks) |
-| Visual effects | Set to performance mode (Step 5) |
-
-> **Monitor refresh rate** must still be set manually in Display Settings — it's hardware-specific.
-
----
-
-## Step 4: Disable Unnecessary Services
-
-📁 **Folder:** `4 services/`
-
-### What to run:
-- **`apply-all.bat`** — Disables all listed services at once
-- **`revert-all.bat`** — Re-enables all services
-
-Or use **individual scripts** in `4 services/individual/` to toggle specific services.
-
-### Services disabled:
-| Service | What it does | Why disable |
-|---------|-------------|-------------|
-| DiagTrack | Sends telemetry to Microsoft | Uses CPU/network |
-| Phone Service | Phone Link integration | Unnecessary for gaming |
-| Geolocation | Location tracking | Unnecessary for desktop |
-| Print Spooler | Manages printing | Skip if you have a printer |
-| Windows Search | Indexes files for search | Frees CPU; Start search slower |
-| Retail Demo | Store display mode | Never needed |
-| Maps Manager | Offline maps | Unnecessary |
-| Fax | Fax service | It's 2026 |
-
-### What we DON'T disable:
-BITS (breaks Windows Update), SysMain (Win11 manages well), Windows Defender, Audio services.
-
----
-
-## Step 5: Registry Tweaks (Expanded)
-
-📁 **Folder:** `5 registry tweaks/`
-
-Now includes comprehensive privacy, visual effects, sound, Game Bar, explorer, and accessibility tweaks from multiple sources.
-
-### What to run:
-1. **`backup-current.bat`** FIRST — saves current registry values
-2. **`apply-all.reg`** — applies ALL tweaks at once
-
-Or pick individual tweaks from `5 registry tweaks/individual/`:
-
-### Performance Tweaks:
-| File | What it does |
-|------|-------------|
-| `menu-show-delay.reg` | Instant right-click menus |
-| `mouse-hover-time.reg` | Instant tooltips |
-| `disable-startup-delay.reg` | Apps load immediately at boot |
-| `disable-driver-searching.reg` | Prevents auto-installing generic drivers |
-| `disable-fast-startup.reg` | True clean shutdown; fixes dual-boot |
-| `disable-fullscreen-optimizations.reg` | Reduces input lag in fullscreen games |
-| `game-priority.reg` | More CPU/GPU time for games + no network throttle |
-| `disable-power-throttling.reg` | *(NEW)* Prevents CPU throttling |
-| `visual-effects-performance.reg` | *(NEW)* Disables all animations (keeps smooth fonts) |
-| `disable-game-bar-dvr.reg` | *(NEW)* Disables Game Bar overlay (Game Mode stays ON) |
-| `sound-scheme-none.reg` | *(NEW)* Removes all system sounds |
-| `explorer-tweaks.reg` | *(NEW)* Show extensions, full path, disable OneDrive ads |
-| `privacy-telemetry.reg` | *(NEW)* Comprehensive privacy lockdown |
-
-### Windows Update Management:
-| File | What it does |
-|------|-------------|
-| `disable-auto-restart.reg` | *(NEW)* Prevents forced restarts during gaming (sets active hours 8AM-2AM) |
-| `revert-auto-restart.reg` | *(NEW)* Restores default auto-restart behavior |
-| `disable-windows-update.ps1` | *(NEW)* Permanently disables Windows Update service + related services |
-| `enable-windows-update.ps1` | *(NEW)* Re-enables Windows Update (run monthly to check for updates) |
-
-### Advanced (PowerShell):
-| File | What it does |
-|------|-------------|
-| `install-timer-resolution-service.ps1` | *(NEW)* Installs service for ~0.5ms timer (reduces input lag) |
-
-### To revert:
-Double-click **`revert-all.reg`** and confirm.
-
----
-
-## Step 6: GPU Optimization
-
-📁 **Folder:** `6 gpu/`
-
-Open the subfolder for your GPU brand: **nvidia/**, **amd/**, or **intel/**
-
-### NEW: MSI Mode for All GPUs
-- **`enable-msi-mode.ps1`** — Enables Message Signaled Interrupts for all GPUs
-- MSI mode has lower latency than legacy line-based interrupts
-- Can reduce micro-stuttering in games
-
-### GPU Subfolders:
-Each contains a README with clean driver installation, recommended settings, and Resizable BAR / Smart Access Memory setup.
-
-### DDU (Display Driver Uninstaller):
-For the cleanest possible driver install, use DDU to completely remove old drivers before installing new ones.
-
-- `DduAuto.ps1` stages DDU, configures it, schedules a Safe Mode reboot, and auto-runs the cleanup pass after the next admin login.
-- `DduManual.ps1` stages DDU and launches it in the current session, or can prepare a Safe Mode handoff without the automatic cleanup arguments.
-- The automation no longer hijacks `Winlogon\Userinit`; it uses a one-shot Safe Mode `RunOnce` handoff and clears `safeboot` before launching DDU to avoid boot loops.
-
----
-
-## Step 7: Network Optimization
-
-📁 **Folder:** `7 network/`
-
-### What to run:
-- **`optimize-network.bat`** — Applies all network tweaks
-- **`revert-network.bat`** — Restores defaults
-
-### What it does:
-- Disables Nagle's Algorithm (biggest impact — reduces packet batching delay)
-- Disables Large Send Offload
-- Disables TCP Timestamps
-- Enables RSS (spreads network load across CPU cores)
-- Sets DNS to Cloudflare Gaming (1.1.1.1) — shaves 10-50ms off server lookups
-- Flushes DNS cache
-
-See the README.txt in this folder for router QoS tips, port forwarding for popular games, and WiFi optimization for laptops.
-
----
-
-## Step 8: Security vs Performance
-
-📁 **Folder:** `8 security vs performance/`
-
-> **READ THE README.txt IN THIS FOLDER BEFORE PROCEEDING.**
-
-### Performance impact:
-- **5-25% FPS improvement** depending on game and CPU
-
-### What to run:
-- **`disable-vbs.bat`** — Disables VBS + HVCI (requires reboot)
-- **`enable-vbs.bat`** — Re-enables everything (requires reboot)
-
-### Note:
-`APPLY-EVERYTHING.ps1` includes this step when the machine supports it. Read the trade-offs first because this is an intentional security reduction.
-
----
-
-## Step 9: Cleanup, Debloat & WinUtil
-
-📁 **Folder:** `9 cleanup/`
-
-### What to run:
-1. **`debloat.ps1`** — Removes Windows 11 bloatware apps
-2. **`cleanup-temp.bat`** — Clears temp files, shader cache, Windows Update cache
-3. **`chris-titus-winutil.bat`** *(NEW)* — Launches Chris Titus Tech's WinUtil
-
-### Chris Titus Tech Windows Utility (WinUtil):
-A popular open-source GUI tool for Windows optimization. It can:
-- Remove bloatware with checkboxes (visual interface)
-- Install common programs (browsers, 7-Zip, VLC, etc.)
-- Apply Windows tweaks via a simple interface
-- Configure Windows Update policies
-
-**Source:** github.com/ChrisTitusTech/winutil
-**Nothing is installed** — it downloads and runs directly from GitHub each time.
-
-To launch: Right-click `chris-titus-winutil.bat` > Run as Administrator
-
----
-
-## Step 10: Verify & Benchmark
-
-📁 **Folder:** `10 verify/`
-
-### Automated Health Check:
-- **`verify-tweaks.ps1`** *(NEW)* — Scans every tweak and outputs a color-coded report
-  - **PASS** (green): Tweak is applied correctly
-  - **FAIL** (red): Tweak is missing or was reverted (e.g., by Windows Update)
-  - **WARN** (yellow): Optional tweak not applied
-  - Shows an overall **Optimization Score** (e.g., "85% — 22/26 tweaks applied")
-
-Run this after applying tweaks, and periodically to check if Windows Update reverted anything.
-
-### Recommended tools:
-| Tool | Best for | Cost |
-|------|----------|------|
-| CapFrameX | Real-world game FPS + frame time recording | Free |
-| 3DMark Time Spy | Synthetic GPU benchmark | Free demo on Steam |
-| UserBenchmark | Quick overall system health check | Free |
-
-### Expected total improvement:
-| Tweak | Expected FPS Gain |
-|-------|-------------------|
-| VBS/HVCI disabled (Step 8) | 5-25% |
-| Power plan + services | 2-5% |
-| Registry tweaks | 1-3% (mostly feel) |
-| Timer Resolution Service | 1-3% (frame pacing) |
-| MSI mode + GPU optimization | 2-10% |
-| Network optimization | Lower ping, not FPS |
-| **Total combined** | **10-35% FPS improvement** |
-
----
-
-## Troubleshooting & Recovery
-
-Something went wrong? Don't panic. Every tweak in this guide is reversible. Use this section to diagnose and fix common issues.
-
-### Quick Fix: Bisect Method
-
-If you're not sure which tweak caused a problem:
-1. Run `REVERT-EVERYTHING.ps1` to undo all changes
-2. If the problem goes away, re-apply tweaks **one step at a time**
-3. Test after each step — when the problem returns, you found the culprit
-4. Skip that tweak and continue with the rest
-
-### Common Issues
-
-| Problem | Likely Cause | Fix |
-|---------|-------------|-----|
-| Game crashes after tweaks | Timer resolution or VBS change | Revert Step 5 timer service, or re-enable VBS (Step 8) |
-| Black screen after GPU tweak | MSI mode or driver issue | Boot into Safe Mode (hold Shift + click Restart), run `6 gpu/enable-msi-mode.ps1` with `-Revert`, or use DDU to reinstall drivers |
-| System unstable / random freezes | Power plan too aggressive or core unparking | Revert Step 2 first: Settings > Power > select "Balanced" |
-| Start menu search is slow/broken | Windows Search service disabled | Run `4 services/individual/wsearch-enable.bat` as Admin |
-| USB devices disconnect randomly | USB selective suspend in power plan | Check Settings > Power > USB settings, or revert Step 2 |
-| Printer not working | Print Spooler service disabled | Run `4 services/individual/printspooler-enable.bat` as Admin |
-| Blue screen (BSOD) | Usually MSI mode or timer resolution | Boot Safe Mode, revert MSI mode and uninstall timer service |
-| Game stuttering got WORSE | Nagle's Algorithm or LSO change | Run `7 network/revert-network.bat` as Admin |
-| Windows Update won't install | Services disabled or update paused | Run `4 services/revert-all.bat`, check if updates are paused |
-| Can't hear system sounds | Sound scheme set to None | Run `5 registry tweaks/revert-all.reg` or go to Sound settings |
-
-### Safe Mode Recovery
-
-If you can't boot normally:
-1. **Force Safe Mode:** Hold power button to shut down 3 times in a row — Windows will enter Recovery Mode
-2. Select **Troubleshoot > Advanced options > Startup Settings > Restart**
-3. Press **4** or **F4** for Safe Mode (or **5/F5** for Safe Mode with Networking)
-4. In Safe Mode, run the relevant revert script or use System Restore from Step 1
-
-### Known Incompatibilities
-
-| Tweak | Incompatibility | Workaround |
-|-------|----------------|------------|
-| VBS disabled (Step 8) | Some anti-cheat systems (Vanguard, FACEIT) may require VBS/HVCI | Re-enable VBS for those games |
-| Timer Resolution Service | Rare conflicts with audio production software (DAWs) | Stop the STR service before using DAW software |
-| MSI mode | Some older GPUs (pre-2016) don't support MSI properly | Revert MSI mode if you see display artifacts |
-| Nagle disabled | Can increase bandwidth usage on metered connections | Revert network tweaks if on limited data |
-| Windows Search disabled | Outlook desktop search won't work | Re-enable Windows Search if you use Outlook |
-
-### Nuclear Option: System Restore
-
-If nothing else works:
-1. Boot into Safe Mode (see above)
-2. Open **Start Menu > search "Create a restore point"**
-3. Click **System Restore**
-4. Select the **"Before Gaming Optimization"** restore point from Step 1
-5. This undoes ALL changes at once (registry, services, everything)
-
----
-
-## How to Revert Everything
-
-If something goes wrong or you want to undo all changes:
-
-### Quick (one-click revert):
-Run **`REVERT-EVERYTHING.ps1`** as Administrator — this undoes everything APPLY-EVERYTHING.ps1 changed (power plan, services, registry, network, GPU MSI mode, timer service).
-
-### Manual (step-by-step):
-1. **Registry:** Double-click `5 registry tweaks/revert-all.reg`
-2. **Services:** Run `4 services/revert-all.bat` as Administrator
-3. **Network:** Run `7 network/revert-network.bat` as Administrator
-4. **VBS:** Run `8 security vs performance/enable-vbs.bat` as Administrator
-5. **Power plan:** Settings > System > Power > select "Balanced"
-6. **Windows Settings:** Manually revert using the checklist
-7. **Timer Service:** `Stop-Service STR; sc.exe delete STR`
-8. **Removed apps:** Reinstall from Microsoft Store
-9. **Nuclear option:** Use the System Restore point from Step 1
-
----
-
-## File Map
-
-```
-APPLY-EVERYTHING.ps1              ← One-click apply the aggressive full stack
-REVERT-EVERYTHING.ps1             ← One-click undo all tweaks
-GUIDE.md                          ← This document
-BIOS-CHECKLIST.md                 ← BIOS optimization (XMP, ReBAR, etc.)
-0 prerequisites/
-  ├── install-runtimes.ps1        ← C++ Runtimes & DirectX
-  └── README.txt
-1 backup/
-  ├── create-restore-point.bat
-  └── backup-registry.bat
-2 power plan/
-  ├── enable-ultimate-performance.bat
-  ├── configure-power-plan.ps1    ← Advanced power settings
-  └── README.txt
-4 services/
-  ├── apply-all.bat
-  ├── revert-all.bat
-  └── individual/                 ← Per-service toggle scripts
-5 registry tweaks/
-  ├── backup-current.bat
-  ├── apply-all.reg               ← All tweaks combined
-  ├── revert-all.reg
-  └── individual/
-      ├── menu-show-delay.reg
-      ├── mouse-hover-time.reg
-      ├── disable-startup-delay.reg
-      ├── disable-driver-searching.reg
-      ├── disable-fast-startup.reg
-      ├── disable-fullscreen-optimizations.reg
-      ├── game-priority.reg
-      ├── disable-nagle.reg
-      ├── disable-power-throttling.reg
-      ├── visual-effects-performance.reg
-      ├── disable-game-bar-dvr.reg
-      ├── sound-scheme-none.reg
-      ├── explorer-tweaks.reg
-      ├── privacy-telemetry.reg
-      ├── disable-auto-restart.reg           ← NEW — Prevent update restarts
-      ├── revert-auto-restart.reg            ← NEW
-      ├── disable-windows-update.ps1         ← NEW — Permanently disable WU
-      ├── enable-windows-update.ps1          ← NEW — Re-enable WU for updates
-      └── install-timer-resolution-service.ps1 (advanced)
-6 gpu/
-  ├── enable-msi-mode.ps1         ← MSI mode for all GPUs
-  ├── nvidia/README.txt
-  ├── amd/README.txt
-  └── intel/README.txt
-7 network/
-  ├── optimize-network.bat        ← Now includes DNS optimization
-  ├── revert-network.bat
-  └── README.txt                  ← Expanded: QoS, port forwarding, WiFi tips
-8 security vs performance/
-  ├── disable-vbs.bat
-  ├── enable-vbs.bat
-  └── README.txt
-9 cleanup/
-  ├── debloat.ps1
-  ├── cleanup-temp.bat
-  └── chris-titus-winutil.bat     ← Chris Titus WinUtil launcher
-10 verify/
-  ├── verify-tweaks.ps1           ← NEW — Automated health check report
-  └── README.txt
+```powershell
+.\launcher.ps1
 ```
 
----
+Use the launcher as the main entrypoint. It groups the repo into:
 
-## FAQ
+- `Setup` for backup and prerequisites
+- `Optimize` for power, services, registry, cleanup, and security trade-offs
+- `GPU and Network` for device-specific tuning and driver flows
+- `Safety and Verify` for full apply, full revert, and verification
 
-**Q: What's the single biggest FPS gain?**
-A: Disabling VBS/HVCI (Step 8). It's 5-25% and `APPLY-EVERYTHING` includes it when the machine supports it, but it has a security trade-off.
+### Aggressive path: full-stack apply
 
-**Q: What if I just want to run one thing?**
-A: Run `APPLY-EVERYTHING.ps1` as Administrator. It runs the aggressive full stack, including security trade-off tweaks, and skips only unsupported items.
+Run:
 
-**Q: Is this safe?**
-A: No blanket promise. This toolkit is intentionally aggressive. `APPLY-EVERYTHING` includes security and convenience trade-offs, and rollback quality varies by tweak.
+```powershell
+.\APPLY-EVERYTHING.ps1
+```
 
-**Q: What's the Timer Resolution Service?**
-A: Windows normally ticks at ~15.6ms intervals. The service forces ~0.5ms ticks, which improves frame pacing and reduces input lag. It's used by competitive gamers. Install via `install-timer-resolution-service.ps1`.
+Use this only when you already understand the trade-offs. It includes:
 
-**Q: What's Chris Titus WinUtil?**
-A: An open-source GUI tool from YouTuber Chris Titus Tech that debloats Windows, installs programs, and applies tweaks. We include a launcher script — it downloads and runs directly from GitHub each time (nothing permanently installed).
+- power and Windows tuning
+- service and registry changes
+- startup cleanup
+- GPU MSI mode and network tuning
+- Windows Update suppression
+- VBS / HVCI / LSA trade-offs
+- shell customization
+- Defender exclusions
+- app debloat and temp cleanup
 
-**Q: What about DDU?**
-A: DDU (Display Driver Uninstaller) is the gold standard for clean GPU driver installs. `DduAuto.ps1` now stages DDU, reboots into Safe Mode, and auto-runs the cleanup pass after the next admin login without hijacking the login chain.
+### Rollback path
 
-**Q: Do I need to run all steps?**
-A: No. Each step is still independent, but `APPLY-EVERYTHING` is the flagship path and intentionally runs the maximal supported stack.
+Run:
 
-**Q: I have a laptop. Should I do all of this?**
-A: It will still run. On battery-capable systems the script does not downgrade itself to a safe preset, so read the trade-offs first.
+```powershell
+.\REVERT-EVERYTHING.ps1
+```
 
-**Q: How do I check if my tweaks are still applied?**
-A: Run `10 verify/verify-tweaks.ps1` as Administrator. It checks every tweak and gives you a color-coded health report with an optimization score.
+This restores tracked settings first, then falls back to sensible defaults where no captured state exists.
 
-**Q: How do I stop Windows from restarting during a gaming session?**
-A: Apply `disable-auto-restart.reg` (Step 5) to prevent forced restarts. For full control, run `disable-windows-update.ps1` to permanently disable Windows Update. Run `enable-windows-update.ps1` monthly to check for updates, then disable again.
+### Verification path
 
-**Q: Should I change BIOS settings?**
-A: Yes! See `BIOS-CHECKLIST.md`. Enabling XMP/DOCP alone can give 10-30% more FPS in CPU-bound games because your RAM is probably running at half its rated speed.
+Run:
 
-**Q: Why don't you bundle every .exe tool directly in the repo?**
-A: Bundled executables go stale, can be tampered with, and create licensing issues. The main toolkit stays readable and script-first, while bounded helper flows download official tools when needed.
+```powershell
+.\10 verify\verify-tweaks.ps1
+```
 
----
+This checks the same phases exposed by the launcher and the full apply flow so you can see what is still applied, what drifted, and what was already present.
 
-## Credits & Sources
+## Primary Entry Points
 
-- Khorvie Tech (youtube.com/@KhorvieTech) — Original optimization pack and research
-- FR33THY (youtube.com/FR33THY) — Timer Resolution Service, DDU automation, comprehensive privacy tweaks, power plan fine-tuning
-- Chris Titus Tech (christitus.com) — WinUtil debloating tool
-- Community-sourced Windows optimization knowledge
+| Entry point | When to use it | Main risk | Undo |
+| --- | --- | --- | --- |
+| `launcher.ps1` | You want the guided menu | Low by itself | N/A |
+| `1 backup/create-backup.ps1` | You want a restore point and registry backup first | Low | Restore point and exported registry files |
+| `0 prerequisites/install-runtimes.ps1` | Games are missing VC++ or legacy DirectX runtimes | Low | Uninstall from Apps / Features |
+| `2 power plan/configure-power.ps1` | You want the performance power baseline only | Low to medium | Switch back to Balanced |
+| `4 services/disable-services.ps1` | You want service changes without the full stack | Medium | `4 services/revert-all.bat` or full revert |
+| `5 registry tweaks/apply-all.reg` | You want the raw registry pack | Medium | `5 registry tweaks/revert-all.reg` or full revert |
+| `6 gpu/install-gpu-driver.ps1` | You want the clean GPU driver path | Medium to high | DDU + reinstall / full revert for tracked settings |
+| `8 security vs performance/configure-vbs.ps1` | You want the security trade-off step only | High | Re-enable via the same folder or full revert |
+| `APPLY-EVERYTHING.ps1` | You want the whole stack in one run | High | `REVERT-EVERYTHING.ps1` |
 
-Built for the community. Share freely. If you find an issue, report it.
+## Phase Reference
+
+### Setup
+
+#### Backup and restore
+
+- What it changes: creates a restore point and exports key registry areas.
+- Why run it: gives you the safest rollback point before tuning.
+- Main risk: restore-point creation can be throttled or unavailable by Windows policy.
+- Undo: use System Restore or import the exported `.reg` files.
+
+#### Runtime prep
+
+- What it changes: installs Visual C++ runtimes and the legacy DirectX June 2010 redistributable.
+- Why run it: fixes missing runtime dependencies for older games and launchers.
+- Main risk: low; this is standard dependency installation.
+- Undo: uninstall from Windows apps settings if needed.
+
+### Optimize
+
+#### Power plan
+
+- What it changes: activates Ultimate Performance and tunes detailed power settings.
+- Why run it: reduces power-saving latency and background throttling.
+- Main risk: worse idle power usage, worse battery behavior on laptops.
+- Undo: switch back to Balanced or run the full revert.
+
+#### Services
+
+- What it changes: disables selected background services.
+- Why run it: reduces unnecessary background work on gaming-focused systems.
+- Main risk: features like printing, search indexing, and telemetry-related components may stop working as expected.
+- Undo: `4 services/revert-all.bat` or the full revert script.
+
+#### Registry pack
+
+- What it changes: latency, Game Bar, Explorer, privacy, sound, and visual-effect related registry settings.
+- Why run it: applies many common Windows gaming tweaks in one place.
+- Main risk: broadest surface area in the repo; some changes are preference-driven, not universally better.
+- Undo: `5 registry tweaks/revert-all.reg` for the raw pack, or `REVERT-EVERYTHING.ps1` for the tracked path.
+
+#### Timer service
+
+- What it changes: installs a service to request lower timer resolution.
+- Why run it: can reduce input latency on some systems.
+- Main risk: more wakeups and power cost.
+- Undo: `REVERT-EVERYTHING.ps1` removes the toolkit-managed timer service.
+
+#### Cleanup
+
+- What it changes: removes bundled apps and clears temp/cache folders.
+- Why run it: trims non-essential software and stale files.
+- Main risk: some removed apps may need manual reinstall.
+- Undo: reinstall apps from Microsoft Store or winget; temp-file cleanup is not reversible.
+
+#### Security trade-off
+
+- What it changes: disables VBS, HVCI, and related protections.
+- Why run it: removes security features that can affect latency or compatibility for aggressive tuning.
+- Main risk: reduced Windows hardening.
+- Undo: use the same folder scripts or `REVERT-EVERYTHING.ps1`.
+
+### GPU and Network
+
+#### GPU MSI mode
+
+- What it changes: enables MSI mode for detected display devices.
+- Why run it: lowers interrupt latency on supported hardware.
+- Main risk: misbehaving drivers or hardware-specific instability.
+- Undo: rerun the relevant GPU flow or use full revert.
+
+#### GPU driver flow
+
+- What it changes: stages a DDU-backed clean driver install and optional hidden vendor settings.
+- Why run it: cleanest path when troubleshooting or redoing GPU drivers.
+- Main risk: highest-risk path in the repo if interrupted mid-clean/install.
+- Undo: use DDU again and reinstall a known-good driver.
+
+#### Network
+
+- What it changes: TCP settings, adapter properties, Nagle-related flags, and DNS.
+- Why run it: reduces avoidable network latency on gaming systems.
+- Main risk: adapter-specific compatibility differences and changed DNS behavior.
+- Undo: `7 network/revert-network.bat` or `REVERT-EVERYTHING.ps1`.
+
+### Safety and Verify
+
+#### Apply Everything
+
+- What it changes: runs the aggressive full stack across all phases.
+- Why run it: fastest route to the maximum scripted tuning pass.
+- Main risk: combines every compatibility and security trade-off in the repo.
+- Undo: `REVERT-EVERYTHING.ps1`.
+
+#### Revert Everything
+
+- What it changes: restores manifest-backed state where available and applies default-based rollback elsewhere.
+- Why run it: fastest supported return path from the full-stack flow.
+- Main risk: app removals and some broad defaults still need manual follow-up.
+- Undo: this is the undo path.
+
+#### Verify
+
+- What it changes: nothing.
+- Why run it: shows whether tracked changes are applied, preexisting, unsupported, drifted, or failed.
+- Main risk: none.
+- Undo: not applicable.
+
+## Repo Map
+
+Use this map when you want to open folders directly instead of using the launcher:
+
+- `0 prerequisites/` runtime installers
+- `1 backup/` restore point and registry backup
+- `2 power plan/` power and sleep behavior
+- `4 services/` service toggles
+- `5 registry tweaks/` raw registry packs and timer service
+- `6 gpu/` MSI mode, DDU, and driver flows
+- `7 network/` adapter and TCP tuning
+- `8 security vs performance/` VBS / HVCI trade-off scripts
+- `9 cleanup/` debloat, temp cleanup, WinUtil wrapper
+- `10 verify/` state inspection and health checks
+- `lib/` shared PowerShell helpers and manifest/state tracking
+- `website/` guide-first landing page mirroring the repo workflow
+
+## Troubleshooting
+
+### The launcher or scripts say Administrator is required
+
+Open PowerShell as Administrator, then run the script again.
+
+### PowerShell refuses to run local scripts
+
+Run:
+
+```powershell
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+### A tweak applied, but Verify says it drifted
+
+Windows, OEM utilities, enterprise policy, or driver software may have overwritten it. Use Verify to find the phase, then re-run only that area instead of the whole stack.
+
+### A laptop behaves worse after tuning
+
+Undo the power and GPU-focused phases first. The toolkit does not automatically downgrade itself for battery-capable systems.
+
+### Revert finished, but the PC still feels off
+
+Reboot first. Then run Verify. If the remaining issue is an app removal or an external tool side effect, that requires manual follow-up.

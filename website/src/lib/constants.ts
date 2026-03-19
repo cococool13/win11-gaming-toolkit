@@ -10,116 +10,117 @@ export const QUICK_START_STEPS = [
   {
     title: "Read the guide",
     description:
-      "Start with the guide so you know which scripts are relevant to your PC and what each step changes.",
+      "Start with GUIDE.md so you understand the phases, risks, and rollback path before you change anything.",
   },
   {
-    title: "Create a backup",
+    title: "Launch the menu",
     description:
-      "Make a restore point and back up the registry before changing anything.",
+      "Use launcher.ps1 as the main entrypoint. It groups the toolkit into setup, optimize, GPU and network, and safety flows.",
   },
   {
-    title: "Run the scripts you want",
+    title: "Verify after changes",
     description:
-      "Use the launcher or run individual scripts based on the sections you actually want to apply.",
+      "Run the verification report after tuning so you can see what is applied, preexisting, unsupported, or drifted.",
   },
 ] as const;
 
 export const INCLUDED_SECTIONS = [
   {
-    title: "Backup and restore point",
-    description: "Scripts for restore points, registry backups, and revert paths.",
+    title: "Setup",
+    description:
+      "Restore points, registry backup, and prerequisite installers for a clean starting point.",
   },
   {
-    title: "Power and Windows settings",
+    title: "Optimize",
     description:
-      "Power plan changes and common Windows settings used in the guide.",
+      "Power, services, registry, cleanup, and optional security trade-off phases.",
   },
   {
-    title: "Services and registry tweaks",
+    title: "GPU and network",
     description:
-      "Service changes, registry edits, and startup cleanup steps.",
+      "MSI mode, DDU-backed driver workflows, and adapter-aware network tuning.",
   },
   {
-    title: "GPU and network tweaks",
+    title: "Safety and verify",
     description:
-      "GPU-related scripts, DDU helpers, and adapter-aware network changes.",
+      "Full apply, full revert, and a verification report that mirrors the same phases.",
   },
   {
-    title: "Revert and verify tools",
+    title: "Shared toolkit layer",
     description:
-      "Scripts for undoing changes and checking which tweaks are currently applied.",
+      "Manifest, state tracking, and PowerShell helpers that keep the scripts aligned.",
   },
 ] as const;
 
 export const FILE_LINKS = [
   {
-    title: "Main guide",
+    title: "GUIDE.md",
     path: "GUIDE.md",
     href: repoFile("GUIDE.md"),
     instruction:
-      "Read this first. It explains the sections, order, and tradeoffs before you run anything.",
+      "The canonical workflow and risk model. Read this first before running any tuning path.",
   },
   {
-    title: "Launcher",
+    title: "launcher.ps1",
     path: "launcher.ps1",
     href: repoFile("launcher.ps1"),
     instruction:
-      "Use this if you want a menu for running individual parts of the guide instead of opening folders manually.",
+      "Primary entrypoint. Use this when you want the guided product flow instead of browsing folders manually.",
   },
   {
-    title: "Apply everything",
+    title: "APPLY-EVERYTHING.ps1",
     path: "APPLY-EVERYTHING.ps1",
     href: repoFile("APPLY-EVERYTHING.ps1"),
     instruction:
-      "Run this only after reading the guide. It applies the full scripted pass and includes higher-tradeoff changes.",
+      "Aggressive full-stack run for dedicated gaming setups. Includes Windows Update and security trade-offs.",
   },
   {
-    title: "Revert everything",
+    title: "REVERT-EVERYTHING.ps1",
     path: "REVERT-EVERYTHING.ps1",
     href: repoFile("REVERT-EVERYTHING.ps1"),
     instruction:
-      "Use this to undo the tracked full-apply path when you want to restore prior settings.",
+      "Tracked rollback path for the full-stack run, with default-based fallbacks where captured state is unavailable.",
   },
   {
-    title: "Verification",
+    title: "verify-tweaks.ps1",
     path: "10 verify/verify-tweaks.ps1",
     href: repoFile("10%20verify/verify-tweaks.ps1"),
     instruction:
-      "Run this after making changes to check which tweaks are currently applied and which ones drifted.",
+      "Verification report that checks the same phases exposed by the launcher and guide.",
   },
   {
-    title: "BIOS checklist",
+    title: "BIOS-CHECKLIST.md",
     path: "BIOS-CHECKLIST.md",
     href: repoFile("BIOS-CHECKLIST.md"),
     instruction:
-      "Read this separately for manual BIOS items like XMP, ReBAR, and other non-script changes.",
+      "Manual BIOS and firmware items such as XMP and ReBAR that the scripts cannot change for you.",
   },
 ] as const;
 
 export const FAQ_ITEMS = [
   {
-    question: "Do I need to run every step?",
+    question: "What should I run first?",
     answer:
-      "No. The guide is organized so you can read the sections and choose the scripts that fit your system and goals.",
+      "Read GUIDE.md, then start from launcher.ps1. The launcher is the main entrypoint and mirrors the same phases as the guide.",
+  },
+  {
+    question: "Do I need to run everything?",
+    answer:
+      "No. The toolkit is organized so you can run only the phases that match your machine and your tolerance for trade-offs.",
+  },
+  {
+    question: "What is the risky path?",
+    answer:
+      "APPLY-EVERYTHING.ps1 is the aggressive path. It bundles service, registry, cleanup, Windows Update, and security trade-off changes into one run.",
   },
   {
     question: "How do I undo changes?",
     answer:
-      "Use REVERT-EVERYTHING.ps1 for the tracked full revert path, or the individual revert scripts for specific areas.",
+      "Use REVERT-EVERYTHING.ps1 for the tracked full rollback path, then reboot and run Verify if you want to confirm the result.",
   },
   {
-    question: "Is this safe for laptops?",
+    question: "Why run Verify?",
     answer:
-      "Some steps work on laptops, but not every tweak is a good fit for every machine. Read the tradeoffs before running everything.",
-  },
-  {
-    question: "What should I read before running everything?",
-    answer:
-      "Read the main guide first, then the BIOS checklist and any section README that applies to the scripts you plan to run.",
-  },
-  {
-    question: "What is DDU for?",
-    answer:
-      "DDU is used for clean GPU driver removal before reinstalling drivers. The repo includes helpers for staging and launching that workflow.",
+      "Verify tells you which checks passed, which settings were already present, which ones drifted, and which checks were unsupported on your machine.",
   },
 ] as const;

@@ -34,8 +34,8 @@ export function QuickStartSection() {
             Quick start
           </h2>
           <p className="text-muted-foreground max-w-2xl mb-10">
-            The homepage is only an overview. The guide is the main reference
-            for what to run and in what order.
+            The website is only an overview. GUIDE.md is the source of truth,
+            and launcher.ps1 is the main entrypoint for the toolkit.
           </p>
         </ScrollReveal>
 
@@ -81,8 +81,8 @@ export function IncludedSection() {
             What&apos;s included
           </h2>
           <p className="text-muted-foreground max-w-2xl mb-10">
-            The repo is organized into a few main areas so you can find the
-            scripts you need without digging through everything.
+            The repo is organized around a few clear surfaces so you can
+            understand the workflow before you touch the lower-level files.
           </p>
         </ScrollReveal>
 
@@ -127,8 +127,8 @@ export function FilesSection() {
             Files and scripts
           </h2>
           <p className="text-muted-foreground max-w-2xl mb-10">
-            These are the main files to open or run. Start with the guide, then
-            use the scripts that match the sections you want.
+            These are the main files worth opening or running directly. Start
+            with the guide, then use the launcher or a specific phase script.
           </p>
         </ScrollReveal>
 
@@ -211,12 +211,14 @@ export function TradeoffsSection() {
                     every PC.
                   </p>
                   <p>
-                    Many changes have revert support, but not every change is
-                    perfectly reversible in every case.
+                    The rollback path is strongest when you use the launcher
+                    and full-stack scripts, because those flows record more
+                    state.
                   </p>
                   <p>
                     Read the guide before running everything, especially on
-                    laptops, work machines, or systems that do more than gaming.
+                    laptops, hybrid-GPU systems, or machines that do more than
+                    gaming.
                   </p>
                 </div>
               </div>

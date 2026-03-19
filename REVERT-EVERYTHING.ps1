@@ -10,44 +10,23 @@
 # ============================================================
 
 . "$PSScriptRoot\lib\toolkit-state.ps1"
+. "$PSScriptRoot\lib\ui-helpers.ps1"
 
 $Host.UI.RawUI.WindowTitle = "Windows 11 Gaming Optimization — Revert Everything"
-
-Write-Host ""
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "  REVERT ALL GAMING OPTIMIZATIONS" -ForegroundColor Cyan
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host ""
-
-if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host "[ERROR] This script must be run as Administrator." -ForegroundColor Red
-    Read-Host "Press Enter to exit"
-    exit 1
-}
-
-Write-Host "This will UNDO the aggressive full-stack optimization pass." -ForegroundColor Yellow
-Write-Host "Manifest-backed state will be restored first where available." -ForegroundColor Yellow
-Write-Host ""
-Write-Host "Press Ctrl+C to cancel, or" -ForegroundColor Yellow
-Read-Host "Press Enter to continue"
-Write-Host ""
+UI-Header -Title "Revert Everything" -Subtitle "Restore the tracked full-stack path"
+UI-RequireAdmin -ScriptName "Revert Everything"
+UI-Confirm -Message "Manifest-backed state is restored first, then default-based fallbacks are applied." -Warnings @(
+    "Removed Store apps may still require manual reinstall.",
+    "A reboot is required for the rollback to fully settle."
+)
 
 $state = Initialize-ToolkitState
 $manifestPath = Get-ToolkitManifestPath
-$succeeded = 0
-$failed = 0
+UI-ResetCounters
 
 function Run-Step {
     param([string]$Description, [scriptblock]$Action)
-    Write-Host "  $Description..." -NoNewline
-    try {
-        & $Action
-        Write-Host " Done" -ForegroundColor Green
-        $script:succeeded++
-    } catch {
-        Write-Host " Failed: $($_.Exception.Message)" -ForegroundColor Red
-        $script:failed++
-    }
+    UI-Step -Label $Description -Action $Action
 }
 
 function Restore-TrackedRegistryStep {
@@ -58,7 +37,7 @@ function Restore-TrackedRegistryStep {
 # ============================================================
 # STEP 1: POWER PLAN
 # ============================================================
-Write-Host "[1/10] Restoring Power Plan..." -ForegroundColor White
+UI-Section -Title "Phase 1: Power Baseline"
 
 Run-Step "Activating Balanced power plan" {
     powercfg /setactive SCHEME_BALANCED 2>&1 | Out-Null
@@ -80,8 +59,7 @@ Run-Step "Removing power throttling override" {
 # ============================================================
 # STEP 2: WINDOWS SETTINGS
 # ============================================================
-Write-Host ""
-Write-Host "[2/10] Restoring Windows Settings..." -ForegroundColor White
+UI-Section -Title "Phase 2: Windows Settings"
 
 Run-Step "Transparency effects" { Restore-TrackedRegistryStep "reg:EnableTransparency" }
 Run-Step "Background apps" {
@@ -97,8 +75,7 @@ Run-Step "Notifications" {
 # ============================================================
 # STEP 3: SERVICES
 # ============================================================
-Write-Host ""
-Write-Host "[3/10] Restoring Services..." -ForegroundColor White
+UI-Section -Title "Phase 3: Services"
 
 foreach ($svc in @("DiagTrack", "PhoneSvc", "lfsvc", "RetailDemo", "MapsBroker", "Fax", "Spooler", "WSearch")) {
     Run-Step "Restoring $svc" {
@@ -115,8 +92,7 @@ foreach ($svc in @("DiagTrack", "PhoneSvc", "lfsvc", "RetailDemo", "MapsBroker",
 # ============================================================
 # STEP 4: REGISTRY TWEAKS
 # ============================================================
-Write-Host ""
-Write-Host "[4/10] Reverting Registry Tweaks..." -ForegroundColor White
+UI-Section -Title "Phase 4: Registry Pack"
 
 Run-Step "MenuShowDelay = 400" { reg add "HKCU\Control Panel\Desktop" /v "MenuShowDelay" /t REG_SZ /d "400" /f 2>&1 | Out-Null }
 Run-Step "MouseHoverTime = 400" { reg add "HKCU\Control Panel\Mouse" /v "MouseHoverTime" /t REG_SZ /d "400" /f 2>&1 | Out-Null }
@@ -188,8 +164,7 @@ Run-Step "Restoring privacy defaults" {
 # ============================================================
 # STEP 5: STARTUP
 # ============================================================
-Write-Host ""
-Write-Host "[5/10] Restoring Startup Apps..." -ForegroundColor White
+UI-Section -Title "Phase 5: Startup Cleanup"
 
 Run-Step "Re-enabling OneDrive startup" { reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\OneDrive" /v "DisableFileSyncNGSC" /f 2>&1 | Out-Null }
 Run-Step "Re-enabling Teams startup" { reg delete "HKLM\SOFTWARE\Policies\Microsoft\Office\16.0\common\officeupdate" /v "preventteamsinstall" /f 2>&1 | Out-Null }
@@ -206,8 +181,7 @@ Run-Step "Re-enabling Copilot" {
 # ============================================================
 # STEP 6: GPU MSI MODE
 # ============================================================
-Write-Host ""
-Write-Host "[6/10] Reverting GPU MSI Mode..." -ForegroundColor White
+UI-Section -Title "Phase 6: GPU MSI Mode"
 
 Run-Step "Removing MSI mode overrides" {
     $gpuDevices = @(Get-PnpDevice -Class Display -ErrorAction SilentlyContinue)
@@ -221,8 +195,7 @@ Run-Step "Removing MSI mode overrides" {
 # ============================================================
 # STEP 6.5: GPU HIDDEN SETTINGS
 # ============================================================
-Write-Host ""
-Write-Host "[6.5/10] Reverting GPU Performance Settings..." -ForegroundColor White
+UI-Section -Title "Phase 6.5: GPU Performance Settings"
 
 $gpuSteps = @("gpu-nvidia-settings", "gpu-amd-settings", "gpu-intel-settings")
 foreach ($gpuStep in $gpuSteps) {
@@ -258,8 +231,7 @@ foreach ($svc in @("NvTelemetryContainer", "amdfendr", "amdfendrmgr", "Intel(R) 
 # ============================================================
 # STEP 7: NETWORK
 # ============================================================
-Write-Host ""
-Write-Host "[7/10] Reverting Network..." -ForegroundColor White
+UI-Section -Title "Phase 7: Network"
 
 Run-Step "Restoring TCP timestamps" { netsh int tcp set global timestamps=enabled 2>&1 | Out-Null }
 Run-Step "Re-enabling Large Send Offload" {
@@ -286,8 +258,7 @@ Run-Step "Restoring DNS" {
 # ============================================================
 # STEP 8: WINDOWS UPDATE + SECURITY
 # ============================================================
-Write-Host ""
-Write-Host "[8/10] Reverting Windows Update + Security Trade-offs..." -ForegroundColor White
+UI-Section -Title "Phase 8: Windows Update and Security Trade-offs"
 
 Run-Step "Restoring Windows Update policies" {
     Restore-TrackedRegistryStep "reg:NoAutoRebootWithLoggedOnUsers"
@@ -320,8 +291,7 @@ Run-Step "Restoring VBS / HVCI / LSA" {
 # ============================================================
 # STEP 9: WINDOWS CUSTOMIZATION
 # ============================================================
-Write-Host ""
-Write-Host "[9/10] Reverting Windows Customization..." -ForegroundColor White
+UI-Section -Title "Phase 9: Windows Customization"
 
 Run-Step "Restoring Win11 context menu" { reg delete "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" /f 2>&1 | Out-Null }
 Run-Step "Re-enabling Bing search" {
@@ -359,8 +329,7 @@ Run-Step "Restart Explorer" {
 # ============================================================
 # STEP 10: DEFENDER + TIMER
 # ============================================================
-Write-Host ""
-Write-Host "[10/10] Reverting Defender + Timer Resolution..." -ForegroundColor White
+UI-Section -Title "Phase 10: Defender and Timer Resolution"
 
 Run-Step "Removing toolkit-added Defender exclusions" {
     Restore-ToolkitDefenderExclusions | Out-Null
@@ -378,32 +347,19 @@ Run-Step "Stopping and removing STR service" {
 # ============================================================
 # SUMMARY
 # ============================================================
-Write-Host ""
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "  REVERT COMPLETE" -ForegroundColor Cyan
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "  Succeeded: $succeeded operations" -ForegroundColor Green
-if ($failed -gt 0) {
-    Write-Host "  Failed:    $failed operations" -ForegroundColor Red
-}
-Write-Host ""
-Write-Host "  Manual follow-up still required for:" -ForegroundColor Yellow
-Write-Host "    - Removed apps: reinstall from Microsoft Store / winget" -ForegroundColor Gray
-Write-Host "    - Some broad registry tweaks still use default-based rollback" -ForegroundColor Gray
-Write-Host "    - Any external tools run after APPLY-EVERYTHING" -ForegroundColor Gray
-Write-Host "  Manifest used:" -ForegroundColor Gray
-Write-Host "    $manifestPath" -ForegroundColor White
-Write-Host ""
-Write-Host "  REBOOT REQUIRED for all changes to take full effect" -ForegroundColor Yellow
-Write-Host ""
+UI-Summary -DoneMessage "Revert Everything complete" -Details @(
+    "Manifest:   $manifestPath",
+    "Follow-up:  Reinstall removed apps from Microsoft Store or winget if needed.",
+    "Follow-up:  Any external tools run after Apply Everything still need manual cleanup."
+) -RevertHint "If something still looks off after reboot, run Verify and compare against GUIDE.md."
+UI-Note -Message "Some broad registry areas still use default-based rollback." -Color $script:UI_Warning
+UI-Note -Message "Reboot is required for all rollback changes to take effect." -Color $script:UI_Warning
 
-$reboot = Read-Host "Reboot now? (Y/N)"
-if ($reboot -eq "Y" -or $reboot -eq "y") {
-    Write-Host "Rebooting in 5 seconds..." -ForegroundColor Yellow
+if (UI-AskYesNo -Prompt "Reboot now?") {
+    UI-Note -Message "Rebooting in 5 seconds..." -Color $script:UI_Warning
     Start-Sleep -Seconds 5
     Restart-Computer -Force
 } else {
-    Write-Host "Remember to reboot!" -ForegroundColor Yellow
-    Read-Host "Press Enter to exit"
+    UI-Note -Message "Remember to reboot." -Color $script:UI_Warning
+    UI-Exit
 }

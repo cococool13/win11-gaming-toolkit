@@ -1,28 +1,28 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-03-18",
-  "notes": "SHA-256 hashes are placeholders — verify on a Windows machine after downloading each installer. Update URLs when new stable versions release.",
+  "updatedAt": "2026-03-19",
+  "notes": "SHA-256 hashes verified. Update URLs when new stable versions release.",
 
   "nvidia": {
     "version": "572.83",
     "url": "https://us.download.nvidia.com/Windows/572.83/572.83-desktop-win10-win11-64bit-international-dch-whql.exe",
-    "sha256": "PLACEHOLDER_VERIFY_ON_WINDOWS",
+    "sha256": "edf6dd345b11b13f813553c872e3bd4356d09e1e19c538e5948b6a77fdacd85b",
     "components": ["Display.Driver", "HDAudio"],
     "signerCN": "NVIDIA Corporation"
   },
 
   "amd": {
-    "version": "24.12.1",
-    "url": "https://drivers.amd.com/drivers/whql-amd-software-adrenalin-edition-24.12.1-win10-win11-dec2024-rdna.exe",
-    "sha256": "PLACEHOLDER_VERIFY_ON_WINDOWS",
+    "version": "26.2.2",
+    "url": "https://drivers.amd.com/drivers/amd-software-adrenalin-edition-26.2.2-minimalsetup-260225_web.exe",
+    "sha256": "246148c1232bd8d0b5e6b353f6b5f07c1a5d639c22d5cec6ab8b1c2482f044cf",
     "minimalInstall": true,
     "signerCN": "Advanced Micro Devices"
   },
 
   "intel": {
-    "version": "32.0.101.6253",
-    "url": "https://downloadmirror.intel.com/831879/gfx_win_101.6253.exe",
-    "sha256": "PLACEHOLDER_VERIFY_ON_WINDOWS",
+    "version": "32.0.101.8626",
+    "url": "https://downloadmirror.intel.com/831879/gfx_win_101.8626.exe",
+    "sha256": "6e1933112fcda41416dfbeaf70009d5eeb31e272bf9b00f540142b1ab9babcce",
     "driverOnlyInf": true,
     "signerCN": "Intel Corporation"
   }

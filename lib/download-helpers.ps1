@@ -70,12 +70,14 @@ function Ensure-7Zip {
         return $sevenZipExe
     }
 
+    # Fetch version info from manifest (GitHub → cache → bundled)
+    . "$PSScriptRoot\version-manifest.ps1"
+    $sevenZipManifest = Get-ToolManifest -Name "sevenZip"
     $sevenZipInstaller = Join-Path $env:TEMP "7zip-installer.exe"
-    $sevenZipUrl = "https://www.7-zip.org/a/7z2301-x64.exe"
-    # Pinned SHA-256 for 7z2301-x64.exe — update when changing version
-    $sevenZipHash = "c37b3078d4a0643a6a58bf9ff91a4e1e6bab61a8cd0e1e0034a42e7bb2f4a5a2"
+    $sevenZipUrl = $sevenZipManifest.url
+    $sevenZipHash = $sevenZipManifest.sha256
 
-    Write-Info "Installing 7-Zip for archive extraction..."
+    Write-Info "Installing 7-Zip v$($sevenZipManifest.version) for archive extraction..."
     Get-FileFromWeb -Url $sevenZipUrl -File $sevenZipInstaller
 
     # Verify SHA-256 hash first (if hash is a valid hex string)

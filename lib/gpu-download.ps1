@@ -10,7 +10,7 @@ $script:GpuDriverStageRoot = Join-Path $env:ProgramData "GamingOpt\Drivers"
 function Get-GpuDriverVersionManifest {
     <#
     .SYNOPSIS
-        Loads the pinned driver version manifest from gpu-driver-versions.json.
+        Loads a GPU driver version manifest object (from versions.json or remote).
     #>
     param([string]$ManifestPath)
 

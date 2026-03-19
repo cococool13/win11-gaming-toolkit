@@ -13,6 +13,7 @@ Clear-Host
 $ProgressPreference = "SilentlyContinue"
 
 . "$PSScriptRoot\lib\download-helpers.ps1"
+. "$PSScriptRoot\lib\version-manifest.ps1"
 
 $stageRoot = Join-Path $env:ProgramData "GamingOpt"
 $dduRoot = Join-Path $stageRoot "DDU"
@@ -22,7 +23,11 @@ $launchLog = Join-Path $stageRoot "DDU-Auto.log"
 $sevenZipInstaller = Join-Path $env:TEMP "7zip-installer.exe"
 $dduInstaller = Join-Path $env:TEMP "DDU-setup.exe"
 $runOnceName = "*!GamingOpt-DDU"
-$expectedDduSha256 = "6073e6d311290d45b7a8ae4e832994c9487082531f89e4e01c99f86c0e38da6c"
+
+# Fetch DDU version info from manifest (GitHub → cache → bundled)
+$dduManifest = Get-ToolManifest -Name "ddu"
+$dduDownloadUrl = $dduManifest.url
+$expectedDduSha256 = $dduManifest.sha256
 
 # Shared helpers (Write-Info, Get-FileFromWeb, Ensure-Internet, Ensure-Directory,
 # Ensure-7Zip, Test-FileSha256, Test-FileAuthenticode) loaded from lib/download-helpers.ps1
@@ -33,8 +38,8 @@ function Stage-DduPayload {
 
     $sevenZipExe = Ensure-7Zip
 
-    Write-Info "Downloading DDU..."
-    Get-FileFromWeb -Url "https://www.wagnardsoft.com/DDU/download/DDU%20v18.1.4.2_setup.exe" -File $dduInstaller
+    Write-Info "Downloading DDU v$($dduManifest.version)..."
+    Get-FileFromWeb -Url $dduDownloadUrl -File $dduInstaller
     if (-not (Test-Path $dduInstaller) -or (Get-Item $dduInstaller).Length -lt 100000) {
         throw "DDU download failed"
     }

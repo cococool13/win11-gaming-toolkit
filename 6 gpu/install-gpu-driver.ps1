@@ -30,6 +30,7 @@ param(
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"
 . "$PSScriptRoot\..\lib\gpu-detection.ps1"
 . "$PSScriptRoot\..\lib\gpu-download.ps1"
+. "$PSScriptRoot\..\lib\version-manifest.ps1"
 
 $Host.UI.RawUI.WindowTitle = "GPU Driver — Clean Install + Optimize"
 if (-not $PostDdu) { Clear-Host }
@@ -123,9 +124,8 @@ if (-not $PostDdu) {
     Write-Host ""
 }
 
-# --- Load version manifest ---
-$manifestPath = Join-Path $PSScriptRoot "gpu-driver-versions.json"
-$versionManifest = Get-GpuDriverVersionManifest -ManifestPath $manifestPath
+# --- Load version manifest (fetches latest from GitHub, falls back to local) ---
+$versionManifest = Get-GpuManifest
 
 # --- Resolve driver URL ---
 Write-Info "Resolving driver download URL..."

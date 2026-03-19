@@ -17,6 +17,10 @@ export function Footer() {
             <p className="text-xs text-muted-foreground">
               Based on optimizations by{" "}
               <strong className="text-foreground">Khorvie Tech</strong>
+              ,{" "}
+              <strong className="text-foreground">FR33THY</strong>
+              {" & "}
+              <strong className="text-foreground">Chris Titus Tech</strong>
             </p>
           </div>
 

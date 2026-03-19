@@ -39,6 +39,10 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} antialiased`}
       >
+        <a href="#guide" className="skip-nav">Skip to content</a>
+        <noscript>
+          <style>{`.reveal-up,.reveal-left,.reveal-right,.reveal-blur{opacity:1;transform:none;filter:none}`}</style>
+        </noscript>
         {children}
       </body>
     </html>

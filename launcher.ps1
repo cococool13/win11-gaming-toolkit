@@ -4,7 +4,7 @@
 
 . "$PSScriptRoot\lib\toolkit-state.ps1"
 . "$PSScriptRoot\lib\ui-helpers.ps1"
-. "$PSScriptRoot\lib\launcher-data.ps1"
+. "$PSScriptRoot\lib\launcher-menu.ps1"
 
 $Host.UI.RawUI.WindowTitle = "Windows 11 Gaming Optimization - Launcher"
 $Host.UI.RawUI.BackgroundColor = "Black"

@@ -12,6 +12,7 @@ Thumbs.db
 # Debug logs
 *.log
 firebase-debug.log
+.gstack/
 
 # IDE
 .vscode/

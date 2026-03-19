@@ -526,6 +526,7 @@ A: Bundled executables go stale, can be tampered with, and create licensing issu
 
 ## Credits & Sources
 
+- Khorvie Tech (youtube.com/@KhorvieTech) — Original optimization pack and research
 - FR33THY (youtube.com/FR33THY) — Timer Resolution Service, DDU automation, comprehensive privacy tweaks, power plan fine-tuning
 - Chris Titus Tech (christitus.com) — WinUtil debloating tool
 - Community-sourced Windows optimization knowledge

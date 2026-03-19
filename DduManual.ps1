@@ -12,6 +12,8 @@ $Host.UI.RawUI.WindowTitle = $myInvocation.MyCommand.Definition + " (Administrat
 Clear-Host
 $ProgressPreference = "SilentlyContinue"
 
+. "$PSScriptRoot\lib\download-helpers.ps1"
+
 $stageRoot = Join-Path $env:ProgramData "GamingOpt"
 $dduRoot = Join-Path $stageRoot "DDU"
 $resumeScriptPath = Join-Path $stageRoot "DDU-Resume.ps1"
@@ -22,67 +24,8 @@ $dduInstaller = Join-Path $env:TEMP "DDU-setup.exe"
 $runOnceName = "*!GamingOpt-DDU"
 $expectedDduSha256 = "6073e6d311290d45b7a8ae4e832994c9487082531f89e4e01c99f86c0e38da6c"
 
-function Write-Info {
-    param([string]$Message)
-    Write-Host $Message -ForegroundColor Cyan
-}
-
-function Get-FileFromWeb {
-    param(
-        [Parameter(Mandatory)][string]$Url,
-        [Parameter(Mandatory)][string]$File
-    )
-
-    Invoke-WebRequest -Uri $Url -OutFile $File -UseBasicParsing
-}
-
-function Ensure-Internet {
-    if (-not (Test-Connection -ComputerName "8.8.8.8" -Count 1 -Quiet -ErrorAction SilentlyContinue)) {
-        throw "Internet connection required"
-    }
-}
-
-function Ensure-Directory {
-    param([string]$Path)
-    if (-not (Test-Path $Path)) {
-        New-Item -ItemType Directory -Path $Path -Force | Out-Null
-    }
-}
-
-function Ensure-7Zip {
-    $sevenZipExe = Join-Path ${env:ProgramFiles} "7-Zip\7z.exe"
-    if (Test-Path $sevenZipExe) {
-        return $sevenZipExe
-    }
-
-    Write-Info "Installing 7-Zip for DDU extraction..."
-    Get-FileFromWeb -Url "https://www.7-zip.org/a/7z2301-x64.exe" -File $sevenZipInstaller
-    if (-not (Test-Path $sevenZipInstaller) -or (Get-Item $sevenZipInstaller).Length -lt 100000) {
-        throw "7-Zip download failed"
-    }
-
-    $signature = Get-AuthenticodeSignature $sevenZipInstaller
-    if ($signature.Status -ne "Valid") {
-        throw "7-Zip installer signature is invalid"
-    }
-
-    Start-Process -FilePath $sevenZipInstaller -ArgumentList "/S" -Wait
-    if (-not (Test-Path $sevenZipExe)) {
-        throw "7-Zip installation failed"
-    }
-
-    return $sevenZipExe
-}
-
-function Test-FileSha256 {
-    param(
-        [string]$Path,
-        [string]$ExpectedHash
-    )
-
-    $actualHash = (Get-FileHash -Path $Path -Algorithm SHA256).Hash.ToLowerInvariant()
-    return $actualHash -eq $ExpectedHash.ToLowerInvariant()
-}
+# Shared helpers (Write-Info, Get-FileFromWeb, Ensure-Internet, Ensure-Directory,
+# Ensure-7Zip, Test-FileSha256, Test-FileAuthenticode) loaded from lib/download-helpers.ps1
 
 function Stage-DduPayload {
     Ensure-Directory -Path $stageRoot
@@ -163,11 +106,32 @@ shutdown -r -t 5
 function New-DduResumeScript {
     param(
         [string]$DduExe,
-        [string[]]$DduArguments
+        [string[]]$DduArguments,
+        [switch]$ChainDriverInstall
     )
 
     $quotedArgs = @($DduArguments | ForEach-Object { "'{0}'" -f $_.Replace("'", "''") }) -join ", "
     $argumentsArray = if ([string]::IsNullOrWhiteSpace($quotedArgs)) { "@()" } else { "@($quotedArgs)" }
+
+    # Resolve the GPU driver install script path (relative to repo root)
+    $gpuInstallScript = Join-Path $PSScriptRoot "6 gpu\install-gpu-driver.ps1"
+    $driverInstallRunOnceName = "*!GamingOpt-DriverInstall"
+
+    # Build the optional driver-install RunOnce block
+    $driverInstallBlock = ""
+    if ($ChainDriverInstall -and (Test-Path $gpuInstallScript)) {
+        $driverInstallBlock = @"
+
+    # Chain: register driver install for next normal-mode boot
+    `$driverInstallScript = '$gpuInstallScript'
+    if (Test-Path `$driverInstallScript) {
+        New-Item -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' -Force | Out-Null
+        `$driverCmd = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Maximized -File "' + `$driverInstallScript + '" -PostDdu'
+        New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' -Name '$driverInstallRunOnceName' -Value `$driverCmd -PropertyType String -Force | Out-Null
+        Write-Host '[INFO] GPU driver install will run after next reboot.' -ForegroundColor Cyan
+    }
+"@
+    }
 
     $scriptBody = @"
 `$ErrorActionPreference = 'Continue'
@@ -189,7 +153,7 @@ try {
         Write-Host 'Use the Leave-Safe-Mode helper if you want to reboot immediately.' -ForegroundColor Yellow
         exit 1
     }
-
+$driverInstallBlock
     `$dduArguments = $argumentsArray
     if (`$dduArguments.Count -gt 0) {
         Start-Process -FilePath '$DduExe' -ArgumentList `$dduArguments -Wait
@@ -239,7 +203,7 @@ try {
             @()
         }
 
-        New-DduResumeScript -DduExe $dduExe -DduArguments $dduArguments
+        New-DduResumeScript -DduExe $dduExe -DduArguments $dduArguments -ChainDriverInstall:$Automatic
         Register-DduRunOnce
 
         Write-Info "Scheduling next boot into Safe Mode..."

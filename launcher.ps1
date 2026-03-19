@@ -56,7 +56,8 @@ function Show-Menu {
     Write-Host ""
     Write-Host "  --- TOOLS ---" -ForegroundColor DarkGray
     Write-Host "    [V]  Verify Tweaks" -ForegroundColor White
-    Write-Host "    [D]  DDU — Clean GPU Driver" -ForegroundColor White
+    Write-Host "    [D]  DDU — Clean GPU Driver Removal" -ForegroundColor White
+    Write-Host "    [G]  GPU Driver — Clean Install + Optimize" -ForegroundColor White
     Write-Host "    [W]  Chris Titus WinUtil" -ForegroundColor White
     Write-Host ""
     Write-Host "    [Q]  Quit" -ForegroundColor DarkGray
@@ -83,7 +84,10 @@ function Run-Script {
         reg import "$fullPath" 2>&1 | Out-Null
         Write-Host "  [DONE] Registry file applied." -ForegroundColor Green
     } else {
-        & $fullPath
+        # Run in child process so exit in sub-script doesn't kill launcher
+        $proc = Start-Process -FilePath "powershell.exe" `
+            -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $fullPath) `
+            -PassThru -Wait
     }
 
     Write-Host ""
@@ -98,23 +102,24 @@ do {
     $choice = $choice.Trim().ToUpper()
 
     switch ($choice) {
-        "0" {
-            Run-Script "1 backup\create-restore-point.bat" "bat"
-            Run-Script "1 backup\backup-registry.bat" "bat"
-        }
+        "0" { Run-Script "1 backup\create-backup.ps1" }
         "1" { Run-Script "0 prerequisites\install-runtimes.ps1" }
-        "2" { Run-Script "2 power plan\enable-ultimate-performance.bat" "bat" }
-        "3" { Run-Script "4 services\apply-all.bat" "bat" }
+        "2" { Run-Script "2 power plan\configure-power.ps1" }
+        "3" { Run-Script "4 services\disable-services.ps1" }
         "4" { Run-Script "5 registry tweaks\apply-all.reg" "reg" }
         "5" { Run-Script "5 registry tweaks\individual\install-timer-resolution-service.ps1" }
         "6" { Run-Script "6 gpu\enable-msi-mode.ps1" }
-        "7" { Run-Script "7 network\optimize-network.bat" "bat" }
-        "8" { Run-Script "8 security vs performance\disable-vbs.bat" "bat" }
-        "9" { Run-Script "9 cleanup\cleanup-temp.bat" "bat" }
+        "7" { Run-Script "7 network\optimize-network.ps1" }
+        "8" { Run-Script "8 security vs performance\configure-vbs.ps1" }
+        "9" {
+            Run-Script "9 cleanup\debloat.ps1"
+            Run-Script "9 cleanup\cleanup-temp.ps1"
+        }
         "A" { Run-Script "APPLY-EVERYTHING.ps1" }
         "R" { Run-Script "REVERT-EVERYTHING.ps1" }
         "V" { Run-Script "10 verify\verify-tweaks.ps1" }
         "D" { Run-Script "DduAuto.ps1" }
+        "G" { Run-Script "6 gpu\install-gpu-driver.ps1" }
         "W" { Run-Script "9 cleanup\chris-titus-winutil.bat" "bat" }
         "Q" { break }
         default {

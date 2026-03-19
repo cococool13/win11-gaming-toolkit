@@ -219,6 +219,43 @@ Run-Step "Removing MSI mode overrides" {
 }
 
 # ============================================================
+# STEP 6.5: GPU HIDDEN SETTINGS
+# ============================================================
+Write-Host ""
+Write-Host "[6.5/10] Reverting GPU Performance Settings..." -ForegroundColor White
+
+$gpuSteps = @("gpu-nvidia-settings", "gpu-amd-settings", "gpu-intel-settings")
+foreach ($gpuStep in $gpuSteps) {
+    $stepStatus = Get-ToolkitRecordedStatus -Key $gpuStep
+    if ($stepStatus -eq "applied") {
+        Write-Host "  Reverting $gpuStep..." -ForegroundColor Gray
+        $regKeys = $state.registry
+        $properties = if ($regKeys -is [hashtable]) {
+            $regKeys.GetEnumerator() | ForEach-Object { [PSCustomObject]@{ Name = $_.Key; Value = $_.Value } }
+        } else {
+            $regKeys.PSObject.Properties
+        }
+        foreach ($prop in $properties) {
+            if ($prop.Value.step -eq $gpuStep) {
+                Run-Step "Reverting $($prop.Name)" {
+                    Restore-ToolkitRegistryValue -Id $prop.Name | Out-Null
+                }
+            }
+        }
+    }
+}
+
+# Restore GPU-related services disabled during driver install
+foreach ($svc in @("NvTelemetryContainer", "amdfendr", "amdfendrmgr", "Intel(R) Computing Improvement Program")) {
+    $svcEntry = $null
+    if (Test-ToolkitMapHasKey -Map $state.services -Key $svc) {
+        Run-Step "Restoring $svc" {
+            Restore-ToolkitServiceStartMode -Name $svc | Out-Null
+        }
+    }
+}
+
+# ============================================================
 # STEP 7: NETWORK
 # ============================================================
 Write-Host ""

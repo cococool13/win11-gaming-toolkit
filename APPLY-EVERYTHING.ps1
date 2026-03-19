@@ -391,6 +391,18 @@ if ($gpuDevices.Count -eq 0) {
 Write-Host ""
 
 # ============================================================
+# STEP 7.5: GPU DRIVER INSTALL (requires DDU — skip with note)
+# ============================================================
+Write-Host "============================================================" -ForegroundColor DarkGray
+Write-Host "  STEP 7.5: GPU Driver Install" -ForegroundColor White
+Write-Host "============================================================" -ForegroundColor DarkGray
+Write-Host "  [SKIP] GPU driver install requires DDU flow." -ForegroundColor Yellow
+Write-Host "         Run DduAuto.ps1 or use launcher [G] separately." -ForegroundColor Yellow
+Add-ToolkitStepResult -Key "gpu-driver-install" -Tier "Advanced" -Status "skipped" `
+    -Reason "Requires DDU flow. Run DduAuto.ps1 or launcher [G] separately."
+Write-Host ""
+
+# ============================================================
 # STEP 8: NETWORK
 # ============================================================
 Write-Host "============================================================" -ForegroundColor DarkGray

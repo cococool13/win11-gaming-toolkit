@@ -1,5 +1,5 @@
 # ============================================================
-# Windows 11 Gaming Optimization — Launcher
+# Windows 11 Gaming Optimization - Launcher
 # ============================================================
 # Interactive menu to run any optimization step.
 # Run as Administrator in PowerShell.
@@ -7,91 +7,164 @@
 
 . "$PSScriptRoot\lib\toolkit-state.ps1"
 
-$Host.UI.RawUI.WindowTitle = "Windows 11 Gaming Optimization — Launcher"
+$Host.UI.RawUI.WindowTitle = "Windows 11 Gaming Optimization - Launcher"
 $Host.UI.RawUI.BackgroundColor = "Black"
 $Host.UI.RawUI.ForegroundColor = "White"
 Clear-Host
 
+$script:LauncherPalette = @{
+    Frame = "DarkCyan"
+    Accent = "Cyan"
+    Danger = "Red"
+    Warning = "Yellow"
+    Success = "Green"
+    Muted = "DarkGray"
+    Text = "White"
+    Soft = "Gray"
+}
+
 # Admin check
 if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     Write-Host ""
-    Write-Host "  [ERROR] This launcher must be run as Administrator." -ForegroundColor Red
-    Write-Host "  Right-click > 'Run with PowerShell' (as Admin)" -ForegroundColor Red
+    Write-Host "  [ERROR] This launcher must be run as Administrator." -ForegroundColor $script:LauncherPalette.Danger
+    Write-Host "  Right-click > 'Run with PowerShell' (as Admin)" -ForegroundColor $script:LauncherPalette.Danger
     Write-Host ""
     Read-Host "Press Enter to exit"
     exit 1
 }
 
+function Write-LauncherLine {
+    param(
+        [string]$Text = "",
+        [string]$Color = $script:LauncherPalette.Text
+    )
+
+    Write-Host $Text -ForegroundColor $Color
+}
+
+function Write-LauncherBoxLine {
+    param(
+        [string]$Content = "",
+        [string]$Color = $script:LauncherPalette.Text
+    )
+
+    $innerWidth = 72
+    $trimmed = if ($Content.Length -gt $innerWidth) { $Content.Substring(0, $innerWidth) } else { $Content }
+    $padding = " " * ($innerWidth - $trimmed.Length)
+    Write-Host ("  | {0}{1} |" -f $trimmed, $padding) -ForegroundColor $Color
+}
+
+function Get-LauncherFootnote {
+    param(
+        [bool]$IsLaptop,
+        [bool]$IsHybridGraphics,
+        [bool]$PartOfDomain
+    )
+
+    if ($IsLaptop -or $IsHybridGraphics) {
+        return "Laptop / hybrid graphics detected. Review GPU and power changes before applying."
+    }
+
+    if ($PartOfDomain) {
+        return "Domain-joined PC detected. Some policy-backed tweaks may be overridden later."
+    }
+
+    return "Desktop profile detected. Apply targeted steps first, then use full-stack mode if needed."
+}
+
 function Show-Menu {
     Clear-Host
     $profile = Get-ToolkitMachineProfile
+    $footnote = Get-LauncherFootnote -IsLaptop:$profile.isLaptop -IsHybridGraphics:$profile.isHybridGraphics -PartOfDomain:$profile.partOfDomain
+    $gpus = if ($profile.gpuCount -gt 0) { $profile.gpuCount } else { 0 }
+    $adapters = if ($profile.activeAdapterCount -gt 0) { $profile.activeAdapterCount } else { 0 }
+    $hybridLabel = if ($profile.isHybridGraphics) { "Hybrid" } else { "Single" }
+    $domainLabel = if ($profile.partOfDomain) { "Joined" } else { "No" }
+    $mobilityLabel = if ($profile.isLaptop) { "Laptop" } elseif ($profile.isHandheld) { "Handheld" } else { "Desktop" }
+
     Write-Host ""
-    Write-Host "  ============================================================" -ForegroundColor Cyan
-    Write-Host "    WINDOWS 11 GAMING OPTIMIZATION" -ForegroundColor Cyan
-    Write-Host "    Interactive Launcher" -ForegroundColor Cyan
-    Write-Host "  ============================================================" -ForegroundColor Cyan
+    Write-Host "  ========================================================================" -ForegroundColor $script:LauncherPalette.Frame
+    Write-Host "   __      ___       ___ _ _  " -ForegroundColor $script:LauncherPalette.Accent
+    Write-Host "   \ \    / (_)_ _  / __(_) |_ _  _   " -ForegroundColor $script:LauncherPalette.Accent
+    Write-Host "    \ \/\/ /| | ' \| (_ | |  _| || |  " -ForegroundColor $script:LauncherPalette.Accent
+    Write-Host "     \_/\_/ |_|_||_|\___|_|\__|\_, |  " -ForegroundColor $script:LauncherPalette.Accent
+    Write-Host "                               |__/   " -ForegroundColor $script:LauncherPalette.Accent
+    Write-Host "  ========================================================================" -ForegroundColor $script:LauncherPalette.Frame
+    Write-Host "  POWER SHELL LAUNCH PAD" -ForegroundColor $script:LauncherPalette.Text
+    Write-Host "  Fast access to restore, optimize, verify, and recover." -ForegroundColor $script:LauncherPalette.Soft
     Write-Host ""
-    Write-Host "  Detected PC: $($profile.manufacturer) $($profile.model)" -ForegroundColor White
-    Write-Host "  Power:       $($profile.powerState)" -ForegroundColor Gray
-    Write-Host "  GPUs:        $($profile.gpuCount) (hybrid: $($profile.isHybridGraphics))" -ForegroundColor Gray
-    Write-Host "  Domain:      $($profile.partOfDomain)" -ForegroundColor Gray
+
+    Write-Host "  +------------------------------------------------------------------------+" -ForegroundColor $script:LauncherPalette.Frame
+    Write-LauncherBoxLine -Content ("Machine   : {0} {1}" -f $profile.manufacturer, $profile.model)
+    Write-LauncherBoxLine -Content ("OS        : {0}" -f $profile.windowsCaption)
+    Write-LauncherBoxLine -Content ("Profile   : {0} | Power {1} | Domain {2}" -f $mobilityLabel, $profile.powerState, $domainLabel)
+    Write-LauncherBoxLine -Content ("Graphics  : {0} GPU(s) | {1} layout" -f $gpus, $hybridLabel)
+    Write-LauncherBoxLine -Content ("Network   : {0} active adapter(s) | Printers {1}" -f $adapters, $profile.printerCount)
+    Write-Host "  +------------------------------------------------------------------------+" -ForegroundColor $script:LauncherPalette.Frame
     Write-Host ""
-    Write-Host "  --- SETUP ---" -ForegroundColor DarkGray
-    Write-Host "    [0]  Create Restore Point & Registry Backup" -ForegroundColor White
-    Write-Host "    [1]  Install Prerequisites (VC++, DirectX)" -ForegroundColor White
+
+    Write-Host "  QUICK START" -ForegroundColor $script:LauncherPalette.Accent
+    Write-LauncherLine "    [0] Safe checkpoint      Restore point + registry backup" $script:LauncherPalette.Text
+    Write-LauncherLine "    [1] Runtime prep         VC++, DirectX, prerequisites" $script:LauncherPalette.Text
+    Write-LauncherLine "    [A] Full send            Apply the aggressive full stack" $script:LauncherPalette.Success
+    Write-LauncherLine "    [R] Panic button         Revert the tracked changes" $script:LauncherPalette.Danger
     Write-Host ""
-    Write-Host "  --- OPTIMIZE ---" -ForegroundColor DarkGray
-    Write-Host "    [2]  Power Plan (Ultimate Performance)" -ForegroundColor White
-    Write-Host "    [3]  Disable Services" -ForegroundColor White
-    Write-Host "    [4]  Registry Tweaks" -ForegroundColor White
-    Write-Host "    [5]  Timer Resolution Service" -ForegroundColor White
-    Write-Host "    [6]  GPU MSI Mode" -ForegroundColor White
-    Write-Host "    [7]  Network Optimization" -ForegroundColor White
-    Write-Host "    [8]  Disable VBS / Memory Integrity" -ForegroundColor Yellow
-    Write-Host "    [9]  Cleanup & Debloat" -ForegroundColor White
+
+    Write-Host "  CORE TUNING" -ForegroundColor $script:LauncherPalette.Accent
+    Write-LauncherLine "    [2] Power plan           Ultimate Performance profile" $script:LauncherPalette.Text
+    Write-LauncherLine "    [3] Services             Disable background services" $script:LauncherPalette.Text
+    Write-LauncherLine "    [4] Registry             Apply bundled registry tweaks" $script:LauncherPalette.Text
+    Write-LauncherLine "    [5] Timer service        Install timer resolution service" $script:LauncherPalette.Text
+    Write-LauncherLine "    [6] GPU MSI mode         Lower interrupt latency" $script:LauncherPalette.Text
+    Write-LauncherLine "    [7] Network              Adapter-aware optimization" $script:LauncherPalette.Text
+    Write-LauncherLine "    [8] VBS / Memory         Security trade-off preset" $script:LauncherPalette.Warning
+    Write-LauncherLine "    [9] Cleanup              Debloat and temp cleanup" $script:LauncherPalette.Text
     Write-Host ""
-    Write-Host "  --- ALL-IN-ONE ---" -ForegroundColor DarkGray
-    Write-Host "    [A]  APPLY EVERYTHING (Aggressive Full Stack)" -ForegroundColor Green
-    Write-Host "    [R]  REVERT EVERYTHING" -ForegroundColor Red
+
+    Write-Host "  TOOLS" -ForegroundColor $script:LauncherPalette.Accent
+    Write-LauncherLine "    [V] Verify               Inspect what actually stuck" $script:LauncherPalette.Text
+    Write-LauncherLine "    [D] DDU                  Safe-mode GPU clean removal flow" $script:LauncherPalette.Text
+    Write-LauncherLine "    [G] Driver install       Clean GPU driver install + tune" $script:LauncherPalette.Text
+    Write-LauncherLine "    [W] WinUtil              Chris Titus WinUtil launcher" $script:LauncherPalette.Text
     Write-Host ""
-    Write-Host "  --- TOOLS ---" -ForegroundColor DarkGray
-    Write-Host "    [V]  Verify Tweaks" -ForegroundColor White
-    Write-Host "    [D]  DDU — Clean GPU Driver Removal" -ForegroundColor White
-    Write-Host "    [G]  GPU Driver — Clean Install + Optimize" -ForegroundColor White
-    Write-Host "    [W]  Chris Titus WinUtil" -ForegroundColor White
+
+    Write-Host "  NOTE" -ForegroundColor $script:LauncherPalette.Warning
+    Write-LauncherLine ("    {0}" -f $footnote) $script:LauncherPalette.Soft
     Write-Host ""
-    Write-Host "    [Q]  Quit" -ForegroundColor DarkGray
+    Write-LauncherLine "    [Q] Quit" $script:LauncherPalette.Muted
     Write-Host ""
 }
 
 function Run-Script {
     param([string]$Path, [string]$Type = "ps1")
+
     $fullPath = Join-Path $PSScriptRoot $Path
     if (-not (Test-Path $fullPath)) {
-        Write-Host "  [ERROR] Script not found: $Path" -ForegroundColor Red
+        Write-Host "  [ERROR] Script not found: $Path" -ForegroundColor $script:LauncherPalette.Danger
         Read-Host "  Press Enter to continue"
         return
     }
+
     Write-Host ""
-    Write-Host "  Running: $Path" -ForegroundColor Cyan
-    Write-Host "  --------------------------------------------------------" -ForegroundColor DarkGray
+    Write-Host "  >>> Launching $Path" -ForegroundColor $script:LauncherPalette.Accent
+    Write-Host "  ------------------------------------------------------------------------" -ForegroundColor $script:LauncherPalette.Muted
     Write-Host ""
 
     if ($Type -eq "bat") {
         cmd /c "`"$fullPath`""
     } elseif ($Type -eq "reg") {
-        Write-Host "  Applying registry file..." -ForegroundColor Yellow
+        Write-Host "  Applying registry file..." -ForegroundColor $script:LauncherPalette.Warning
         reg import "$fullPath" 2>&1 | Out-Null
-        Write-Host "  [DONE] Registry file applied." -ForegroundColor Green
+        Write-Host "  [DONE] Registry file applied." -ForegroundColor $script:LauncherPalette.Success
     } else {
         # Run in child process so exit in sub-script doesn't kill launcher
-        $proc = Start-Process -FilePath "powershell.exe" `
+        $null = Start-Process -FilePath "powershell.exe" `
             -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $fullPath) `
             -PassThru -Wait
     }
 
     Write-Host ""
-    Write-Host "  --------------------------------------------------------" -ForegroundColor DarkGray
+    Write-Host "  ------------------------------------------------------------------------" -ForegroundColor $script:LauncherPalette.Muted
     Read-Host "  Press Enter to return to menu"
 }
 
@@ -123,12 +196,12 @@ do {
         "W" { Run-Script "9 cleanup\chris-titus-winutil.bat" "bat" }
         "Q" { break }
         default {
-            Write-Host "  Invalid choice. Try again." -ForegroundColor Yellow
+            Write-Host "  Invalid choice. Try again." -ForegroundColor $script:LauncherPalette.Warning
             Start-Sleep -Seconds 1
         }
     }
 } while ($choice -ne "Q")
 
 Write-Host ""
-Write-Host "  Goodbye!" -ForegroundColor Cyan
+Write-Host "  Session closed." -ForegroundColor $script:LauncherPalette.Accent
 Write-Host ""

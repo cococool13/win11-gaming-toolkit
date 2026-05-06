@@ -14,25 +14,33 @@ call "%~dp0..\lib\ui-helpers.bat"
 call :ui_header "Enabling Ultimate Performance Power Plan"
 call :ui_admin_check
 
-:: Add the Ultimate Performance plan (GUID is the same on all Win11)
-echo     Adding Ultimate Performance power plan...
-powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61 >nul 2>&1
+:: Use a known fixed GUID for the duplicate so we can activate it without
+:: parsing localized powercfg output. The for /f "tokens=4" approach broke
+:: on non-English Windows because powercfg -list localizes both the column
+:: layout and the "Ultimate Performance" string, so findstr never matched.
+set "ULTIMATE_GUID=99999999-9999-9999-9999-999999999999"
 
-:: List available plans so user can see it
+:: Try to duplicate Ultimate Performance into our known GUID. The duplicate
+:: command silently fails if the target GUID already exists, so re-runs
+:: are idempotent. powercfg -duplicatescheme writes the duplicate to a
+:: random GUID by default; pass our known GUID as the second argument so
+:: we always know what to activate afterwards.
+echo     Adding Ultimate Performance power plan...
+powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61 %ULTIMATE_GUID% >nul 2>&1
+
 echo.
 echo   %C_DIM%Available power plans:%C_R%
 powercfg -list
 echo.
 
-:: Find and activate the Ultimate Performance plan
-for /f "tokens=4" %%i in ('powercfg -list ^| findstr /i "Ultimate Performance"') do (
-    powercfg -setactive %%i
+powercfg -setactive %ULTIMATE_GUID% >nul 2>&1
+if %errorlevel% equ 0 (
     call :ui_step_ok "Ultimate Performance plan activated"
     goto :done
 )
 
-echo   %C_WARN%[WARNING] Could not auto-activate. Please open Power Options%C_R%
-echo   %C_WARN%and select "Ultimate Performance" manually.%C_R%
+echo   %C_WARN%[WARNING] Could not activate plan %ULTIMATE_GUID%.%C_R%
+echo   %C_WARN%Open Power Options and select "Ultimate Performance" manually.%C_R%
 
 :done
 echo.

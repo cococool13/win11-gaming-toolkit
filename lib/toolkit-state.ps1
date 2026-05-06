@@ -145,7 +145,9 @@ function Get-ToolkitState {
 function Initialize-ToolkitState {
     param([switch]$ForceNew)
 
-    if (-not $ForceNew -and (Test-Path $script:ToolkitStateFile)) {
+    # Preserve captured before-state once a manifest exists. Older callers used
+    # -ForceNew during apply, which could destroy the only reliable revert data.
+    if (Test-Path $script:ToolkitStateFile) {
         $script:ToolkitState = Get-Content $script:ToolkitStateFile -Raw | ConvertFrom-Json -Depth 12
         return $script:ToolkitState
     }

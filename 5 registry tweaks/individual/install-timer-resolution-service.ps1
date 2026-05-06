@@ -89,7 +89,22 @@ Set-Content -Path $csPath -Value $csSource -Force
 Write-Host "[2/4] Compiling service..." -ForegroundColor Yellow
 $cscPath = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
 if (-not (Test-Path $cscPath)) {
-    Write-Host "[ERROR] .NET Framework 4.0 compiler not found." -ForegroundColor Red
+    Write-Host ""
+    Write-Host "[ERROR] .NET Framework 4.x compiler (csc.exe) not found." -ForegroundColor Red
+    Write-Host ""
+    Write-Host "This script compiles a small Windows service from C# source at install" -ForegroundColor Gray
+    Write-Host "time. .NET Framework 4.x is normally bundled with Windows 10/11, but is" -ForegroundColor Gray
+    Write-Host "missing on Server Core, custom debloat ISOs, or stripped images." -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "To recover .NET Framework 4.x:" -ForegroundColor Yellow
+    Write-Host "  1. Run as Administrator:" -ForegroundColor Gray
+    Write-Host "       DISM /Online /Enable-Feature /FeatureName:NetFx4 /All" -ForegroundColor White
+    Write-Host "  2. If DISM cannot find the source files, mount your Windows ISO and" -ForegroundColor Gray
+    Write-Host "       point /Source: at the X:\sources\sxs path on the ISO." -ForegroundColor Gray
+    Write-Host "  3. Reboot, then re-run this script." -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "Looked for: $cscPath" -ForegroundColor DarkGray
+    Write-Host ""
     Read-Host "Press Enter to exit"
     exit 1
 }

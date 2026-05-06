@@ -16,7 +16,7 @@ Windows Registry Editor Version 5.00
 ; Enabled: animate controls, smooth fonts
 ; Disabled: fade menus, slide tooltips, shadows, slide combos, smooth scroll
 [HKEY_CURRENT_USER\Control Panel\Desktop]
-"UserPreferencesMask"=hex(2):90,12,03,80,12,00,00,00
+"UserPreferencesMask"=hex:90,12,03,80,12,00,00,00
 "FontSmoothing"="2"
 "DragFullWindows"="0"
 

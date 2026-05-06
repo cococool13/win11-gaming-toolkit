@@ -296,7 +296,11 @@ function Restore-ToolkitRegistryValue {
     $name = $entry.name
 
     if (-not $before.pathExists) {
-        if (Test-Path $path -and $name -ne "") {
+        # Parenthesize Test-Path so $path doesn't get bound as -and parameter.
+        # Without parens, PowerShell parses Test-Path's args greedily and the
+        # Remove-ItemProperty branch is skipped (or throws), leaving the
+        # toolkit-added value behind when the parent key didn't exist before.
+        if ((Test-Path $path) -and $name -ne "") {
             Remove-ItemProperty -Path $path -Name $name -ErrorAction SilentlyContinue
         }
         return $true

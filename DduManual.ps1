@@ -58,9 +58,13 @@ function Stage-DduPayload {
     $dduSettingsDir = Join-Path $dduRoot "Settings"
     Ensure-Directory -Path $dduSettingsDir
 
-    @'
+    # Keep the generated Settings.xml version aligned with the verified DDU
+    # payload from versions.json instead of hardcoding a second copy here.
+    $dduSettingsVersion = [string]$dduManifest.version
+
+    @"
 <?xml version="1.0" encoding="utf-8"?>
-<DisplayDriverUninstaller Version="18.1.4.2">
+<DisplayDriverUninstaller Version="$dduSettingsVersion">
 	<Settings>
 		<SelectedLanguage>en-US</SelectedLanguage>
 		<RemoveMonitors>True</RemoveMonitors>
@@ -95,7 +99,7 @@ function Stage-DduPayload {
 		<LastSelectedTypeIndex>0</LastSelectedTypeIndex>
 	</Settings>
 </DisplayDriverUninstaller>
-'@ | Set-Content -Path (Join-Path $dduSettingsDir "Settings.xml") -Force
+"@ | Set-Content -Path (Join-Path $dduSettingsDir "Settings.xml") -Force
 
     Set-ItemProperty -Path (Join-Path $dduSettingsDir "Settings.xml") -Name IsReadOnly -Value $true
 

@@ -96,12 +96,16 @@ if (-not (Test-Path $cscPath)) {
     Write-Host "time. .NET Framework 4.x is normally bundled with Windows 10/11, but is" -ForegroundColor Gray
     Write-Host "missing on Server Core, custom debloat ISOs, or stripped images." -ForegroundColor Gray
     Write-Host ""
-    Write-Host "To recover .NET Framework 4.x:" -ForegroundColor Yellow
-    Write-Host "  1. Run as Administrator:" -ForegroundColor Gray
-    Write-Host "       DISM /Online /Enable-Feature /FeatureName:NetFx4 /All" -ForegroundColor White
-    Write-Host "  2. If DISM cannot find the source files, mount your Windows ISO and" -ForegroundColor Gray
-    Write-Host "       point /Source: at the X:\sources\sxs path on the ISO." -ForegroundColor Gray
-    Write-Host "  3. Reboot, then re-run this script." -ForegroundColor Gray
+    Write-Host "Recovery options:" -ForegroundColor Yellow
+    Write-Host "  1. Repair the Windows component store:" -ForegroundColor Gray
+    Write-Host "       DISM /Online /Cleanup-Image /RestoreHealth" -ForegroundColor White
+    Write-Host "       sfc /scannow" -ForegroundColor White
+    Write-Host "  2. If csc.exe is still missing, install or repair the Microsoft" -ForegroundColor Gray
+    Write-Host "       .NET Framework 4.8 Developer Pack from:" -ForegroundColor Gray
+    Write-Host "       https://dotnet.microsoft.com/download/dotnet-framework/net48" -ForegroundColor White
+    Write-Host "  3. For damaged framework installs, use Microsoft's repair tool:" -ForegroundColor Gray
+    Write-Host "       https://www.microsoft.com/download/details.aspx?id=30135" -ForegroundColor White
+    Write-Host "  4. Reboot, then re-run this script." -ForegroundColor Gray
     Write-Host ""
     Write-Host "Looked for: $cscPath" -ForegroundColor DarkGray
     Write-Host ""

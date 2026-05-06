@@ -22,8 +22,6 @@ Status values:
 - Rubric: Real=yes, Current=yes, Not covered=yes, Automatable=yes, Reversible=yes, Tierable=yes.
 - Status: `Implemented`
 
-## Planned
-
 ### Disable NTFS Last-Access Updates
 
 - Sources: <https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/fsutil-behavior>, <https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/fsutil-8dot3name>
@@ -33,7 +31,7 @@ Status values:
 - Proof not covered: `rg -n "NtfsDisableLastAccessUpdate|disablelastaccess|NtfsDisable8dot3|MftZone" .` returned no matches.
 - Risk note: legacy backup, indexing, or audit tools that rely on last-access timestamps may see stale access times.
 - Rubric: Real=yes, Current=yes, Not covered=yes, Automatable=yes, Reversible=yes, Tierable=yes.
-- Status: `Planned`
+- Status: `Implemented`
 
 ## Backlog
 

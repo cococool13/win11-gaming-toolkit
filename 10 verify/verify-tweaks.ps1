@@ -194,6 +194,10 @@ Check "Multiplane Overlay (MPO) disabled" {
     (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\Dwm" -Name "OverlayTestMode" -ErrorAction SilentlyContinue).OverlayTestMode -eq 5
 } "reg:DwmOverlayTestMode"
 
+Check "NTFS last-access updates disabled" {
+    (Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "NtfsDisableLastAccessUpdate" -ErrorAction SilentlyContinue).NtfsDisableLastAccessUpdate -eq 1
+} "reg:NtfsDisableLastAccessUpdate"
+
 # ============================================================
 # GPU + NETWORK
 # ============================================================

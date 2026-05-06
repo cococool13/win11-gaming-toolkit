@@ -300,6 +300,11 @@ Run-Step "Disable Multiplane Overlay (MPO)" {
     # on some HDR + multi-monitor configs. Tracked so revert can restore.
     Set-TrackedRegistry -Id "reg:DwmOverlayTestMode" -Path "HKLM:\SOFTWARE\Microsoft\Windows\Dwm" -Name "OverlayTestMode" -Value 5 -Type "DWord" -Tier "Advanced" -Step "dwm-mpo"
 }
+Run-Step "Disable NTFS last-access updates" {
+    # Source:
+    # https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/fsutil-behavior
+    Set-TrackedRegistry -Id "reg:NtfsDisableLastAccessUpdate" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "NtfsDisableLastAccessUpdate" -Value 1 -Type "DWord" -Tier "Advanced" -Step "ntfs-last-access"
+}
 Run-Step "Accessibility shortcut popups disabled" {
     Reg-Add "HKCU\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "2" /f
     Reg-Add "HKCU\Control Panel\Accessibility\ToggleKeys" /v "Flags" /t REG_SZ /d "34" /f

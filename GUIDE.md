@@ -135,6 +135,13 @@ This checks the same phases exposed by the launcher and the full apply flow so y
 - Main risk: Edge can cold-start more slowly; background Edge apps/extensions stop when Edge is closed.
 - Undo: `5 registry tweaks/individual/enable-edge-background.ps1` or `REVERT-EVERYTHING.ps1`.
 
+#### NTFS last-access updates
+
+- What it changes: disables NTFS Last Access timestamp updates.
+- Why run it: reduces avoidable file metadata writes during directory and file access.
+- Main risk: backup, indexing, or audit tools that rely on access timestamps can see stale times.
+- Undo: `5 registry tweaks/individual/enable-ntfs-last-access.ps1` or `REVERT-EVERYTHING.ps1`.
+
 #### Timer service
 
 - What it changes: installs a service to request lower timer resolution.

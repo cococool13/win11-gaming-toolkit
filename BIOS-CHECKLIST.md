@@ -157,6 +157,8 @@ Saves IRQ/DMA resources and can reduce latency:
 
 These tools are not bundled with the toolkit, but they are the standard kit for verifying BIOS settings, monitoring temps under load, and capturing baseline benchmarks before and after tuning. Install whichever you need from the upstream source.
 
+The Codex audit also added software-only Edge background and NTFS last-access tweaks under `5 registry tweaks/individual/`. They do not require BIOS/UEFI changes.
+
 | Tool | What it tells you | Source |
 |------|-------------------|--------|
 | HWInfo64 | Sensor readout: per-core clocks, package temps, VRM telemetry, RAM speed and timings | <https://www.hwinfo.com> |

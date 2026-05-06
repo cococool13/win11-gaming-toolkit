@@ -544,7 +544,27 @@ Run-Step "Clearing Windows Update cache" {
 }
 Run-Step "Clearing shader cache" { Remove-Item -Path "$env:LOCALAPPDATA\D3DSCache\*" -Recurse -Force -ErrorAction SilentlyContinue }
 Run-Step "Removing leftover folders" {
-    Remove-Item "$env:SystemDrive\inetpub" -Recurse -Force -ErrorAction SilentlyContinue
+    # Guard: do not nuke inetpub if IIS is installed. Some devs run IIS Express
+    # or full IIS for local development. Removing this directory destroys
+    # site state, virtual directory configs, and IIS-managed app pools.
+    $iisInstalled = $false
+    try {
+        $feature = Get-WindowsOptionalFeature -Online -FeatureName IIS-WebServer -ErrorAction Stop
+        $iisInstalled = $feature.State -eq 'Enabled'
+    } catch {
+        # Get-WindowsOptionalFeature unavailable on Home editions or stripped
+        # images — fall back to a directory contents probe. If the folder
+        # contains the IIS metabase indicators, treat as installed.
+        $iisMarkers = @("history", "logs", "temp", "wwwroot", "config")
+        $iisInstalled = (Test-Path "$env:SystemDrive\inetpub") -and
+            ((Get-ChildItem "$env:SystemDrive\inetpub" -Force -ErrorAction SilentlyContinue |
+                Where-Object { $iisMarkers -contains $_.Name }).Count -ge 2)
+    }
+    if ($iisInstalled) {
+        UI-Note -Message "      Skipping inetpub removal: IIS appears installed." -Color $script:UI_Warning
+    } elseif (Test-Path "$env:SystemDrive\inetpub") {
+        Remove-Item "$env:SystemDrive\inetpub" -Recurse -Force -ErrorAction SilentlyContinue
+    }
     Remove-Item "$env:SystemDrive\PerfLogs" -Recurse -Force -ErrorAction SilentlyContinue
 }
 Write-Host ""

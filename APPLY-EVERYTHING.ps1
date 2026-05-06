@@ -33,7 +33,10 @@ $Host.UI.RawUI.WindowTitle = "Windows 11 Gaming Optimization — Apply Everythin
 UI-Header -Title "Windows 11 Optimization" -Subtitle "Apply Everything - aggressive full-stack run"
 UI-RequireAdmin -ScriptName "Apply Everything"
 
-$state = Initialize-ToolkitState -ForceNew
+# Load existing manifest if present so re-runs do not wipe captured before-state.
+# Set-ToolkitRegistryValue / Set-ToolkitServiceStartMode each guard against
+# overwriting an existing entry's `before` block, so re-apply is idempotent.
+$state = Initialize-ToolkitState
 $profile = $state.context
 
 UI-ShowProfile -Profile $profile

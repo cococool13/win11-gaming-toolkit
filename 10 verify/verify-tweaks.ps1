@@ -14,6 +14,7 @@
 
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"
 . "$PSScriptRoot\..\lib\ui-helpers.ps1"
+. "$PSScriptRoot\..\lib\gpu-detection.ps1"
 
 $Host.UI.RawUI.WindowTitle = "Gaming Optimization — Verification Report"
 UI-Header -Title "Gaming Optimization Health Check" -Subtitle "Verify the same phases exposed by the launcher and guide"
@@ -187,16 +188,16 @@ Check "Copilot disabled" {
 # ============================================================
 UI-Section -Title "Phase 6 to 8: GPU, Network, and Update Path"
 
-$gpuDevices = @(Get-PnpDevice -Class Display -ErrorAction SilentlyContinue)
+$gpuDevices = @(Get-GpuVendor)
 if ($gpuDevices.Count -eq 0) {
-    Write-CheckStatus -Label "No display adapters found" -Status "SKIPPED" -Color DarkYellow
+    Write-CheckStatus -Label "No NVIDIA / AMD / Intel GPUs found" -Status "SKIPPED" -Color DarkYellow
     $unsupported++
 } else {
     foreach ($gpu in $gpuDevices) {
         Check "MSI mode enabled for $($gpu.FriendlyName)" {
             $regPath = "HKLM:\SYSTEM\CurrentControlSet\Enum\$($gpu.InstanceId)\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
             (Get-ItemProperty $regPath -Name "MSISupported" -ErrorAction SilentlyContinue).MSISupported -eq 1
-        } "gpu:$($gpu.InstanceId)"
+        } "gpu-msi:$($gpu.InstanceId)"
     }
 }
 

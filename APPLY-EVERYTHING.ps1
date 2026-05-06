@@ -27,6 +27,7 @@
 
 . "$PSScriptRoot\lib\toolkit-state.ps1"
 . "$PSScriptRoot\lib\ui-helpers.ps1"
+. "$PSScriptRoot\lib\gpu-detection.ps1"
 
 $Host.UI.RawUI.WindowTitle = "Windows 11 Gaming Optimization — Apply Everything"
 UI-Header -Title "Windows 11 Optimization" -Subtitle "Apply Everything - aggressive full-stack run"
@@ -319,19 +320,21 @@ Run-Step "Disable Copilot" {
 # ============================================================
 UI-Section -Title "Phase 7: GPU and Network Prep" -Context "Apply device-level latency changes"
 
-$gpuDevices = @(Get-PnpDevice -Class Display -ErrorAction SilentlyContinue)
+$gpuDevices = @(Get-GpuVendor)
 if ($gpuDevices.Count -eq 0) {
-    Skip-Step -Description "MSI mode" -Reason "No display devices found" -Tier "Advanced"
+    Skip-Step -Description "MSI mode" -Reason "No NVIDIA / AMD / Intel display devices detected" -Tier "Advanced"
 } else {
     foreach ($gpu in $gpuDevices) {
         Run-Step "MSI Mode for $($gpu.FriendlyName)" {
             $id = $gpu.InstanceId
             $regPath = "HKLM:\SYSTEM\CurrentControlSet\Enum\$id\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
-            if (-not (Test-Path $regPath)) {
-                New-Item -Path $regPath -Force | Out-Null
-            }
-            Set-ItemProperty -Path $regPath -Name "MSISupported" -Value 1 -Type DWord -Force -ErrorAction Stop
-            Add-ToolkitStepResult -Key "gpu:$id" -Tier "Advanced" -Status "applied" -Reason "MSI mode enabled"
+            Set-ToolkitRegistryValue `
+                -Id "gpu-msi:$id" `
+                -Path $regPath `
+                -Name "MSISupported" `
+                -Value 1 -Type "DWord" `
+                -Tier "Advanced" -Step "gpu-msi"
+            Add-ToolkitStepResult -Key "gpu-msi:$id" -Tier "Advanced" -Status "applied" -Reason "MSI mode enabled"
         }
     }
 }

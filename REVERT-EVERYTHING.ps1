@@ -11,6 +11,7 @@
 
 . "$PSScriptRoot\lib\toolkit-state.ps1"
 . "$PSScriptRoot\lib\ui-helpers.ps1"
+. "$PSScriptRoot\lib\gpu-detection.ps1"
 
 $Host.UI.RawUI.WindowTitle = "Windows 11 Gaming Optimization — Revert Everything"
 UI-Header -Title "Revert Everything" -Subtitle "Restore the tracked full-stack path"
@@ -183,12 +184,27 @@ Run-Step "Re-enabling Copilot" {
 # ============================================================
 UI-Section -Title "Phase 6: GPU MSI Mode"
 
-Run-Step "Removing MSI mode overrides" {
-    $gpuDevices = @(Get-PnpDevice -Class Display -ErrorAction SilentlyContinue)
-    foreach ($gpu in $gpuDevices) {
-        $id = $gpu.InstanceId
-        $regPath = "HKLM:\SYSTEM\CurrentControlSet\Enum\$id\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
-        Remove-ItemProperty -Path $regPath -Name "MSISupported" -ErrorAction SilentlyContinue
+Run-Step "Removing MSI mode overrides (manifest-driven)" {
+    $regKeys = $state.registry
+    $properties = if ($regKeys -is [hashtable]) {
+        $regKeys.GetEnumerator() | ForEach-Object { [PSCustomObject]@{ Name = $_.Key; Value = $_.Value } }
+    } else {
+        $regKeys.PSObject.Properties
+    }
+    $msiCount = 0
+    foreach ($prop in $properties) {
+        if ($prop.Value.step -eq "gpu-msi") {
+            Restore-ToolkitRegistryValue -Id $prop.Name | Out-Null
+            $msiCount++
+        }
+    }
+    if ($msiCount -eq 0) {
+        # Fallback for pre-manifest installs: enumerate live and clear blindly.
+        $gpuDevices = @(Get-GpuVendor)
+        foreach ($gpu in $gpuDevices) {
+            $regPath = "HKLM:\SYSTEM\CurrentControlSet\Enum\$($gpu.InstanceId)\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
+            Remove-ItemProperty -Path $regPath -Name "MSISupported" -ErrorAction SilentlyContinue
+        }
     }
 }
 

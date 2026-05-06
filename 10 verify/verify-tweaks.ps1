@@ -133,6 +133,14 @@ Check "Notifications suppressed" {
     (Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings" -Name "NOC_GLOBAL_SETTING_TOASTS_ENABLED" -ErrorAction SilentlyContinue).NOC_GLOBAL_SETTING_TOASTS_ENABLED -eq 0
 } "reg:ToastsEnabled"
 
+Check "Edge Startup Boost disabled" {
+    (Get-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft\Edge" -Name "StartupBoostEnabled" -ErrorAction SilentlyContinue).StartupBoostEnabled -eq 0
+} "reg:EdgeStartupBoostEnabled"
+
+Check "Edge background mode disabled" {
+    (Get-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft\Edge" -Name "BackgroundModeEnabled" -ErrorAction SilentlyContinue).BackgroundModeEnabled -eq 0
+} "reg:EdgeBackgroundModeEnabled"
+
 # ============================================================
 # SERVICES
 # ============================================================

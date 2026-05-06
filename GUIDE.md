@@ -128,6 +128,13 @@ This checks the same phases exposed by the launcher and the full apply flow so y
 - Main risk: broadest surface area in the repo; some changes are preference-driven, not universally better.
 - Undo: `5 registry tweaks/revert-all.reg` for the raw pack, or `REVERT-EVERYTHING.ps1` for the tracked path.
 
+#### Edge background policies
+
+- What it changes: disables Microsoft Edge Startup Boost and background mode through machine policy.
+- Why run it: stops Edge from preloading at sign-in or continuing background work after close.
+- Main risk: Edge can cold-start more slowly; background Edge apps/extensions stop when Edge is closed.
+- Undo: `5 registry tweaks/individual/enable-edge-background.ps1` or `REVERT-EVERYTHING.ps1`.
+
 #### Timer service
 
 - What it changes: installs a service to request lower timer resolution.

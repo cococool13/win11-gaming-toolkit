@@ -4,11 +4,12 @@ Audit target: `CC/hardcore-rubin-7d2584`
 Audit date: 2026-05-06
 
 Status values:
+- `Implemented`: shipped by this audit branch.
 - `Planned`: accepted for implementation in the follow-up commits from this audit.
 - `Backlog`: real candidate, but not safe enough or not reversible enough for this pass.
 - `Rejected`: does not pass the rubric for this toolkit.
 
-## Planned
+## Implemented
 
 ### Disable Edge Background Mode and Startup Boost
 
@@ -19,7 +20,9 @@ Status values:
 - Proof not covered: `rg -n "StartupBoostEnabled|BackgroundModeEnabled|Microsoft\\Edge" .` only found older `Windows\EdgeUI` privacy keys, not Chromium Edge policies.
 - Risk note: Edge may cold-start more slowly and background Edge apps/extensions stop when Edge closes.
 - Rubric: Real=yes, Current=yes, Not covered=yes, Automatable=yes, Reversible=yes, Tierable=yes.
-- Status: `Planned`
+- Status: `Implemented`
+
+## Planned
 
 ### Disable NTFS Last-Access Updates
 

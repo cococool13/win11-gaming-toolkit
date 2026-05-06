@@ -72,6 +72,10 @@ Run-Step "Notifications" {
     Restore-TrackedRegistryStep "reg:ToastsEnabled"
     Restore-TrackedRegistryStep "reg:NotificationSound"
 }
+Run-Step "Restoring Edge background policies" {
+    Restore-TrackedRegistryStep "reg:EdgeStartupBoostEnabled"
+    Restore-TrackedRegistryStep "reg:EdgeBackgroundModeEnabled"
+}
 
 # ============================================================
 # STEP 3: SERVICES

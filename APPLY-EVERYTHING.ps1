@@ -190,6 +190,14 @@ Run-Step "Suppress notifications" {
     Set-TrackedRegistry -Id "reg:NotificationSound" -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings" -Name "NOC_GLOBAL_SETTING_ALLOW_NOTIFICATION_SOUND" -Value 0 -Type "DWord" -Tier "Safe" -Step "windows-settings"
 }
 
+Run-Step "Disable Edge background startup" {
+    # Sources:
+    # https://learn.microsoft.com/en-us/deployedge/microsoft-edge-browser-policies/startupboostenabled
+    # https://learn.microsoft.com/en-us/deployedge/microsoft-edge-browser-policies/backgroundmodeenabled
+    Set-TrackedRegistry -Id "reg:EdgeStartupBoostEnabled" -Path "HKLM:\SOFTWARE\Policies\Microsoft\Edge" -Name "StartupBoostEnabled" -Value 0 -Type "DWord" -Tier "Safe" -Step "edge-background"
+    Set-TrackedRegistry -Id "reg:EdgeBackgroundModeEnabled" -Path "HKLM:\SOFTWARE\Policies\Microsoft\Edge" -Name "BackgroundModeEnabled" -Value 0 -Type "DWord" -Tier "Safe" -Step "edge-background"
+}
+
 # ============================================================
 # STEP 4: SERVICES
 # ============================================================

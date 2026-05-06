@@ -237,3 +237,26 @@ Undo the power and GPU-focused phases first. The toolkit does not automatically 
 ### Revert finished, but the PC still feels off
 
 Reboot first. Then run Verify. If the remaining issue is an app removal or an external tool side effect, that requires manual follow-up.
+
+### Windows Update keeps re-enabling itself on 24H2 / 25H2
+
+`disable-windows-update.ps1` writes `Start = 4` to `HKLM\SYSTEM\CurrentControlSet\Services\WaaSMedicSvc`. On Windows 11 24H2 and newer, the DACL on this key blocks even SYSTEM from setting `Start`, so the change is rejected. The script detects this and prints a warning rather than failing silently.
+
+Recovery options if you need WaaSMedicSvc actually disabled:
+
+1. Run an elevated CMD and take ownership manually:
+   ```
+   takeown /f HKLM\SYSTEM\CurrentControlSet\Services\WaaSMedicSvc
+   icacls "HKLM\SYSTEM\CurrentControlSet\Services\WaaSMedicSvc" /grant Administrators:F
+   ```
+   Then re-run `disable-windows-update.ps1`. The toolkit does not do this automatically because mis-applied DACL changes on protected services can break Windows Update permanently.
+2. Live with the warning. The other update-suppression policies (`NoAutoUpdate`, `NoAutoRebootWithLoggedOnUsers`, service `Start = 4` for `wuauserv` / `UsoSvc` / `DoSvc`) are still applied. WaaSMedicSvc may periodically re-enable Windows Update; you can re-run the script to put things back.
+
+## Credits
+
+The toolkit's tweak set is informed by these communities and people. Where a script was directly derived from upstream work, the source is named in a header comment in that file.
+
+- **FR33THY** — <https://github.com/FR33THYFR33THY/Ultimate>. Source for MPO disable, MMAgent tuning, NIC power-savings disable, IPv6 unbind, Spectre / Meltdown override, DEP toggle, NVIDIA P0 state, AMD ULPS disable, MobSync service disable. See `docs/freethy-integration.md` for the full inventory.
+- **Khorvie Tech** — original lineage credit retained in `Notice.txt`.
+- **Chris Titus Tech** — <https://github.com/ChrisTitusTech/winutil>. Wrapped by `9 cleanup/chris-titus-winutil.bat`.
+- **Wagnardsoft** — Display Driver Uninstaller (DDU). Wrapped by `DduManual.ps1` / `DduAuto.ps1`.

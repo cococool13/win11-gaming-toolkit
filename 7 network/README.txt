@@ -8,8 +8,16 @@ What this does:
   normally batches small packets together (adds ~200ms delay).
 
 Scripts included:
-  optimize-network.bat  — Apply all network tweaks
-  revert-network.bat    — Restore all defaults
+  optimize-network.bat                  — Apply all network tweaks (.bat front-end)
+  optimize-network.ps1                  — Apply all network tweaks (.ps1, tracked)
+  revert-network.bat                    — Restore all defaults
+                                          (no .ps1 revert: REVERT-EVERYTHING.ps1
+                                          handles tracked-state restore)
+  disable-adapter-power-savings.ps1     — Per-NIC power savings + WoL off
+                                          (paired with enable-adapter-power-savings.ps1)
+  disable-ipv6-binding.ps1              — IPv4-only operation
+                                          (paired with enable-ipv6-binding.ps1)
+                                          TIER: Security Trade-off — read header.
 
 What it changes:
   - Disables Nagle's Algorithm (reduces packet batching delay)

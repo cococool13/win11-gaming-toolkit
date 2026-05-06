@@ -425,6 +425,13 @@ Run-Step "Disable LSA protection" {
     Set-TrackedRegistry -Id "reg:RunAsPPL" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name "RunAsPPL" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
     Set-TrackedRegistry -Id "reg:LsaCfgFlags" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name "LsaCfgFlags" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
 }
+Run-Step "Disable Spectre / Meltdown CPU mitigations" {
+    # Source: FR33THYFR33THY/Ultimate — 8 Advanced/3 Spectre Meltdown.ps1
+    # Tier matches the surrounding section (VBS / HVCI / LSA also Security Trade-off).
+    $mmPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"
+    Set-TrackedRegistry -Id "reg:FeatureSettingsOverride" -Path $mmPath -Name "FeatureSettingsOverride" -Value 3 -Type "DWord" -Tier "Security Trade-off" -Step "security"
+    Set-TrackedRegistry -Id "reg:FeatureSettingsOverrideMask" -Path $mmPath -Name "FeatureSettingsOverrideMask" -Value 3 -Type "DWord" -Tier "Security Trade-off" -Step "security"
+}
 
 # ============================================================
 # STEP 11: CUSTOMIZATION

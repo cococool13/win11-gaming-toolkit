@@ -250,6 +250,13 @@ Check "HVCI disabled" {
     $val -eq 0
 } "reg:HVCIEnabled"
 
+Check "Spectre / Meltdown mitigations override applied" {
+    $mmPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"
+    $override = (Get-ItemProperty $mmPath -Name "FeatureSettingsOverride" -ErrorAction SilentlyContinue).FeatureSettingsOverride
+    $mask     = (Get-ItemProperty $mmPath -Name "FeatureSettingsOverrideMask" -ErrorAction SilentlyContinue).FeatureSettingsOverrideMask
+    ($override -eq 3) -and ($mask -eq 3)
+} "reg:FeatureSettingsOverride"
+
 Check "Toolkit-added Defender exclusions are still present" {
     if (-not $manifest -or -not $manifest.defender -or @($manifest.defender.added).Count -eq 0) {
         return "SKIP"

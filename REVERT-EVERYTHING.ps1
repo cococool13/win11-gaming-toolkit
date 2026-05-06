@@ -309,6 +309,10 @@ Run-Step "Restoring VBS / HVCI / LSA" {
     Restore-TrackedRegistryStep "reg:RunAsPPL"
     Restore-TrackedRegistryStep "reg:LsaCfgFlags"
 }
+Run-Step "Restoring Spectre / Meltdown mitigations" {
+    Restore-TrackedRegistryStep "reg:FeatureSettingsOverride"
+    Restore-TrackedRegistryStep "reg:FeatureSettingsOverrideMask"
+}
 
 # ============================================================
 # STEP 9: WINDOWS CUSTOMIZATION

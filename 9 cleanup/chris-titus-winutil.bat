@@ -53,6 +53,15 @@ if not exist "%WINUTIL_FILE%" (
 )
 
 call :ui_step_ok "Downloaded to %WINUTIL_FILE%"
+
+:: Compute and surface SHA-256 of the downloaded payload before execution.
+:: Chris Titus releases are auto-built per commit so we cannot pin a single
+:: hash, but echoing the value lets a paranoid user compare it against the
+:: hash printed on the upstream release page before allowing it to run.
+for /f "tokens=*" %%h in ('powershell -NoProfile -Command "(Get-FileHash -Algorithm SHA256 '%WINUTIL_FILE%').Hash"') do set "WINUTIL_HASH=%%h"
+echo.
+echo   %C_HEAD%SHA-256:%C_R% %WINUTIL_HASH%
+echo   %C_DIM%Compare against: https://github.com/ChrisTitusTech/winutil/releases%C_R%
 echo.
 echo   %C_WARN%SECURITY: The script has been saved locally. You can review it%C_R%
 echo   %C_WARN%before running. To review: open the file in a text editor.%C_R%

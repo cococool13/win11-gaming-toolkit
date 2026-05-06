@@ -28,7 +28,7 @@ This is the canonical record of which FR33THY artifacts were ported into this to
 | `5 Graphics/6 Intel Settings.ps1` | .ps1 | Intel driver registry settings | Yes (`6 gpu/intel/configure-intel.ps1`) | Decline | — |
 | `5 Graphics/7 Hdcp.ps1` | .ps1 | HDCP toggle | No (display-quality concern, not gaming-perf) | Decline | `KNOWN-ISSUES.md` |
 | `5 Graphics/8 P0 State.ps1` | .ps1 | Force NVIDIA P0 state via registry | No | **Port** | `6 gpu/nvidia/force-p0-state.ps1` |
-| `5 Graphics/9 Msi Mode.ps1` | .ps1 | MSI mode + `DevicePriority` for GPU/NVMe/audio | Partial (we set `MSISupported` only on GPU) | **Merge** + extend (Phase B group 4) | `6 gpu/enable-msi-mode.ps1` (extended), `6 gpu/enable-msi-priority.ps1` (NVMe + audio) |
+| `5 Graphics/9 Msi Mode.ps1` | .ps1 | MSI mode + `DevicePriority` for GPU/NVMe/audio | Partial (we set `MSISupported` only on GPU) | **Merge GPU MSI only**; NVMe/audio priority remains backlog | `6 gpu/enable-msi-mode.ps1` |
 | `5 Graphics/10 DirectX.ps1` | .ps1 | DirectX runtime install | Yes (`0 prerequisites/install-runtimes.ps1`) | Decline | — |
 | `5 Graphics/11 C++.ps1` | .ps1 | VC++ redist install | Yes (`0 prerequisites/install-runtimes.ps1`) | Decline | — |
 | `5 Graphics/12 Resolution Refresh Rate.ps1` | .ps1 | Manual UI step | No | Decline (manual) | `BIOS-CHECKLIST.md` |
@@ -74,9 +74,9 @@ This is the canonical record of which FR33THY artifacts were ported into this to
 | `8 Advanced/8 Smt Ht.ps1` | .ps1 | Disable SMT/HT | No | Decline (workload-specific, breaks productivity) | `KNOWN-ISSUES.md` |
 | `8 Advanced/9 Core 1 Thread 1.ps1` | .ps1 | Single-core CPU affinity for explorer | No | Decline (breaks multithreading) | `KNOWN-ISSUES.md` |
 | `8 Advanced/10 Priority.ps1` | .ps1 | Process priority registry | Partial (we set Game priority MMCSS) | Decline (overlap) | — |
-| `8 Advanced/11 Mpo.ps1` | .ps1 | DWM Multiplane Overlay disable | No | **Port** | `5 registry tweaks/individual/disable-mpo.reg` |
-| `8 Advanced/12 Hardware Legacy Flip.ps1` | .ps1 | DWM legacy flip mode | No | **Port** | `5 registry tweaks/individual/hardware-flip.reg` |
-| `8 Advanced/13 Hardware Composed Independent Flip.ps1` | .ps1 | DWM composed-independent flip | No | **Port** (paired with 12) | `5 registry tweaks/individual/hardware-flip.reg` |
+| `8 Advanced/11 Mpo.ps1` | .ps1 | DWM Multiplane Overlay disable | No | **Port** | `5 registry tweaks/individual/disable-mpo.ps1` |
+| `8 Advanced/12 Hardware Legacy Flip.ps1` | .ps1 | DWM legacy flip mode | No | Decline (DWM flip-model behavior is driver/build-sensitive) | `DISCOVERY-BACKLOG.md` |
+| `8 Advanced/13 Hardware Composed Independent Flip.ps1` | .ps1 | DWM composed-independent flip | No | Decline (paired with 12; same risk) | `DISCOVERY-BACKLOG.md` |
 | `8 Advanced/14 Ulps.ps1` | .ps1 | AMD ULPS disable | No | **Port** AMD-only | `6 gpu/configure-amd-ulps.ps1` |
 | `8 Advanced/15 Driver Whql Secure Boot Bypass.ps1` | .ps1 | Disable WHQL signing enforcement | No | Decline (real attack-surface increase) | `KNOWN-ISSUES.md` |
 | `8 Advanced/16 Keyboard Shortcuts.ps1` | .ps1 | Disable keyboard shortcuts | No | Decline (preference) | — |
@@ -88,7 +88,7 @@ This is the canonical record of which FR33THY artifacts were ported into this to
 
 ## Net additions
 
-12 new files in this repo from FR33THY. 3 merges into existing files. 9 explicit declines documented in `KNOWN-ISSUES.md`. Everything else is duplicate or out of scope.
+Ported and declined items are listed in the table above. `CODEX-AUDIT.md` records follow-up discrepancies found after this initial inventory.
 
 ## Crediting
 

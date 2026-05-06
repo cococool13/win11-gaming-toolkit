@@ -35,6 +35,7 @@ if ($amdGpus.Count -eq 0) {
     exit 0
 }
 
+$script:AmdUlpsApplied = $false
 foreach ($gpu in $amdGpus) {
     if (-not $gpu.AdapterRegistryPath) {
         UI-Skip -Label "ULPS off for $($gpu.FriendlyName)" -Reason "Adapter registry path could not be resolved"
@@ -47,7 +48,13 @@ foreach ($gpu in $amdGpus) {
             -Name "EnableUlps" `
             -Value 0 -Type "DWord" `
             -Tier "Advanced" -Step "gpu-amd-ulps"
+        $script:AmdUlpsApplied = $true
     }
+}
+
+if ($script:AmdUlpsApplied) {
+    $status = if ($script:UI_Failed -eq 0) { "applied" } else { "failed" }
+    Add-ToolkitStepResult -Key "gpu-amd-ulps" -Tier "Advanced" -Status $status -Reason "AMD ULPS disabled"
 }
 
 UI-Summary -DoneMessage "AMD ULPS disabled" -Details @(

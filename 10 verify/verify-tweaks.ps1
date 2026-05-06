@@ -202,6 +202,25 @@ if ($gpuDevices.Count -eq 0) {
             (Get-ItemProperty $regPath -Name "MSISupported" -ErrorAction SilentlyContinue).MSISupported -eq 1
         } "gpu-msi:$($gpu.InstanceId)"
     }
+
+    if ((Get-ToolkitRecordedStatus -Key "gpu-p0-state") -eq "applied") {
+        foreach ($gpu in @($gpuDevices | Where-Object { $_.Vendor -eq "nvidia" })) {
+            Check "NVIDIA P0 state forced for $($gpu.FriendlyName)" {
+                if (-not $gpu.AdapterRegistryPath) { return "SKIP" }
+                $props = Get-ItemProperty $gpu.AdapterRegistryPath -ErrorAction SilentlyContinue
+                ($props.PerfLevelSrc -eq 0x2222) -and ($props.DisableDynamicPstate -eq 1)
+            } "gpu-p0-state"
+        }
+    }
+
+    if ((Get-ToolkitRecordedStatus -Key "gpu-amd-ulps") -eq "applied") {
+        foreach ($gpu in @($gpuDevices | Where-Object { $_.Vendor -eq "amd" })) {
+            Check "AMD ULPS disabled for $($gpu.FriendlyName)" {
+                if (-not $gpu.AdapterRegistryPath) { return "SKIP" }
+                (Get-ItemProperty $gpu.AdapterRegistryPath -Name "EnableUlps" -ErrorAction SilentlyContinue).EnableUlps -eq 0
+            } "gpu-amd-ulps"
+        }
+    }
 }
 
 Check "TCP timestamps disabled" {

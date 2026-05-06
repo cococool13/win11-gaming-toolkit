@@ -38,6 +38,7 @@ if ($nvidiaGpus.Count -eq 0) {
     exit 0
 }
 
+$script:NvidiaP0Applied = $false
 foreach ($gpu in $nvidiaGpus) {
     if (-not $gpu.AdapterRegistryPath) {
         UI-Skip -Label "P0 for $($gpu.FriendlyName)" -Reason "Adapter registry path could not be resolved"
@@ -51,6 +52,7 @@ foreach ($gpu in $nvidiaGpus) {
             -Name "PerfLevelSrc" `
             -Value 0x2222 -Type "DWord" `
             -Tier "Advanced" -Step "gpu-p0-state"
+        $script:NvidiaP0Applied = $true
     }
 
     UI-Step -Label "DisableDynamicPstate on $($gpu.FriendlyName)" -Action {
@@ -60,7 +62,13 @@ foreach ($gpu in $nvidiaGpus) {
             -Name "DisableDynamicPstate" `
             -Value 1 -Type "DWord" `
             -Tier "Advanced" -Step "gpu-p0-state"
+        $script:NvidiaP0Applied = $true
     }
+}
+
+if ($script:NvidiaP0Applied) {
+    $status = if ($script:UI_Failed -eq 0) { "applied" } else { "failed" }
+    Add-ToolkitStepResult -Key "gpu-p0-state" -Tier "Advanced" -Status $status -Reason "NVIDIA P0 state registry keys"
 }
 
 UI-Summary -DoneMessage "P0 state forced" -Details @(

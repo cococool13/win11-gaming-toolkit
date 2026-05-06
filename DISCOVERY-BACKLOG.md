@@ -100,6 +100,17 @@ Status values:
 - Rubric: Real=yes, Current=yes, Not covered=yes, Automatable=yes, Reversible=yes, Tierable=yes.
 - Status: `Backlog`
 
+### DWM Hardware Flip Model Overrides
+
+- Sources: <https://github.com/FR33THYFR33THY/Ultimate>, <https://github.com/Atlas-OS/Atlas>
+- Mechanism: set DWM registry values for legacy flip and composed-independent flip behavior.
+- Tier: `Advanced`
+- Proposed path: `5 registry tweaks/individual/configure-dwm-flip-model.ps1`
+- Proof not covered: `rg -n "OverlayTestMode|Hardware.*Flip|DWM.*Flip|HwFlip" .` only found the existing MPO `OverlayTestMode` toggle.
+- Risk note: flip-model behavior is tied to Windows build, DWM, driver, MPO, VRR, and capture overlays, so this needs per-GPU validation before shipping.
+- Rubric: Real=yes, Current=unclear, Not covered=yes, Automatable=yes, Reversible=yes, Tierable=yes.
+- Status: `Backlog`
+
 ### Telemetry Scheduled Task Disabling
 
 - Sources: <https://github.com/undergroundwires/privacy.sexy>, <https://github.com/hellzerg/optimizer>

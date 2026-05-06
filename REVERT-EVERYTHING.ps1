@@ -219,22 +219,24 @@ Run-Step "Removing MSI mode overrides (manifest-driven)" {
 # ============================================================
 UI-Section -Title "Phase 6.5: GPU Performance Settings"
 
-$gpuSteps = @("gpu-nvidia-settings", "gpu-amd-settings", "gpu-intel-settings")
+$gpuSteps = @(
+    "gpu-nvidia-settings",
+    "gpu-amd-settings",
+    "gpu-intel-settings",
+    "gpu-p0-state",
+    "gpu-amd-ulps"
+)
 foreach ($gpuStep in $gpuSteps) {
-    $stepStatus = Get-ToolkitRecordedStatus -Key $gpuStep
-    if ($stepStatus -eq "applied") {
-        Write-Host "  Reverting $gpuStep..." -ForegroundColor Gray
-        $regKeys = $state.registry
-        $properties = if ($regKeys -is [hashtable]) {
-            $regKeys.GetEnumerator() | ForEach-Object { [PSCustomObject]@{ Name = $_.Key; Value = $_.Value } }
-        } else {
-            $regKeys.PSObject.Properties
-        }
-        foreach ($prop in $properties) {
-            if ($prop.Value.step -eq $gpuStep) {
-                Run-Step "Reverting $($prop.Name)" {
-                    Restore-ToolkitRegistryValue -Id $prop.Name | Out-Null
-                }
+    $regKeys = $state.registry
+    $properties = if ($regKeys -is [hashtable]) {
+        $regKeys.GetEnumerator() | ForEach-Object { [PSCustomObject]@{ Name = $_.Key; Value = $_.Value } }
+    } else {
+        $regKeys.PSObject.Properties
+    }
+    foreach ($prop in $properties) {
+        if ($prop.Value.step -eq $gpuStep) {
+            Run-Step "Reverting $($prop.Name)" {
+                Restore-ToolkitRegistryValue -Id $prop.Name | Out-Null
             }
         }
     }

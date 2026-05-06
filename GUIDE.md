@@ -165,6 +165,13 @@ This checks the same phases exposed by the launcher and the full apply flow so y
 - Main risk: highest-risk path in the repo if interrupted mid-clean/install.
 - Undo: use DDU again and reinstall a known-good driver.
 
+#### GPU vendor opt-ins
+
+- What it changes: optional FR33THY-derived NVIDIA P0 state and AMD ULPS registry settings under `6 gpu/`.
+- Why run it: use only for benchmark consistency or AMD multi-GPU hitch troubleshooting.
+- Main risk: higher idle GPU power, heat, and driver-specific behavior.
+- Undo: `REVERT-EVERYTHING.ps1` restores the manifest-backed registry values.
+
 #### Network
 
 - What it changes: TCP settings, adapter properties, Nagle-related flags, and DNS.

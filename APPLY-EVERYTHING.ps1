@@ -286,6 +286,12 @@ Run-Step "Privacy / telemetry disabled" {
 Run-Step "Autoplay disabled" {
     Reg-Add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers" /v "DisableAutoplay" /t REG_DWORD /d 1 /f
 }
+Run-Step "Disable Multiplane Overlay (MPO)" {
+    # Source: FR33THYFR33THY/Ultimate — 8 Advanced/11 Mpo.ps1
+    # OverlayTestMode=5 forces MPO off via DWM. Helps stutter / flicker
+    # on some HDR + multi-monitor configs. Tracked so revert can restore.
+    Set-TrackedRegistry -Id "reg:DwmOverlayTestMode" -Path "HKLM:\SOFTWARE\Microsoft\Windows\Dwm" -Name "OverlayTestMode" -Value 5 -Type "DWord" -Tier "Advanced" -Step "dwm-mpo"
+}
 Run-Step "Accessibility shortcut popups disabled" {
     Reg-Add "HKCU\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "2" /f
     Reg-Add "HKCU\Control Panel\Accessibility\ToggleKeys" /v "Flags" /t REG_SZ /d "34" /f

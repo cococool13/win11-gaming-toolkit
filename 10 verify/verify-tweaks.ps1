@@ -182,6 +182,9 @@ Check "Widgets disabled" {
 Check "Copilot disabled" {
     (Get-ItemProperty "HKCU:\Software\Policies\Microsoft\Windows\WindowsCopilot" -Name "TurnOffWindowsCopilot" -ErrorAction SilentlyContinue).TurnOffWindowsCopilot -eq 1
 }
+Check "Multiplane Overlay (MPO) disabled" {
+    (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\Dwm" -Name "OverlayTestMode" -ErrorAction SilentlyContinue).OverlayTestMode -eq 5
+} "reg:DwmOverlayTestMode"
 
 # ============================================================
 # GPU + NETWORK

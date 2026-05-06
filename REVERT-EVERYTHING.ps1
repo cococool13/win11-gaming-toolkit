@@ -95,6 +95,12 @@ foreach ($svc in @("DiagTrack", "PhoneSvc", "lfsvc", "RetailDemo", "MapsBroker",
 # ============================================================
 UI-Section -Title "Phase 4: Registry Pack"
 
+Run-Step "Restoring DWM Multiplane Overlay" {
+    if (-not (Restore-ToolkitRegistryValue -Id "reg:DwmOverlayTestMode")) {
+        # No manifest entry — clear the value so DWM uses driver default.
+        Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\Dwm" -Name "OverlayTestMode" -ErrorAction SilentlyContinue
+    }
+}
 Run-Step "MenuShowDelay = 400" { reg add "HKCU\Control Panel\Desktop" /v "MenuShowDelay" /t REG_SZ /d "400" /f 2>&1 | Out-Null }
 Run-Step "MouseHoverTime = 400" { reg add "HKCU\Control Panel\Mouse" /v "MouseHoverTime" /t REG_SZ /d "400" /f 2>&1 | Out-Null }
 Run-Step "Removing startup delay override" { reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize" /v "StartupDelayInMSec" /f 2>&1 | Out-Null }

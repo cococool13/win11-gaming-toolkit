@@ -82,7 +82,7 @@ Run-Step "Restoring Edge background policies" {
 # ============================================================
 UI-Section -Title "Phase 3: Services"
 
-foreach ($svc in @("DiagTrack", "PhoneSvc", "lfsvc", "RetailDemo", "MapsBroker", "Fax", "Spooler", "WSearch")) {
+foreach ($svc in @("DiagTrack", "PhoneSvc", "lfsvc", "RetailDemo", "MapsBroker", "Fax", "Spooler", "WSearch", "CscService")) {
     Run-Step "Restoring $svc" {
         if (-not (Restore-ToolkitServiceStartMode -Name $svc)) {
             if ($svc -in @("DiagTrack", "Spooler", "WSearch", "MapsBroker")) {

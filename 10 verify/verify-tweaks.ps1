@@ -154,7 +154,8 @@ foreach ($svc in @(
     @("MapsBroker", "Downloaded Maps Manager"),
     @("Fax", "Fax"),
     @("Spooler", "Print Spooler"),
-    @("WSearch", "Windows Search")
+    @("WSearch", "Windows Search"),
+    @("CscService", "Offline Files")
 )) {
     Check "$($svc[1]) disabled" {
         $service = Get-Service -Name $svc[0] -ErrorAction SilentlyContinue

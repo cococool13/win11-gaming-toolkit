@@ -118,7 +118,7 @@ This checks the same phases exposed by the launcher and the full apply flow so y
 
 - What it changes: disables selected background services.
 - Why run it: reduces unnecessary background work on gaming-focused systems.
-- Main risk: features like printing, search indexing, and telemetry-related components may stop working as expected.
+- Main risk: features like printing, search indexing, Offline Files / Sync Center, and telemetry-related components may stop working as expected.
 - Undo: `4 services/revert-all.bat` or the full revert script.
 
 #### Registry pack
@@ -277,7 +277,7 @@ Recovery options if you need WaaSMedicSvc actually disabled:
 
 The toolkit's tweak set is informed by these communities and people. Where a script was directly derived from upstream work, the source is named in a header comment in that file.
 
-- **FR33THY** — <https://github.com/FR33THYFR33THY/Ultimate>. Source for MPO disable, MMAgent tuning, NIC power-savings disable, IPv6 unbind, Spectre / Meltdown override, DEP toggle, NVIDIA P0 state, AMD ULPS disable, MobSync service disable. See `docs/freethy-integration.md` for the full inventory.
+- **FR33THY** — <https://github.com/FR33THYFR33THY/Ultimate>. Source for MPO disable, MMAgent tuning, NIC power-savings disable, IPv6 unbind, Spectre / Meltdown override, DEP toggle, NVIDIA P0 state, AMD ULPS disable, and Offline Files / Sync Center disable. See `docs/freethy-integration.md` for the full inventory.
 - **Khorvie Tech** — original lineage credit retained in `Notice.txt`.
 - **Chris Titus Tech** — <https://github.com/ChrisTitusTech/winutil>. Wrapped by `9 cleanup/chris-titus-winutil.bat`.
 - **Wagnardsoft** — Display Driver Uninstaller (DDU). Wrapped by `DduManual.ps1` / `DduAuto.ps1`.

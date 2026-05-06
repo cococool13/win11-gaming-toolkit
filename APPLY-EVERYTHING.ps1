@@ -215,6 +215,14 @@ foreach ($svc in @("Spooler", "WSearch")) {
         sc.exe stop $svc 2>&1 | Out-Null
     }
 }
+Run-Step "Disabling Offline Files / Sync Center" {
+    if (Get-Service -Name "CscService" -ErrorAction SilentlyContinue) {
+        Set-TrackedService -Name "CscService" -Mode "disabled" -Tier "Advanced" -Step "services-mobsync"
+        Stop-Service -Name "CscService" -Force -ErrorAction SilentlyContinue
+    } else {
+        Add-ToolkitStepResult -Key "service:CscService" -Tier "Advanced" -Status "skipped" -Reason "CscService not found"
+    }
+}
 
 # ============================================================
 # STEP 5: REGISTRY TWEAKS

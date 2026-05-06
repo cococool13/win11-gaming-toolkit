@@ -81,7 +81,7 @@ This is the canonical record of which FR33THY artifacts were ported into this to
 | `8 Advanced/15 Driver Whql Secure Boot Bypass.ps1` | .ps1 | Disable WHQL signing enforcement | No | Decline (real attack-surface increase) | `KNOWN-ISSUES.md` |
 | `8 Advanced/16 Keyboard Shortcuts.ps1` | .ps1 | Disable keyboard shortcuts | No | Decline (preference) | — |
 | `8 Advanced/17 Services.ps1` | .ps1 | Wholesale service disable list (57KB) | Partial | **Cherry-pick** WerSvc / RemoteRegistry / Browser | `4 services/disable-services.ps1` |
-| `8 Advanced/18 Start Search Shell Mobsync.ps1` | .ps1 | Disable mobsync + search/shell tweaks | Partial (search tweaks already covered) | **Port** mobsync only | `4 services/individual/mobsync-disable.bat` |
+| `8 Advanced/18 Start Search Shell Mobsync.ps1` | .ps1 | Disable mobsync + search/shell tweaks | Partial (search tweaks already covered) | **Port** Offline Files / Sync Center only | `4 services/individual/mobsync-disable.ps1` |
 | `8 Advanced/19 NVME Faster Driver.ps1` | .ps1 | Force-install Microsoft inbox `stornvme` | No | Decline (compatibility regression risk) | `KNOWN-ISSUES.md` |
 | `IWR.ps1` | .ps1 | Bootstrapper that downloads + iex | n/a | N/A (their entrypoint, not portable) | — |
 | `AllowScripts.cmd` | .cmd | Set ExecutionPolicy | n/a | Already documented in our `GUIDE.md` | — |

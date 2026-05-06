@@ -1,6 +1,4 @@
 @echo off
-:: Re-enable MobSync (Microsoft Sync Center)
-net session >nul 2>&1 || (echo Run as Administrator. & pause & exit /b 1)
-sc config MobSync start= demand >nul 2>&1
-echo [DONE] MobSync set to manual start.
+:: Restore Offline Files / Sync Center through the tracked PowerShell path.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0mobsync-enable.ps1"
 pause

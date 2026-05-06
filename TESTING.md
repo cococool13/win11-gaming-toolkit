@@ -122,7 +122,7 @@ Each new opt-in script ships with a paired revert. Apply, verify, revert, verify
 | `8 security vs performance/disable-dep.ps1` | `enable-dep.ps1` | `bcdedit /enum {current} \| findstr /i nx` |
 | `6 gpu/nvidia/force-p0-state.ps1` | `REVERT-EVERYTHING.ps1` | manifest entry `reg:NvPerfLevelSrc:*` plus `reg:NvDisableDynamicPstate:*` |
 | `6 gpu/configure-amd-ulps.ps1` | `REVERT-EVERYTHING.ps1` | manifest entry `reg:AmdEnableUlps:*` |
-| `4 services/individual/mobsync-disable.bat` | `mobsync-enable.bat` | `Get-Service MobSync \| Select StartType` |
+| `4 services/individual/mobsync-disable.bat` | `mobsync-enable.bat` | `Get-Service CscService \| Select StartType` |
 
 ## 9. Edge cases
 

@@ -2,7 +2,7 @@
 
 Audit target: `CC/hardcore-rubin-7d2584`
 Base checked: `cd8182156655810b72437464d8d7a6cbe4f67d7f`
-Audit date: 2026-05-06
+Audit date: 2026-05-07
 
 ## Discrepancies
 
@@ -24,7 +24,8 @@ Audit date: 2026-05-06
 2. `5 registry tweaks/apply-all.reg` does not include `UserPreferencesMask`, while the individual `visual-effects-performance.reg` file does. This is not a type bug, but it means the all-reg bundle and individual file do not apply identical visual-effects state.
 3. Several mutating paths use `-ErrorAction SilentlyContinue` on operations that can fail in ways users should see, especially service installation/removal and network adapter mutation. Existing helper-routed paths are better because they throw or record status.
 4. The discovery sweep found no existing coverage for Chromium Edge background/startup policies, NTFS last-access metadata, Windows CEIP / Compatibility Appraiser scheduled tasks, audio MMCSS task tuning, keyboard/mouse class queue sizes, or NVIDIA Profile Inspector automation.
-5. PowerShell runtime validation could not be run in this macOS environment because `pwsh` is not installed.
+5. DNS state capture in `lib/toolkit-state.ps1` keys snapshots only by `InterfaceIndex`, so IPv4 and IPv6 entries for the same adapter overwrite each other. The same helper also verifies the mixed Cloudflare IPv4+IPv6 list from `APPLY-EVERYTHING.ps1` against IPv4 only, which marks the DNS step as skipped even when the apply path succeeds. Revert then cannot reliably restore both address families.
+6. PowerShell runtime validation could not be run in this macOS environment because `pwsh` is not installed.
 
 ## Verified Clean
 

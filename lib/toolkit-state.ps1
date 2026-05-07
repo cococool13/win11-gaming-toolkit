@@ -377,6 +377,50 @@ function Restore-ToolkitServiceStartMode {
     return $true
 }
 
+function Normalize-ToolkitDnsAddressFamily {
+    param($AddressFamily)
+
+    switch -Regex ([string]$AddressFamily) {
+        "^IPv4$|^2$|^InterNetwork$" { return "IPv4" }
+        "^IPv6$|^23$|^InterNetworkV6$" { return "IPv6" }
+        default { return $null }
+    }
+}
+
+function Get-ToolkitDnsAddressFamily {
+    param([string]$Address)
+
+    $parsedAddress = [System.Net.IPAddress]::None
+    if (-not [System.Net.IPAddress]::TryParse($Address, [ref]$parsedAddress)) {
+        return $null
+    }
+
+    return Normalize-ToolkitDnsAddressFamily -AddressFamily $parsedAddress.AddressFamily
+}
+
+function Group-ToolkitDnsServersByFamily {
+    param([string[]]$ServerAddresses)
+
+    $groups = [ordered]@{
+        IPv4 = @()
+        IPv6 = @()
+    }
+
+    foreach ($server in @($ServerAddresses | Where-Object { $_ })) {
+        $family = Get-ToolkitDnsAddressFamily -Address $server
+        if (-not $family) {
+            throw "Invalid DNS server address: $server"
+        }
+        $groups[$family] = @($groups[$family]) + @($server)
+    }
+
+    if (@($groups["IPv4"]).Count -eq 0 -and @($groups["IPv6"]).Count -eq 0) {
+        throw "No DNS server addresses provided"
+    }
+
+    return $groups
+}
+
 function Capture-ToolkitDnsState {
     $state = Get-ToolkitState
     if ($state.dns.captured -or -not (Test-ToolkitCommand "Get-DnsClientServerAddress")) {
@@ -385,9 +429,14 @@ function Capture-ToolkitDnsState {
 
     $snapshot = @(Get-DnsClientServerAddress -ErrorAction SilentlyContinue)
     foreach ($item in $snapshot) {
-        Set-ToolkitMapValue -Map $state.dns.interfaces -Key ([string]$item.InterfaceIndex) -Value ([ordered]@{
+        $addressFamily = Normalize-ToolkitDnsAddressFamily -AddressFamily $item.AddressFamily
+        if (-not $addressFamily) {
+            continue
+        }
+        $snapshotKey = "{0}:{1}" -f $item.InterfaceIndex, $addressFamily
+        Set-ToolkitMapValue -Map $state.dns.interfaces -Key $snapshotKey -Value ([ordered]@{
             interfaceAlias = $item.InterfaceAlias
-            addressFamily = $item.AddressFamily
+            addressFamily = $addressFamily
             serverAddresses = @($item.ServerAddresses)
         })
     }
@@ -402,22 +451,39 @@ function Set-ToolkitDnsServers {
         [string]$Step
     )
 
-    if (-not (Test-ToolkitCommand "Get-NetAdapter")) {
-        throw "NetAdapter cmdlets unavailable"
+    foreach ($commandName in @("Get-NetAdapter", "Get-DnsClientServerAddress", "Set-DnsClientServerAddress")) {
+        if (-not (Test-ToolkitCommand $commandName)) {
+            throw "$commandName cmdlet unavailable"
+        }
     }
+
+    $serverGroups = Group-ToolkitDnsServersByFamily -ServerAddresses $ServerAddresses
     Capture-ToolkitDnsState
     $activeAdapters = @(Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq "Up" })
     foreach ($adapter in $activeAdapters) {
         try {
-            Set-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -ServerAddresses $ServerAddresses -ErrorAction Stop
-            $current = Get-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -AddressFamily IPv4 -ErrorAction Stop
-            $currentServers = @($current.ServerAddresses)
-            $missingServers = @($ServerAddresses | Where-Object { $currentServers -notcontains $_ })
+            $adapterFailures = @()
+            foreach ($family in @("IPv4", "IPv6")) {
+                $familyServers = @($serverGroups[$family])
+                if ($familyServers.Count -eq 0) {
+                    continue
+                }
 
-            if ($missingServers.Count -eq 0) {
+                $target = Get-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -AddressFamily $family -ErrorAction Stop
+                Set-DnsClientServerAddress -InputObject $target -ServerAddresses $familyServers -ErrorAction Stop
+
+                $current = Get-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -AddressFamily $family -ErrorAction Stop
+                $currentServers = @($current.ServerAddresses)
+                $missingServers = @($familyServers | Where-Object { $currentServers -notcontains $_ })
+                if ($missingServers.Count -gt 0) {
+                    $adapterFailures += "$family missing $($missingServers -join ', ')"
+                }
+            }
+
+            if ($adapterFailures.Count -eq 0) {
                 Add-ToolkitStepResult -Key "dns:$($adapter.ifIndex)" -Tier $Tier -Status "applied" -Reason $Step
             } else {
-                Add-ToolkitStepResult -Key "dns:$($adapter.ifIndex)" -Tier $Tier -Status "skipped" -Reason "DNS verification failed on adapter $($adapter.Name)"
+                Add-ToolkitStepResult -Key "dns:$($adapter.ifIndex)" -Tier $Tier -Status "skipped" -Reason "DNS verification failed on adapter $($adapter.Name): $($adapterFailures -join '; ')"
             }
         } catch {
             Add-ToolkitStepResult -Key "dns:$($adapter.ifIndex)" -Tier $Tier -Status "skipped" -Reason "DNS apply failed on adapter $($adapter.Name): $($_.Exception.Message)"
@@ -437,10 +503,26 @@ function Restore-ToolkitDnsServers {
         $state.dns.interfaces.PSObject.Properties
     }
     foreach ($property in $properties) {
-        $interfaceIndex = [int]$property.Name
+        $nameParts = ([string]$property.Name) -split ":", 2
+        $interfaceIndex = [int]$nameParts[0]
         $entry = $property.Value
-        $addresses = @($entry.serverAddresses)
-        if ($addresses.Count -gt 0) {
+        $addressFamily = if ($nameParts.Count -gt 1) {
+            Normalize-ToolkitDnsAddressFamily -AddressFamily $nameParts[1]
+        } else {
+            Normalize-ToolkitDnsAddressFamily -AddressFamily $entry.addressFamily
+        }
+        $addresses = @($entry.serverAddresses | Where-Object { $_ })
+
+        if ($addressFamily) {
+            $target = Get-DnsClientServerAddress -InterfaceIndex $interfaceIndex -AddressFamily $addressFamily -ErrorAction SilentlyContinue
+            if ($target) {
+                if ($addresses.Count -gt 0) {
+                    Set-DnsClientServerAddress -InputObject $target -ServerAddresses $addresses -ErrorAction SilentlyContinue
+                } else {
+                    Set-DnsClientServerAddress -InputObject $target -ResetServerAddresses -ErrorAction SilentlyContinue
+                }
+            }
+        } elseif ($addresses.Count -gt 0) {
             Set-DnsClientServerAddress -InterfaceIndex $interfaceIndex -ServerAddresses $addresses -ErrorAction SilentlyContinue
         } else {
             Set-DnsClientServerAddress -InterfaceIndex $interfaceIndex -ResetServerAddresses -ErrorAction SilentlyContinue

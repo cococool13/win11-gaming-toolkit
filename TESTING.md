@@ -124,7 +124,20 @@ Each new opt-in script ships with a paired revert. Apply, verify, revert, verify
 | `6 gpu/configure-amd-ulps.ps1` | `REVERT-EVERYTHING.ps1` | manifest entry `reg:AmdEnableUlps:*` |
 | `4 services/individual/mobsync-disable.bat` | `mobsync-enable.bat` | `Get-Service CscService \| Select StartType` |
 
-## 9. Edge cases
+## 9. DNS address-family restore
+
+Goal: confirm DNS capture, verification, and revert preserve both IPv4 and IPv6 baselines.
+
+1. Record the current DNS baseline:
+   ```powershell
+   Get-DnsClientServerAddress | Select InterfaceAlias, InterfaceIndex, AddressFamily, ServerAddresses
+   ```
+2. Run `.\7 network\optimize-network.ps1`, choose Cloudflare or Google, and confirm the manifest records DNS under `dns.interfaces`.
+3. Run `.\APPLY-EVERYTHING.ps1`; the mixed Cloudflare IPv4 + IPv6 DNS step should record `dns:<InterfaceIndex>` as `applied`, not `skipped`.
+4. Run `.\10 verify\verify-tweaks.ps1`; DNS should not report immediate drift.
+5. Run `.\REVERT-EVERYTHING.ps1`, then compare `Get-DnsClientServerAddress` output with the baseline from step 1. IPv4 and IPv6 entries for each adapter should both restore.
+
+## 10. Edge cases
 
 ### Domain-joined PC
 Set the VM domain-joined (or set `partOfDomain = $true` synthetically by joining a test domain). Re-run apply. The launcher should surface the domain warning. Update suppression and Defender exclusions still apply. Document the per-step behavior so this can be turned into "soft skip" later if the user wants.
@@ -139,7 +152,7 @@ On a Server Core or Windows IoT image without `csc.exe`:
 - Run the DISM command, reboot, re-run the script.
 - Confirm STR service installs successfully on the second attempt.
 
-## 10. What to file as a bug
+## 11. What to file as a bug
 
 If any of the following happen, open an issue:
 - A `Failed` count > 0 in apply or revert with a fresh manifest.

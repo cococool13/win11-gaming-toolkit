@@ -37,3 +37,4 @@ Audit date: 2026-05-07
 6. Launcher menu file targets resolve to files that exist in the branch.
 7. Actual `-Tier` arguments found in scripts use the canonical strings: `Safe`, `Advanced`, and `Security Trade-off`.
 8. The repo contains no bundled external binaries and no `Invoke-Expression` against remote content in the audited branch.
+9. DNS capture, apply, verify, and revert now preserve IPv4 and IPv6 server lists separately while retaining the existing aggregate `dns:<InterfaceIndex>` step result for `verify-tweaks.ps1`.

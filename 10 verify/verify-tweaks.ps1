@@ -350,5 +350,5 @@ if ($manifest) {
     UI-Note -Message "Manifest: $(Get-ToolkitManifestPath)"
     UI-Note -Message "Recorded package removals: $(@($manifest.packages.removed).Count)"
 }
-UI-Note -Message "Security-tradeoff items are intentional in Apply Everything."
+UI-Note -Message "Security Trade-off items are intentional in Apply Everything."
 UI-Exit

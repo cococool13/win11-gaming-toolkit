@@ -1,17 +1,9 @@
-# Dependencies
-node_modules/
-
-# Next.js
-website/.next/
-website/out/
-
 # OS files
 .DS_Store
 Thumbs.db
 
 # Debug logs
 *.log
-firebase-debug.log
 .gstack/
 
 # IDE

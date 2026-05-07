@@ -231,7 +231,6 @@ Use this map when you want to open folders directly instead of using the launche
 - `9 cleanup/` debloat, temp cleanup, WinUtil wrapper
 - `10 verify/` state inspection and health checks
 - `lib/` shared PowerShell helpers and manifest/state tracking
-- `website/` guide-first landing page mirroring the repo workflow
 
 ## Troubleshooting
 

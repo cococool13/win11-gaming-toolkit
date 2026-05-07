@@ -4,7 +4,7 @@
 
 These items were ambiguous in the brief. I proceeded with the most defensible interpretation in each case. Override any decision below by editing this file and resubmitting.
 
-1. **Canonical GitHub URL.** `lib/version-manifest.ps1` and `website/src/lib/constants.ts` both reference `https://github.com/cococool13/TweakEazy`. I left this as-is. If the canonical name should match the worktree label (`win11-gaming-toolkit` / `PC Tweaks`), say so and I'll update both files plus the GUIDE.md repo map.
+1. **Canonical GitHub URL.** `lib/version-manifest.ps1` references `https://raw.githubusercontent.com/cococool13/TweakEazy/main/versions.json`. Left as-is — that endpoint is functional for version updates regardless of repo display name. (Originally also referenced from `website/src/lib/constants.ts`; that file was removed when `website/` was deleted in the cleanup pass — see `CLEANUP.md`.)
 2. **`Notice.txt` lineage credits.** `Notice.txt` credits Khorvie Tech only. I added FR33THY to `GUIDE.md` Credits and to per-file headers, but left `Notice.txt` untouched. Tell me to expand `Notice.txt` if you want all upstream credits in one document.
 3. **`disable-write-cache-flush.ps1` placement.** Real data-loss risk on power loss. I shipped it as opt-in only — direct invocation or via the `5 registry tweaks/individual/` folder. Not added to `APPLY-EVERYTHING.ps1`. Override if you want it included in the full apply.
 4. **Spectre / Meltdown mitigation disable.** Added to `APPLY-EVERYTHING.ps1` under the existing `Security Trade-off` block alongside VBS / HVCI / LSA. Justification: same tier, same risk profile (security-vs-perf trade-off explicitly opted into by the user running the aggressive flow).

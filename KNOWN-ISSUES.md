@@ -115,3 +115,7 @@ Line 163 (`reg add ... PowerSettings\54533251.../Attributes /d 0`) is a metadata
 ### Notice.txt scope
 
 `Notice.txt` credits Khorvie Tech only — the original toolkit lineage. FR33THY, Chris Titus Tech, and Wagnardsoft are credited in `GUIDE.md` Credits and per-file headers. Owner-decision item from `CHANGES.md` Q2: expand `Notice.txt` to consolidate all upstream credits, or keep it focused on lineage. No technical impact either way.
+
+### `README.md` launcher screenshot
+
+`README.md` describes the launcher header, three-section layout, and color-coded tier indicators in prose, but does not embed a screenshot. The production-readiness pass ran on macOS (no Windows host), so a real-host screenshot couldn't be captured. After the owner runs `MANUAL-TEST-CHECKLIST.md` section 1 on a Win11 VM, capture the launcher main menu (PNG) and place it at `docs/img/launcher.png`, then add `![](docs/img/launcher.png)` under the Quick start section of `README.md`. v1.1 follow-up.

@@ -97,7 +97,10 @@ Phases 1–3 surfaced zero blockers; Phases 1 and 2 fix commits all landed clean
 
 ### Phase 5 result
 
-> _Filled in below once the deletes complete._
+`CC/salvage-pre-cleanup`: deleted from origin and locally (was at `c7e856c`).
+`CC/sleepy-hellman-f4b52f`: worktree at `.claude/worktrees/sleepy-hellman-f4b52f` removed via `git worktree remove --force`; local branch deleted (was at `5aa8db2`; never pushed to origin).
+
+Final state: `main` is the only active branch. Only the main worktree at `/Users/cococool/Projects/PC Tweaks/` remains. Tag `v1.0.0` present locally and on origin.
 
 ## Accepted deviations
 

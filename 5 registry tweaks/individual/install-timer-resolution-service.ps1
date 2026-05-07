@@ -89,7 +89,26 @@ Set-Content -Path $csPath -Value $csSource -Force
 Write-Host "[2/4] Compiling service..." -ForegroundColor Yellow
 $cscPath = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
 if (-not (Test-Path $cscPath)) {
-    Write-Host "[ERROR] .NET Framework 4.0 compiler not found." -ForegroundColor Red
+    Write-Host ""
+    Write-Host "[ERROR] .NET Framework 4.x compiler (csc.exe) not found." -ForegroundColor Red
+    Write-Host ""
+    Write-Host "This script compiles a small Windows service from C# source at install" -ForegroundColor Gray
+    Write-Host "time. .NET Framework 4.x is normally bundled with Windows 10/11, but is" -ForegroundColor Gray
+    Write-Host "missing on Server Core, custom debloat ISOs, or stripped images." -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "Recovery options:" -ForegroundColor Yellow
+    Write-Host "  1. Repair the Windows component store:" -ForegroundColor Gray
+    Write-Host "       DISM /Online /Cleanup-Image /RestoreHealth" -ForegroundColor White
+    Write-Host "       sfc /scannow" -ForegroundColor White
+    Write-Host "  2. If csc.exe is still missing, install or repair the Microsoft" -ForegroundColor Gray
+    Write-Host "       .NET Framework 4.8 Developer Pack from:" -ForegroundColor Gray
+    Write-Host "       https://dotnet.microsoft.com/download/dotnet-framework/net48" -ForegroundColor White
+    Write-Host "  3. For damaged framework installs, use Microsoft's repair tool:" -ForegroundColor Gray
+    Write-Host "       https://www.microsoft.com/download/details.aspx?id=30135" -ForegroundColor White
+    Write-Host "  4. Reboot, then re-run this script." -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "Looked for: $cscPath" -ForegroundColor DarkGray
+    Write-Host ""
     Read-Host "Press Enter to exit"
     exit 1
 }

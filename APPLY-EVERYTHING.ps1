@@ -27,12 +27,16 @@
 
 . "$PSScriptRoot\lib\toolkit-state.ps1"
 . "$PSScriptRoot\lib\ui-helpers.ps1"
+. "$PSScriptRoot\lib\gpu-detection.ps1"
 
 $Host.UI.RawUI.WindowTitle = "Windows 11 Gaming Optimization — Apply Everything"
 UI-Header -Title "Windows 11 Optimization" -Subtitle "Apply Everything - aggressive full-stack run"
 UI-RequireAdmin -ScriptName "Apply Everything"
 
-$state = Initialize-ToolkitState -ForceNew
+# Load existing manifest if present so re-runs do not wipe captured before-state.
+# Set-ToolkitRegistryValue / Set-ToolkitServiceStartMode each guard against
+# overwriting an existing entry's `before` block, so re-apply is idempotent.
+$state = Initialize-ToolkitState
 $profile = $state.context
 
 UI-ShowProfile -Profile $profile
@@ -186,6 +190,14 @@ Run-Step "Suppress notifications" {
     Set-TrackedRegistry -Id "reg:NotificationSound" -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings" -Name "NOC_GLOBAL_SETTING_ALLOW_NOTIFICATION_SOUND" -Value 0 -Type "DWord" -Tier "Safe" -Step "windows-settings"
 }
 
+Run-Step "Disable Edge background startup" {
+    # Sources:
+    # https://learn.microsoft.com/en-us/deployedge/microsoft-edge-browser-policies/startupboostenabled
+    # https://learn.microsoft.com/en-us/deployedge/microsoft-edge-browser-policies/backgroundmodeenabled
+    Set-TrackedRegistry -Id "reg:EdgeStartupBoostEnabled" -Path "HKLM:\SOFTWARE\Policies\Microsoft\Edge" -Name "StartupBoostEnabled" -Value 0 -Type "DWord" -Tier "Safe" -Step "edge-background"
+    Set-TrackedRegistry -Id "reg:EdgeBackgroundModeEnabled" -Path "HKLM:\SOFTWARE\Policies\Microsoft\Edge" -Name "BackgroundModeEnabled" -Value 0 -Type "DWord" -Tier "Safe" -Step "edge-background"
+}
+
 # ============================================================
 # STEP 4: SERVICES
 # ============================================================
@@ -201,6 +213,14 @@ foreach ($svc in @("Spooler", "WSearch")) {
     Run-Step "Disabling $svc (aggressive)" {
         Set-TrackedService -Name $svc -Mode "disabled" -Tier "Advanced" -Step "services"
         sc.exe stop $svc 2>&1 | Out-Null
+    }
+}
+Run-Step "Disabling Offline Files / Sync Center" {
+    if (Get-Service -Name "CscService" -ErrorAction SilentlyContinue) {
+        Set-TrackedService -Name "CscService" -Mode "disabled" -Tier "Advanced" -Step "services-mobsync"
+        Stop-Service -Name "CscService" -Force -ErrorAction SilentlyContinue
+    } else {
+        Add-ToolkitStepResult -Key "service:CscService" -Tier "Advanced" -Status "skipped" -Reason "CscService not found"
     }
 }
 
@@ -282,6 +302,17 @@ Run-Step "Privacy / telemetry disabled" {
 Run-Step "Autoplay disabled" {
     Reg-Add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers" /v "DisableAutoplay" /t REG_DWORD /d 1 /f
 }
+Run-Step "Disable Multiplane Overlay (MPO)" {
+    # Source: FR33THYFR33THY/Ultimate — 8 Advanced/11 Mpo.ps1
+    # OverlayTestMode=5 forces MPO off via DWM. Helps stutter / flicker
+    # on some HDR + multi-monitor configs. Tracked so revert can restore.
+    Set-TrackedRegistry -Id "reg:DwmOverlayTestMode" -Path "HKLM:\SOFTWARE\Microsoft\Windows\Dwm" -Name "OverlayTestMode" -Value 5 -Type "DWord" -Tier "Advanced" -Step "dwm-mpo"
+}
+Run-Step "Disable NTFS last-access updates" {
+    # Source:
+    # https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/fsutil-behavior
+    Set-TrackedRegistry -Id "reg:NtfsDisableLastAccessUpdate" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "NtfsDisableLastAccessUpdate" -Value 1 -Type "DWord" -Tier "Advanced" -Step "ntfs-last-access"
+}
 Run-Step "Accessibility shortcut popups disabled" {
     Reg-Add "HKCU\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "2" /f
     Reg-Add "HKCU\Control Panel\Accessibility\ToggleKeys" /v "Flags" /t REG_SZ /d "34" /f
@@ -319,19 +350,21 @@ Run-Step "Disable Copilot" {
 # ============================================================
 UI-Section -Title "Phase 7: GPU and Network Prep" -Context "Apply device-level latency changes"
 
-$gpuDevices = @(Get-PnpDevice -Class Display -ErrorAction SilentlyContinue)
+$gpuDevices = @(Get-GpuVendor)
 if ($gpuDevices.Count -eq 0) {
-    Skip-Step -Description "MSI mode" -Reason "No display devices found" -Tier "Advanced"
+    Skip-Step -Description "MSI mode" -Reason "No NVIDIA / AMD / Intel display devices detected" -Tier "Advanced"
 } else {
     foreach ($gpu in $gpuDevices) {
         Run-Step "MSI Mode for $($gpu.FriendlyName)" {
             $id = $gpu.InstanceId
             $regPath = "HKLM:\SYSTEM\CurrentControlSet\Enum\$id\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
-            if (-not (Test-Path $regPath)) {
-                New-Item -Path $regPath -Force | Out-Null
-            }
-            Set-ItemProperty -Path $regPath -Name "MSISupported" -Value 1 -Type DWord -Force -ErrorAction Stop
-            Add-ToolkitStepResult -Key "gpu:$id" -Tier "Advanced" -Status "applied" -Reason "MSI mode enabled"
+            Set-ToolkitRegistryValue `
+                -Id "gpu-msi:$id" `
+                -Path $regPath `
+                -Name "MSISupported" `
+                -Value 1 -Type "DWord" `
+                -Tier "Advanced" -Step "gpu-msi"
+            Add-ToolkitStepResult -Key "gpu-msi:$id" -Tier "Advanced" -Status "applied" -Reason "MSI mode enabled"
         }
     }
 }
@@ -412,6 +445,13 @@ Run-Step "Disable VBS" {
 Run-Step "Disable LSA protection" {
     Set-TrackedRegistry -Id "reg:RunAsPPL" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name "RunAsPPL" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
     Set-TrackedRegistry -Id "reg:LsaCfgFlags" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name "LsaCfgFlags" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
+}
+Run-Step "Disable Spectre / Meltdown CPU mitigations" {
+    # Source: FR33THYFR33THY/Ultimate — 8 Advanced/3 Spectre Meltdown.ps1
+    # Tier matches the surrounding section (VBS / HVCI / LSA also Security Trade-off).
+    $mmPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"
+    Set-TrackedRegistry -Id "reg:FeatureSettingsOverride" -Path $mmPath -Name "FeatureSettingsOverride" -Value 3 -Type "DWord" -Tier "Security Trade-off" -Step "security"
+    Set-TrackedRegistry -Id "reg:FeatureSettingsOverrideMask" -Path $mmPath -Name "FeatureSettingsOverrideMask" -Value 3 -Type "DWord" -Tier "Security Trade-off" -Step "security"
 }
 
 # ============================================================
@@ -538,7 +578,27 @@ Run-Step "Clearing Windows Update cache" {
 }
 Run-Step "Clearing shader cache" { Remove-Item -Path "$env:LOCALAPPDATA\D3DSCache\*" -Recurse -Force -ErrorAction SilentlyContinue }
 Run-Step "Removing leftover folders" {
-    Remove-Item "$env:SystemDrive\inetpub" -Recurse -Force -ErrorAction SilentlyContinue
+    # Guard: do not nuke inetpub if IIS is installed. Some devs run IIS Express
+    # or full IIS for local development. Removing this directory destroys
+    # site state, virtual directory configs, and IIS-managed app pools.
+    $iisInstalled = $false
+    try {
+        $feature = Get-WindowsOptionalFeature -Online -FeatureName IIS-WebServer -ErrorAction Stop
+        $iisInstalled = $feature.State -eq 'Enabled'
+    } catch {
+        # Get-WindowsOptionalFeature unavailable on Home editions or stripped
+        # images — fall back to a directory contents probe. If the folder
+        # contains the IIS metabase indicators, treat as installed.
+        $iisMarkers = @("history", "logs", "temp", "wwwroot", "config")
+        $iisInstalled = (Test-Path "$env:SystemDrive\inetpub") -and
+            ((Get-ChildItem "$env:SystemDrive\inetpub" -Force -ErrorAction SilentlyContinue |
+                Where-Object { $iisMarkers -contains $_.Name }).Count -ge 2)
+    }
+    if ($iisInstalled) {
+        UI-Note -Message "      Skipping inetpub removal: IIS appears installed." -Color $script:UI_Warning
+    } elseif (Test-Path "$env:SystemDrive\inetpub") {
+        Remove-Item "$env:SystemDrive\inetpub" -Recurse -Force -ErrorAction SilentlyContinue
+    }
     Remove-Item "$env:SystemDrive\PerfLogs" -Recurse -Force -ErrorAction SilentlyContinue
 }
 Write-Host ""

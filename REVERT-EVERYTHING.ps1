@@ -11,6 +11,7 @@
 
 . "$PSScriptRoot\lib\toolkit-state.ps1"
 . "$PSScriptRoot\lib\ui-helpers.ps1"
+. "$PSScriptRoot\lib\gpu-detection.ps1"
 
 $Host.UI.RawUI.WindowTitle = "Windows 11 Gaming Optimization — Revert Everything"
 UI-Header -Title "Revert Everything" -Subtitle "Restore the tracked full-stack path"
@@ -71,13 +72,17 @@ Run-Step "Notifications" {
     Restore-TrackedRegistryStep "reg:ToastsEnabled"
     Restore-TrackedRegistryStep "reg:NotificationSound"
 }
+Run-Step "Restoring Edge background policies" {
+    Restore-TrackedRegistryStep "reg:EdgeStartupBoostEnabled"
+    Restore-TrackedRegistryStep "reg:EdgeBackgroundModeEnabled"
+}
 
 # ============================================================
 # STEP 3: SERVICES
 # ============================================================
 UI-Section -Title "Phase 3: Services"
 
-foreach ($svc in @("DiagTrack", "PhoneSvc", "lfsvc", "RetailDemo", "MapsBroker", "Fax", "Spooler", "WSearch")) {
+foreach ($svc in @("DiagTrack", "PhoneSvc", "lfsvc", "RetailDemo", "MapsBroker", "Fax", "Spooler", "WSearch", "CscService")) {
     Run-Step "Restoring $svc" {
         if (-not (Restore-ToolkitServiceStartMode -Name $svc)) {
             if ($svc -in @("DiagTrack", "Spooler", "WSearch", "MapsBroker")) {
@@ -94,6 +99,15 @@ foreach ($svc in @("DiagTrack", "PhoneSvc", "lfsvc", "RetailDemo", "MapsBroker",
 # ============================================================
 UI-Section -Title "Phase 4: Registry Pack"
 
+Run-Step "Restoring DWM Multiplane Overlay" {
+    if (-not (Restore-ToolkitRegistryValue -Id "reg:DwmOverlayTestMode")) {
+        # No manifest entry — clear the value so DWM uses driver default.
+        Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\Dwm" -Name "OverlayTestMode" -ErrorAction SilentlyContinue
+    }
+}
+Run-Step "Restoring NTFS last-access updates" {
+    Restore-TrackedRegistryStep "reg:NtfsDisableLastAccessUpdate"
+}
 Run-Step "MenuShowDelay = 400" { reg add "HKCU\Control Panel\Desktop" /v "MenuShowDelay" /t REG_SZ /d "400" /f 2>&1 | Out-Null }
 Run-Step "MouseHoverTime = 400" { reg add "HKCU\Control Panel\Mouse" /v "MouseHoverTime" /t REG_SZ /d "400" /f 2>&1 | Out-Null }
 Run-Step "Removing startup delay override" { reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize" /v "StartupDelayInMSec" /f 2>&1 | Out-Null }
@@ -183,12 +197,27 @@ Run-Step "Re-enabling Copilot" {
 # ============================================================
 UI-Section -Title "Phase 6: GPU MSI Mode"
 
-Run-Step "Removing MSI mode overrides" {
-    $gpuDevices = @(Get-PnpDevice -Class Display -ErrorAction SilentlyContinue)
-    foreach ($gpu in $gpuDevices) {
-        $id = $gpu.InstanceId
-        $regPath = "HKLM:\SYSTEM\CurrentControlSet\Enum\$id\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
-        Remove-ItemProperty -Path $regPath -Name "MSISupported" -ErrorAction SilentlyContinue
+Run-Step "Removing MSI mode overrides (manifest-driven)" {
+    $regKeys = $state.registry
+    $properties = if ($regKeys -is [hashtable]) {
+        $regKeys.GetEnumerator() | ForEach-Object { [PSCustomObject]@{ Name = $_.Key; Value = $_.Value } }
+    } else {
+        $regKeys.PSObject.Properties
+    }
+    $msiCount = 0
+    foreach ($prop in $properties) {
+        if ($prop.Value.step -eq "gpu-msi") {
+            Restore-ToolkitRegistryValue -Id $prop.Name | Out-Null
+            $msiCount++
+        }
+    }
+    if ($msiCount -eq 0) {
+        # Fallback for pre-manifest installs: enumerate live and clear blindly.
+        $gpuDevices = @(Get-GpuVendor)
+        foreach ($gpu in $gpuDevices) {
+            $regPath = "HKLM:\SYSTEM\CurrentControlSet\Enum\$($gpu.InstanceId)\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
+            Remove-ItemProperty -Path $regPath -Name "MSISupported" -ErrorAction SilentlyContinue
+        }
     }
 }
 
@@ -197,22 +226,24 @@ Run-Step "Removing MSI mode overrides" {
 # ============================================================
 UI-Section -Title "Phase 6.5: GPU Performance Settings"
 
-$gpuSteps = @("gpu-nvidia-settings", "gpu-amd-settings", "gpu-intel-settings")
+$gpuSteps = @(
+    "gpu-nvidia-settings",
+    "gpu-amd-settings",
+    "gpu-intel-settings",
+    "gpu-p0-state",
+    "gpu-amd-ulps"
+)
 foreach ($gpuStep in $gpuSteps) {
-    $stepStatus = Get-ToolkitRecordedStatus -Key $gpuStep
-    if ($stepStatus -eq "applied") {
-        Write-Host "  Reverting $gpuStep..." -ForegroundColor Gray
-        $regKeys = $state.registry
-        $properties = if ($regKeys -is [hashtable]) {
-            $regKeys.GetEnumerator() | ForEach-Object { [PSCustomObject]@{ Name = $_.Key; Value = $_.Value } }
-        } else {
-            $regKeys.PSObject.Properties
-        }
-        foreach ($prop in $properties) {
-            if ($prop.Value.step -eq $gpuStep) {
-                Run-Step "Reverting $($prop.Name)" {
-                    Restore-ToolkitRegistryValue -Id $prop.Name | Out-Null
-                }
+    $regKeys = $state.registry
+    $properties = if ($regKeys -is [hashtable]) {
+        $regKeys.GetEnumerator() | ForEach-Object { [PSCustomObject]@{ Name = $_.Key; Value = $_.Value } }
+    } else {
+        $regKeys.PSObject.Properties
+    }
+    foreach ($prop in $properties) {
+        if ($prop.Value.step -eq $gpuStep) {
+            Run-Step "Reverting $($prop.Name)" {
+                Restore-ToolkitRegistryValue -Id $prop.Name | Out-Null
             }
         }
     }
@@ -286,6 +317,10 @@ Run-Step "Restoring VBS / HVCI / LSA" {
     Restore-TrackedRegistryStep "reg:EnableVBS"
     Restore-TrackedRegistryStep "reg:RunAsPPL"
     Restore-TrackedRegistryStep "reg:LsaCfgFlags"
+}
+Run-Step "Restoring Spectre / Meltdown mitigations" {
+    Restore-TrackedRegistryStep "reg:FeatureSettingsOverride"
+    Restore-TrackedRegistryStep "reg:FeatureSettingsOverrideMask"
 }
 
 # ============================================================

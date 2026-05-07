@@ -14,6 +14,7 @@
 
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"
 . "$PSScriptRoot\..\lib\ui-helpers.ps1"
+. "$PSScriptRoot\..\lib\gpu-detection.ps1"
 
 $Host.UI.RawUI.WindowTitle = "Gaming Optimization — Verification Report"
 UI-Header -Title "Gaming Optimization Health Check" -Subtitle "Verify the same phases exposed by the launcher and guide"
@@ -132,6 +133,14 @@ Check "Notifications suppressed" {
     (Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings" -Name "NOC_GLOBAL_SETTING_TOASTS_ENABLED" -ErrorAction SilentlyContinue).NOC_GLOBAL_SETTING_TOASTS_ENABLED -eq 0
 } "reg:ToastsEnabled"
 
+Check "Edge Startup Boost disabled" {
+    (Get-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft\Edge" -Name "StartupBoostEnabled" -ErrorAction SilentlyContinue).StartupBoostEnabled -eq 0
+} "reg:EdgeStartupBoostEnabled"
+
+Check "Edge background mode disabled" {
+    (Get-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft\Edge" -Name "BackgroundModeEnabled" -ErrorAction SilentlyContinue).BackgroundModeEnabled -eq 0
+} "reg:EdgeBackgroundModeEnabled"
+
 # ============================================================
 # SERVICES
 # ============================================================
@@ -145,7 +154,8 @@ foreach ($svc in @(
     @("MapsBroker", "Downloaded Maps Manager"),
     @("Fax", "Fax"),
     @("Spooler", "Print Spooler"),
-    @("WSearch", "Windows Search")
+    @("WSearch", "Windows Search"),
+    @("CscService", "Offline Files")
 )) {
     Check "$($svc[1]) disabled" {
         $service = Get-Service -Name $svc[0] -ErrorAction SilentlyContinue
@@ -181,22 +191,48 @@ Check "Widgets disabled" {
 Check "Copilot disabled" {
     (Get-ItemProperty "HKCU:\Software\Policies\Microsoft\Windows\WindowsCopilot" -Name "TurnOffWindowsCopilot" -ErrorAction SilentlyContinue).TurnOffWindowsCopilot -eq 1
 }
+Check "Multiplane Overlay (MPO) disabled" {
+    (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\Dwm" -Name "OverlayTestMode" -ErrorAction SilentlyContinue).OverlayTestMode -eq 5
+} "reg:DwmOverlayTestMode"
+
+Check "NTFS last-access updates disabled" {
+    (Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "NtfsDisableLastAccessUpdate" -ErrorAction SilentlyContinue).NtfsDisableLastAccessUpdate -eq 1
+} "reg:NtfsDisableLastAccessUpdate"
 
 # ============================================================
 # GPU + NETWORK
 # ============================================================
 UI-Section -Title "Phase 6 to 8: GPU, Network, and Update Path"
 
-$gpuDevices = @(Get-PnpDevice -Class Display -ErrorAction SilentlyContinue)
+$gpuDevices = @(Get-GpuVendor)
 if ($gpuDevices.Count -eq 0) {
-    Write-CheckStatus -Label "No display adapters found" -Status "SKIPPED" -Color DarkYellow
+    Write-CheckStatus -Label "No NVIDIA / AMD / Intel GPUs found" -Status "SKIPPED" -Color DarkYellow
     $unsupported++
 } else {
     foreach ($gpu in $gpuDevices) {
         Check "MSI mode enabled for $($gpu.FriendlyName)" {
             $regPath = "HKLM:\SYSTEM\CurrentControlSet\Enum\$($gpu.InstanceId)\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
             (Get-ItemProperty $regPath -Name "MSISupported" -ErrorAction SilentlyContinue).MSISupported -eq 1
-        } "gpu:$($gpu.InstanceId)"
+        } "gpu-msi:$($gpu.InstanceId)"
+    }
+
+    if ((Get-ToolkitRecordedStatus -Key "gpu-p0-state") -eq "applied") {
+        foreach ($gpu in @($gpuDevices | Where-Object { $_.Vendor -eq "nvidia" })) {
+            Check "NVIDIA P0 state forced for $($gpu.FriendlyName)" {
+                if (-not $gpu.AdapterRegistryPath) { return "SKIP" }
+                $props = Get-ItemProperty $gpu.AdapterRegistryPath -ErrorAction SilentlyContinue
+                ($props.PerfLevelSrc -eq 0x2222) -and ($props.DisableDynamicPstate -eq 1)
+            } "gpu-p0-state"
+        }
+    }
+
+    if ((Get-ToolkitRecordedStatus -Key "gpu-amd-ulps") -eq "applied") {
+        foreach ($gpu in @($gpuDevices | Where-Object { $_.Vendor -eq "amd" })) {
+            Check "AMD ULPS disabled for $($gpu.FriendlyName)" {
+                if (-not $gpu.AdapterRegistryPath) { return "SKIP" }
+                (Get-ItemProperty $gpu.AdapterRegistryPath -Name "EnableUlps" -ErrorAction SilentlyContinue).EnableUlps -eq 0
+            } "gpu-amd-ulps"
+        }
     }
 }
 
@@ -245,6 +281,13 @@ Check "HVCI disabled" {
     if ($null -eq $val) { return "SKIP" }
     $val -eq 0
 } "reg:HVCIEnabled"
+
+Check "Spectre / Meltdown mitigations override applied" {
+    $mmPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"
+    $override = (Get-ItemProperty $mmPath -Name "FeatureSettingsOverride" -ErrorAction SilentlyContinue).FeatureSettingsOverride
+    $mask     = (Get-ItemProperty $mmPath -Name "FeatureSettingsOverrideMask" -ErrorAction SilentlyContinue).FeatureSettingsOverrideMask
+    ($override -eq 3) -and ($mask -eq 3)
+} "reg:FeatureSettingsOverride"
 
 Check "Toolkit-added Defender exclusions are still present" {
     if (-not $manifest -or -not $manifest.defender -or @($manifest.defender.added).Count -eq 0) {

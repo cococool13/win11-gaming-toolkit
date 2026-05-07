@@ -118,7 +118,7 @@ This checks the same phases exposed by the launcher and the full apply flow so y
 
 - What it changes: disables selected background services.
 - Why run it: reduces unnecessary background work on gaming-focused systems.
-- Main risk: features like printing, search indexing, and telemetry-related components may stop working as expected.
+- Main risk: features like printing, search indexing, Offline Files / Sync Center, and telemetry-related components may stop working as expected.
 - Undo: `4 services/revert-all.bat` or the full revert script.
 
 #### Registry pack
@@ -127,6 +127,20 @@ This checks the same phases exposed by the launcher and the full apply flow so y
 - Why run it: applies many common Windows gaming tweaks in one place.
 - Main risk: broadest surface area in the repo; some changes are preference-driven, not universally better.
 - Undo: `5 registry tweaks/revert-all.reg` for the raw pack, or `REVERT-EVERYTHING.ps1` for the tracked path.
+
+#### Edge background policies
+
+- What it changes: disables Microsoft Edge Startup Boost and background mode through machine policy.
+- Why run it: stops Edge from preloading at sign-in or continuing background work after close.
+- Main risk: Edge can cold-start more slowly; background Edge apps/extensions stop when Edge is closed.
+- Undo: `5 registry tweaks/individual/enable-edge-background.ps1` or `REVERT-EVERYTHING.ps1`.
+
+#### NTFS last-access updates
+
+- What it changes: disables NTFS Last Access timestamp updates.
+- Why run it: reduces avoidable file metadata writes during directory and file access.
+- Main risk: backup, indexing, or audit tools that rely on access timestamps can see stale times.
+- Undo: `5 registry tweaks/individual/enable-ntfs-last-access.ps1` or `REVERT-EVERYTHING.ps1`.
 
 #### Timer service
 
@@ -164,6 +178,13 @@ This checks the same phases exposed by the launcher and the full apply flow so y
 - Why run it: cleanest path when troubleshooting or redoing GPU drivers.
 - Main risk: highest-risk path in the repo if interrupted mid-clean/install.
 - Undo: use DDU again and reinstall a known-good driver.
+
+#### GPU vendor opt-ins
+
+- What it changes: optional FR33THY-derived NVIDIA P0 state and AMD ULPS registry settings under `6 gpu/`.
+- Why run it: use only for benchmark consistency or AMD multi-GPU hitch troubleshooting.
+- Main risk: higher idle GPU power, heat, and driver-specific behavior.
+- Undo: `REVERT-EVERYTHING.ps1` restores the manifest-backed registry values.
 
 #### Network
 
@@ -237,3 +258,26 @@ Undo the power and GPU-focused phases first. The toolkit does not automatically 
 ### Revert finished, but the PC still feels off
 
 Reboot first. Then run Verify. If the remaining issue is an app removal or an external tool side effect, that requires manual follow-up.
+
+### Windows Update keeps re-enabling itself on 24H2 / 25H2
+
+`disable-windows-update.ps1` writes `Start = 4` to `HKLM\SYSTEM\CurrentControlSet\Services\WaaSMedicSvc`. On Windows 11 24H2 and newer, the DACL on this key blocks even SYSTEM from setting `Start`, so the change is rejected. The script detects this and prints a warning rather than failing silently.
+
+Recovery options if you need WaaSMedicSvc actually disabled:
+
+1. Run an elevated CMD and take ownership manually:
+   ```
+   takeown /f HKLM\SYSTEM\CurrentControlSet\Services\WaaSMedicSvc
+   icacls "HKLM\SYSTEM\CurrentControlSet\Services\WaaSMedicSvc" /grant Administrators:F
+   ```
+   Then re-run `disable-windows-update.ps1`. The toolkit does not do this automatically because mis-applied DACL changes on protected services can break Windows Update permanently.
+2. Live with the warning. The other update-suppression policies (`NoAutoUpdate`, `NoAutoRebootWithLoggedOnUsers`, service `Start = 4` for `wuauserv` / `UsoSvc` / `DoSvc`) are still applied. WaaSMedicSvc may periodically re-enable Windows Update; you can re-run the script to put things back.
+
+## Credits
+
+The toolkit's tweak set is informed by these communities and people. Where a script was directly derived from upstream work, the source is named in a header comment in that file.
+
+- **FR33THY** — <https://github.com/FR33THYFR33THY/Ultimate>. Source for MPO disable, MMAgent tuning, NIC power-savings disable, IPv6 unbind, Spectre / Meltdown override, DEP toggle, NVIDIA P0 state, AMD ULPS disable, and Offline Files / Sync Center disable. See `docs/freethy-integration.md` for the full inventory.
+- **Khorvie Tech** — original lineage credit retained in `Notice.txt`.
+- **Chris Titus Tech** — <https://github.com/ChrisTitusTech/winutil>. Wrapped by `9 cleanup/chris-titus-winutil.bat`.
+- **Wagnardsoft** — Display Driver Uninstaller (DDU). Wrapped by `DduManual.ps1` / `DduAuto.ps1`.

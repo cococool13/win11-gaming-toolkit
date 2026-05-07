@@ -150,3 +150,27 @@ Saves IRQ/DMA resources and can reduce latency:
 | Disable CSM | Required for ReBAR | Low (check UEFI boot first) |
 | Fan: Performance | 2-5% (higher boost clocks) | None (louder fans) |
 | Disable unused devices | 0-2% (reduces latency) | None |
+
+---
+
+## Diagnostic Tools
+
+These tools are not bundled with the toolkit, but they are the standard kit for verifying BIOS settings, monitoring temps under load, and capturing baseline benchmarks before and after tuning. Install whichever you need from the upstream source.
+
+The Codex audit also added software-only Edge background and NTFS last-access tweaks under `5 registry tweaks/individual/`. They do not require BIOS/UEFI changes.
+
+| Tool | What it tells you | Source |
+|------|-------------------|--------|
+| HWInfo64 | Sensor readout: per-core clocks, package temps, VRM telemetry, RAM speed and timings | <https://www.hwinfo.com> |
+| GPU-Z | GPU clocks, memory speed, ReBAR status, BIOS version, sensor log | <https://www.techpowerup.com/gpuz> |
+| CPU-Z | CPU model and stepping, cache topology, RAM SPD profiles | <https://www.cpuid.com/softwares/cpu-z.html> |
+| MemTest86 | RAM stability test (boot from USB, hours-long burn-in) | <https://www.memtest86.com> |
+| CrystalDiskInfo | SMART health, drive temps, total host writes | <https://crystalmark.info> |
+| LatencyMon | DPC latency profiling — diagnoses driver-induced stutter | <https://www.resplendence.com/latencymon> |
+| Furmark / OCCT | Synthetic GPU / PSU stress tests | <https://www.ozone3d.net> / <https://www.ocbase.com> |
+
+After applying BIOS changes:
+
+1. Verify RAM speed: **Task Manager > Performance > Memory**. Should show rated speed, not 2133 / 2400 MHz default.
+2. Verify ReBAR: **GPU-Z** main tab, look for `Resizable BAR: Enabled`.
+3. Profile DPC latency: **LatencyMon** for 5 minutes idle, then 5 minutes in-game. Anything > 1000 µs warrants driver investigation.

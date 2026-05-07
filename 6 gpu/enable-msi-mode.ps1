@@ -1,56 +1,84 @@
 # ============================================================
-# Enable MSI Mode for All GPUs
+# Enable MSI Mode for Detected GPUs
 # Windows 11 Gaming Optimization Guide
 # ============================================================
-# Enables Message Signaled Interrupts (MSI) for all GPU devices.
-# MSI mode has lower latency than legacy line-based interrupts,
-# which can reduce micro-stuttering in games.
+# Enables Message Signaled Interrupts (MSI) for real GPUs only.
+# Filters out Microsoft Basic Display Adapter, Hyper-V, and
+# virtual displays (Parsec, OBS Virtual Cam, IDD drivers).
 #
-# Run as Administrator in PowerShell.
+# Vendor match: VEN_10DE (NVIDIA), VEN_1002 (AMD), VEN_8086 (Intel).
+#
+# Tracked via Set-TrackedRegistry so REVERT-EVERYTHING can restore
+# the prior MSI mode state from the manifest.
+#
+# Optional: -IncludeStorage also enables MSI on the primary NVMe
+# controller. Off by default; opt-in.
 # ============================================================
 
-Write-Host ""
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "  Enable MSI Mode for GPUs" -ForegroundColor Cyan
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host ""
+param([switch]$IncludeStorage)
 
-if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host "[ERROR] Run this script as Administrator." -ForegroundColor Red
-    Read-Host "Press Enter to exit"
-    exit 1
+. "$PSScriptRoot\..\lib\toolkit-state.ps1"
+. "$PSScriptRoot\..\lib\ui-helpers.ps1"
+. "$PSScriptRoot\..\lib\gpu-detection.ps1"
+
+$Host.UI.RawUI.WindowTitle = "Enable MSI Mode for GPUs"
+UI-Header -Title "Enable MSI Mode for GPUs" -Subtitle "Lower interrupt latency for real display devices only"
+UI-RequireAdmin -ScriptName "Enable MSI Mode"
+
+Initialize-ToolkitState | Out-Null
+UI-ResetCounters
+
+$gpuDevices = @(Get-GpuVendor)
+if ($gpuDevices.Count -eq 0) {
+    UI-Note -Message "[SKIP] No NVIDIA / AMD / Intel display devices found." -Color $script:UI_Warning
+    Add-ToolkitStepResult -Key "gpu-msi" -Tier "Advanced" -Status "skipped" -Reason "No real GPUs detected"
+    UI-Exit
+    exit 0
 }
 
-$gpuDevices = Get-PnpDevice -Class Display -ErrorAction SilentlyContinue
-
-if (-not $gpuDevices) {
-    Write-Host "[WARNING] No display devices found." -ForegroundColor Yellow
-    Read-Host "Press Enter to exit"
-    exit 1
-}
-
+UI-Section -Title "Detected real GPUs"
 foreach ($gpu in $gpuDevices) {
-    $name = $gpu.FriendlyName
-    $id = $gpu.InstanceId
-    $regPath = "HKLM:\SYSTEM\CurrentControlSet\Enum\$id\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
-
-    Write-Host "  GPU: $name" -ForegroundColor White
-
-    # Create registry path if it doesn't exist
-    if (-not (Test-Path $regPath)) {
-        New-Item -Path $regPath -Force | Out-Null
-    }
-
-    Set-ItemProperty -Path $regPath -Name "MSISupported" -Value 1 -Type DWord -Force
-    Write-Host "    MSI Mode: Enabled" -ForegroundColor Green
+    UI-Note -Message ("  {0}  ({1}, VEN_{2})" -f $gpu.FriendlyName, $gpu.Vendor.ToUpper(), $gpu.DeviceId)
 }
 
-Write-Host ""
-Write-Host "[DONE] MSI mode enabled for all GPUs." -ForegroundColor Green
-Write-Host "A reboot is required for changes to take effect." -ForegroundColor Yellow
-Write-Host ""
-Write-Host "To verify after reboot:" -ForegroundColor Gray
-Write-Host "  Open Device Manager > Display Adapters > your GPU >" -ForegroundColor Gray
-Write-Host "  Properties > Resources > check for 'Message Signaled'" -ForegroundColor Gray
-Write-Host ""
-Read-Host "Press Enter to exit"
+UI-Section -Title "Applying MSI mode"
+foreach ($gpu in $gpuDevices) {
+    UI-Step -Label "MSI mode for $($gpu.FriendlyName)" -Action {
+        $regPath = "HKLM:\SYSTEM\CurrentControlSet\Enum\$($gpu.InstanceId)\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
+        Set-ToolkitRegistryValue `
+            -Id "gpu-msi:$($gpu.InstanceId)" `
+            -Path $regPath `
+            -Name "MSISupported" `
+            -Value 1 -Type "DWord" `
+            -Tier "Advanced" -Step "gpu-msi"
+        Add-ToolkitStepResult -Key "gpu-msi:$($gpu.InstanceId)" -Tier "Advanced" -Status "applied" -Reason "MSI mode enabled"
+    }
+}
+
+if ($IncludeStorage) {
+    UI-Section -Title "Storage MSI extension (-IncludeStorage)"
+    $nvmeDevices = @(Get-PnpDevice -Class SCSIAdapter -ErrorAction SilentlyContinue |
+        Where-Object { $_.InstanceId -match "PCI\\VEN_" -and $_.FriendlyName -match "NVMe" -and $_.Status -eq "OK" })
+    if ($nvmeDevices.Count -eq 0) {
+        UI-Skip -Label "NVMe MSI" -Reason "No NVMe controller detected"
+    } else {
+        foreach ($nvme in $nvmeDevices) {
+            UI-Step -Label "MSI mode for $($nvme.FriendlyName)" -Action {
+                $regPath = "HKLM:\SYSTEM\CurrentControlSet\Enum\$($nvme.InstanceId)\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
+                Set-ToolkitRegistryValue `
+                    -Id "gpu-msi:$($nvme.InstanceId)" `
+                    -Path $regPath `
+                    -Name "MSISupported" `
+                    -Value 1 -Type "DWord" `
+                    -Tier "Advanced" -Step "gpu-msi"
+                Add-ToolkitStepResult -Key "gpu-msi:$($nvme.InstanceId)" -Tier "Advanced" -Status "applied" -Reason "NVMe MSI mode enabled"
+            }
+        }
+    }
+}
+
+UI-Summary -DoneMessage "MSI mode applied" -Details @(
+    "A reboot is required for the change to take effect.",
+    "Verify after reboot: Device Manager > Display Adapters > GPU > Properties > Resources > Message Signaled."
+) -RevertHint "Run REVERT-EVERYTHING.ps1 to restore the prior MSI mode state."
+UI-Exit

@@ -16,10 +16,11 @@ function Get-GpuVendor {
         PCI Vendor ID: 10DE = NVIDIA, 1002 = AMD, 8086 = Intel.
     #>
 
-    $devices = @(Get-PnpDevice -Class Display -ErrorAction SilentlyContinue |
+    $devices = @(Get-PnpDevice -Class Display -PresentOnly -ErrorAction SilentlyContinue |
         Where-Object {
             $_.FriendlyName -notmatch "Microsoft Basic|Hyper-V" -and
-            $_.Status -ne "Error"
+            $_.Status -eq "OK" -and
+            $_.InstanceId -match "VEN_(10DE|1002|8086)"
         })
 
     $results = @()

@@ -26,12 +26,30 @@ Run:
 .\launcher.ps1
 ```
 
-Use the launcher as the main entrypoint. It groups the repo into:
+Use the launcher as the main entrypoint. The header reports admin
+state, OS build, and how many entries the toolkit manifest has
+recorded. Below the header are three sections:
 
-- `Setup` for backup and prerequisites
-- `Optimize` for power, services, registry, cleanup, and security trade-offs
-- `GPU and Network` for device-specific tuning and driver flows
-- `Safety and Verify` for full apply, full revert, and verification
+**Quick actions** — `[A]` Apply All, `[V]` Verify status, `[R]` Revert
+All. These call `APPLY-EVERYTHING.ps1`, `10 verify\verify-tweaks.ps1`,
+and `REVERT-EVERYTHING.ps1` directly.
+
+**Categories** — `[0]` through `[10]` open per-folder submenus that
+list every tweak script in that folder. Each category shows a risk
+tier (`Safe` / `Advanced` / `Trade-off`) and, when the manifest knows,
+a status indicator: `[OK] applied` if a tweak from this category is
+recorded, or `! drift` if a tracked tweak's underlying registry value
+has reverted to its pre-toolkit state outside the toolkit.
+
+**Tools** — `[M]` opens `manifest.json` in the default editor; `[L]`
+tails the newest log under `%ProgramData%\Win11GamingToolkit\logs`;
+`[B]` regenerates the baseline manifest after a typed `YES` confirm;
+`[?]` shows full help; `[Q]` quits.
+
+The launcher refuses to run as a non-admin and exits clean. It is
+PowerShell 5.1 compatible; no external modules are required. In
+PowerShell ISE or in narrow terminals it falls back to ASCII box
+characters automatically.
 
 ### Aggressive path: full-stack apply
 

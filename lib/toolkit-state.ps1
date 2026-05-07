@@ -6,10 +6,15 @@
 $script:ToolkitVersion = "2.0.0"
 $script:ToolkitStateRoot = Join-Path $env:ProgramData "Win11GamingToolkit\state"
 $script:ToolkitStateFile = Join-Path $script:ToolkitStateRoot "manifest.json"
+$script:ToolkitLogRoot = Join-Path $env:ProgramData "Win11GamingToolkit\logs"
 $script:ToolkitState = $null
 
 function Get-ToolkitManifestPath {
     return $script:ToolkitStateFile
+}
+
+function Get-ToolkitLogRoot {
+    return $script:ToolkitLogRoot
 }
 
 function Test-ToolkitMapHasKey {

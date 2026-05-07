@@ -3,7 +3,12 @@
 # Windows 11 Gaming Optimization Guide
 # ============================================================
 
-$script:ToolkitVersion = "2.0.0"
+$script:ToolkitVersionFile = Join-Path $PSScriptRoot "..\VERSION"
+$script:ToolkitVersion = if (Test-Path -LiteralPath $script:ToolkitVersionFile) {
+    (Get-Content -LiteralPath $script:ToolkitVersionFile -Raw).Trim()
+} else {
+    "0.0.0"
+}
 $script:ToolkitStateRoot = Join-Path $env:ProgramData "Win11GamingToolkit\state"
 $script:ToolkitStateFile = Join-Path $script:ToolkitStateRoot "manifest.json"
 $script:ToolkitLogRoot = Join-Path $env:ProgramData "Win11GamingToolkit\logs"

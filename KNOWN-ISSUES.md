@@ -95,3 +95,23 @@ Driver-related items (MSI mode for GPU on Snapdragon X) are not separately teste
 ### Stripped Windows images (Server Core, debloat ISOs)
 
 `install-timer-resolution-service.ps1` requires `csc.exe` from .NET Framework 4.0. Missing on stripped images. The script fails with a clear error and exits cleanly. Use `Add-WindowsCapability -Online -Name 'NetFx3~~~~'` to recover, then re-run.
+
+## Logged for next release
+
+Surfaced by the v1.0.0 production-readiness audit. None block v1.0.0 because the affected behaviors are either intentional defaults applies, recoverable manually, or covered by the per-folder script (which routes through the toolkit-state helpers correctly). Logged here so they aren't forgotten.
+
+### `APPLY-EVERYTHING.ps1` Nagle write bypasses toolkit-state
+
+Lines 399–400 set `TcpAckFrequency` and `TCPNoDelay` on every interface via raw `Set-ItemProperty` instead of `Set-ToolkitRegistryValue`. Consequence: `REVERT-EVERYTHING.ps1` will not undo Nagle changes that came from APPLY's path. The standalone `7 network/optimize-network.ps1` already uses `Set-ToolkitRegistryValue` for the same writes — running that script gives revertable Nagle. Default (unset) Nagle behavior is harmless; this is a revert-completeness gap, not a stability risk. Convert APPLY's Nagle block to `Set-TrackedRegistry` in v1.1.
+
+### `APPLY-EVERYTHING.ps1` startup-cleanup `reg delete` calls are not tracked
+
+Phase 6 (Startup Cleanup) deletes `HKCU\...\Run` autostart entries for OneDrive, Teams, etc. via raw `reg delete`. These are deletions of vendor-installed values — there is nothing for the manifest to capture as `before` state in a useful way, and revert relies on the user re-launching OneDrive / Teams to re-register their autostart hooks. Acceptable as an intentional defaults-style policy apply. Document the revert expectation in `GUIDE.md` if user reports surface in the field.
+
+### `APPLY-EVERYTHING.ps1` Power-Plan attribute unhide is not tier-tagged
+
+Line 163 (`reg add ... PowerSettings\54533251.../Attributes /d 0`) is a metadata write that unhides a hidden power setting so the next `Set-PowerIdx` call can reach it. The Phase block is tier-tagged `Advanced`, but the individual `reg add` is not routed through `Set-TrackedRegistry` because there is no functional change to revert — the Attributes flag only controls visibility, not behavior. Acceptable; no action needed.
+
+### Notice.txt scope
+
+`Notice.txt` credits Khorvie Tech only — the original toolkit lineage. FR33THY, Chris Titus Tech, and Wagnardsoft are credited in `GUIDE.md` Credits and per-file headers. Owner-decision item from `CHANGES.md` Q2: expand `Notice.txt` to consolidate all upstream credits, or keep it focused on lineage. No technical impact either way.

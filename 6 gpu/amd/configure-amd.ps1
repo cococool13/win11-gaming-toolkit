@@ -37,15 +37,11 @@ function Apply-AmdAdapterSettings {
 
     Write-Host "  Applying AMD adapter-level settings..." -ForegroundColor Cyan
 
-    # Disable Ultra Low Power State (ULPS) — prevents stuttering on wake
-    Set-ToolkitRegistryValue -Id "amd:EnableUlps" `
-        -Path $AdapterPath -Name "EnableUlps" `
-        -Value 0 -Type "DWord" -Tier "Advanced" -Step $stepName
-
-    # Disable ULPS for the NA key variant too
-    Set-ToolkitRegistryValue -Id "amd:EnableUlps_NA" `
-        -Path $AdapterPath -Name "EnableUlps_NA" `
-        -Value 0 -Type "DWord" -Tier "Advanced" -Step $stepName
+    # CURSOR-AUDIT #25: ULPS disable was previously duplicated here AND in
+    # 6 gpu/configure-amd-ulps.ps1 (different manifest Ids; same target keys).
+    # ULPS is now owned by configure-amd-ulps.ps1 (per-adapter Id format,
+    # vendor-gated to AMD, paired revert at revert-amd-ulps.ps1). To get
+    # ULPS off, run that script before or after this one.
 
     # Disable deep sleep clock gating — keeps GPU responsive
     Set-ToolkitRegistryValue -Id "amd:PP_SclkDeepSleepDisable" `

@@ -102,5 +102,28 @@
         # committed in 17729ec and break any tool that doesn't grok BOMs
         # (we still have to support some legacy .bat callers).
         'PSUseBOMForUnicodeEncodedFile'
+
+        # PSUseApprovedVerbs / PSUseSingularNouns — the toolkit uses a
+        # cross-cutting namespace prefix convention for internal helpers:
+        #   UI-*       lib/ui-helpers.ps1 colored-output functions
+        #   Reg-Add    APPLY-EVERYTHING.ps1 inline reg-add wrapper
+        #   Run-Step   APPLY-EVERYTHING.ps1 inline progress wrapper
+        #   Apply-*    per-vendor GPU configure helpers (internal)
+        #   Ensure-*   lib download / preflight helpers
+        #   Capture-*  lib state-snapshot helpers
+        #   Record-*   lib state-mutation helpers (logs to manifest)
+        #   Normalize- lib data-shape helpers
+        #   Stage-*    lib download-and-prepare helpers
+        #   Fetch-*    lib HTTP fetch helpers
+        # These names predate PSScriptAnalyzer adoption and are referenced
+        # from 100+ call sites across the tree. A wholesale rename to
+        # approved verbs (Show-, Write-, Add-, Invoke-, Confirm-, etc.)
+        # is queued as a v2 refactor — KNOWN-ISSUES.md tracks it.
+        # New module-exported functions added going forward MUST use
+        # approved verbs (enforced by code review, since the analyzer
+        # rule is now disabled). New INTERNAL helpers may join the
+        # prefix namespace if consistency outweighs convention.
+        'PSUseApprovedVerbs'
+        'PSUseSingularNouns'
     )
 }

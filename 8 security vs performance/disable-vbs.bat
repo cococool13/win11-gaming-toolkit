@@ -3,11 +3,19 @@
 :: Disable VBS / Memory Integrity (HVCI)
 :: Windows 11 Gaming Optimization Guide
 :: ============================================================
+:: Tier: Security Trade-off
+::
 :: WARNING: This REDUCES your security protection.
 :: Read README.txt in this folder before running.
 ::
 :: This is the single biggest FPS gain on modern Win11.
 :: Can improve FPS by 5-25% depending on the game and CPU.
+::
+:: ANTI-CHEAT: BattlEye and EAC on Win11 24H2+ may stop working
+:: after this change. R6 Siege and other BattlEye titles may
+:: refuse to launch. Test affected titles after reboot. If a
+:: game stops working, run enable-vbs.bat or REVERT-EVERYTHING.ps1.
+::
 :: Must be run as Administrator. Requires reboot.
 :: ============================================================
 
@@ -22,6 +30,11 @@ echo   %C_DIM%Read the README.txt for full details.%C_R%
 echo.
 echo   %C_OK%Benefits:%C_R% +5-25%% FPS improvement in many games
 echo   %C_ERR%Risk:%C_R%     Reduced protection against kernel-level exploits
+echo.
+echo   %C_BERR%ANTI-CHEAT WARNING:%C_R%
+echo   %C_ERR%BattlEye and EAC on Win11 24H2+ may stop working after this change.%C_R%
+echo   %C_ERR%R6 Siege and other BattlEye titles may refuse to launch.%C_R%
+echo   %C_WARN%Test affected titles after reboot; run enable-vbs.bat to revert.%C_R%
 echo.
 echo   %C_WARN%NOTE: This also disables LSA Protection (LSASS credential guard).%C_R%
 echo   %C_DIM%This means credential-dumping tools could extract passwords%C_R%

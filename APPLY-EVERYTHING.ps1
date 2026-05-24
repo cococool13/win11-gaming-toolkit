@@ -3,8 +3,7 @@
 # ============================================================
 #
 # Applies the maximal supported tweak set in one run.
-# Unsupported tweaks are skipped. Security/functionality trade-offs
-# are intentional in this flow.
+# Unsupported tweaks are skipped.
 #
 # What it does:
 #   1. Creates a system restore point + registry backup
@@ -15,15 +14,30 @@
 #   6. Disables startup bloat
 #   7. Enables GPU MSI mode
 #   8. Optimizes network + DNS
-#   9. Suppresses Windows Update aggressively
-#   10. Disables VBS / HVCI / LSA
+#   9. (opt-in) Suppresses Windows Update aggressively
+#   10. (opt-in) Disables VBS / HVCI / LSA / Spectre / Meltdown
 #   11. Applies Windows customization tweaks
 #   12. Adds Defender exclusions
 #   13. Removes bloatware apps
 #   14. Cleans temp files
 #
+# Phases 9 and 10 are Security Trade-off tier and only run when
+# -IncludeSecurityTradeoffs is passed. Default is OFF.
+#
+# ANTI-CHEAT: -IncludeSecurityTradeoffs disables HVCI/VBS. On Win11
+# 24H2+ this may break BattlEye and EAC — R6 Siege and similar titles
+# may refuse to launch. Test affected games after reboot.
+#
 # Undo: REVERT-EVERYTHING.ps1
 # ============================================================
+
+[CmdletBinding()]
+param(
+    # Run Phases 9 (Windows Update suppression) and 10 (VBS/HVCI/LSA/Spectre).
+    # Default OFF per the v1.1 audit gate. Pass -IncludeSecurityTradeoffs to
+    # opt in. Skipped phases are recorded in the manifest as "skipped".
+    [switch]$IncludeSecurityTradeoffs
+)
 
 . "$PSScriptRoot\lib\toolkit-state.ps1"
 . "$PSScriptRoot\lib\ui-helpers.ps1"
@@ -40,10 +54,20 @@ $state = Initialize-ToolkitState
 $profile = $state.context
 
 UI-ShowProfile -Profile $profile
-UI-Confirm -Message "This path applies every automatable tweak, including security and convenience trade-offs." -Warnings @(
+UI-Confirm -Message "This path applies every automatable tweak (Safe + Advanced)." -Warnings @(
     "Rollback is strongest where the manifest captured prior state.",
-    "Use the launcher or GUIDE.md if you want a narrower path."
+    "Use the launcher or GUIDE.md if you want a narrower path.",
+    "Phases 9 (Windows Update) + 10 (VBS/HVCI/LSA/Spectre) are OFF by default; pass -IncludeSecurityTradeoffs to include them."
 )
+
+if ($IncludeSecurityTradeoffs) {
+    UI-Confirm -Message "Security trade-offs are ENABLED for this run. Phase 9 (Windows Update suppression) and Phase 10 (VBS / HVCI / LSA / Spectre) will execute." -Warnings @(
+        "ANTI-CHEAT: Disabling HVCI/VBS may break BattlEye and EAC on Win11 24H2+.",
+        "Specifically, R6 Siege and other BattlEye titles may refuse to launch.",
+        "Test your titles after reboot. Run REVERT-EVERYTHING.ps1 if anything breaks.",
+        "Windows Update suppression stalls security/driver/anti-cheat patches. Plan to apply monthly updates manually."
+    )
+}
 
 $startTime = Get-Date
 UI-ResetCounters
@@ -407,51 +431,64 @@ Run-Step "DNS set to Cloudflare on active adapters" {
 }
 
 # ============================================================
-# STEP 9: WINDOWS UPDATE
+# STEP 9: WINDOWS UPDATE  (Security Trade-off — gated)
 # ============================================================
-UI-Section -Title "Phase 9: Windows Update Suppression" -Context "Intentional security trade-off for dedicated gaming setups"
+UI-Section -Title "Phase 9: Windows Update Suppression" -Context "Security Trade-off — only runs with -IncludeSecurityTradeoffs"
 
-Run-Step "Disable auto-restart for updates" {
-    Set-TrackedRegistry -Id "reg:NoAutoRebootWithLoggedOnUsers" -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "NoAutoRebootWithLoggedOnUsers" -Value 1 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
-    Set-TrackedRegistry -Id "reg:AUOptions" -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "AUOptions" -Value 3 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
-    Set-TrackedRegistry -Id "reg:NoAutoUpdate" -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "NoAutoUpdate" -Value 1 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
-}
-Run-Step "Set active hours 8AM-2AM" {
-    Set-TrackedRegistry -Id "reg:ActiveHoursStart" -Path "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings" -Name "ActiveHoursStart" -Value 8 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
-    Set-TrackedRegistry -Id "reg:ActiveHoursEnd" -Path "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings" -Name "ActiveHoursEnd" -Value 2 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
-    Set-TrackedRegistry -Id "reg:IsActiveHoursEnabled" -Path "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings" -Name "IsActiveHoursEnabled" -Value 1 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
-}
-foreach ($updateSvc in @("wuauserv", "UsoSvc", "DoSvc")) {
-    Run-Step "Disable $updateSvc" {
-        Set-TrackedService -Name $updateSvc -Mode "disabled" -Tier "Security Trade-off" -Step "windows-update"
-        Stop-Service -Name $updateSvc -Force -ErrorAction SilentlyContinue
+if ($IncludeSecurityTradeoffs) {
+    Run-Step "Disable auto-restart for updates" {
+        Set-TrackedRegistry -Id "reg:NoAutoRebootWithLoggedOnUsers" -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "NoAutoRebootWithLoggedOnUsers" -Value 1 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
+        Set-TrackedRegistry -Id "reg:AUOptions" -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "AUOptions" -Value 3 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
+        Set-TrackedRegistry -Id "reg:NoAutoUpdate" -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "NoAutoUpdate" -Value 1 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
     }
-}
-Run-Step "Disable WaaSMedicSvc (best effort)" {
-    Set-TrackedRegistry -Id "reg:WaaSMedicSvcStart" -Path "HKLM:\SYSTEM\CurrentControlSet\Services\WaaSMedicSvc" -Name "Start" -Value 4 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
+    Run-Step "Set active hours 8AM-2AM" {
+        Set-TrackedRegistry -Id "reg:ActiveHoursStart" -Path "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings" -Name "ActiveHoursStart" -Value 8 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
+        Set-TrackedRegistry -Id "reg:ActiveHoursEnd" -Path "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings" -Name "ActiveHoursEnd" -Value 2 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
+        Set-TrackedRegistry -Id "reg:IsActiveHoursEnabled" -Path "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings" -Name "IsActiveHoursEnabled" -Value 1 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
+    }
+    foreach ($updateSvc in @("wuauserv", "UsoSvc", "DoSvc")) {
+        Run-Step "Disable $updateSvc" {
+            Set-TrackedService -Name $updateSvc -Mode "disabled" -Tier "Security Trade-off" -Step "windows-update"
+            Stop-Service -Name $updateSvc -Force -ErrorAction SilentlyContinue
+        }
+    }
+    Run-Step "Disable WaaSMedicSvc (best effort)" {
+        Set-TrackedRegistry -Id "reg:WaaSMedicSvcStart" -Path "HKLM:\SYSTEM\CurrentControlSet\Services\WaaSMedicSvc" -Name "Start" -Value 4 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
+    }
+} else {
+    Skip-Step -Description "phase9-windows-update" -Reason "Skipped — pass -IncludeSecurityTradeoffs to include" -Tier "Security Trade-off"
 }
 
 # ============================================================
-# STEP 10: SECURITY TRADE-OFFS
+# STEP 10: SECURITY TRADE-OFFS  (Security Trade-off — gated)
 # ============================================================
-UI-Section -Title "Phase 10: Security Trade-offs" -Context "Reduce Windows protections that add overhead"
+UI-Section -Title "Phase 10: Security Trade-offs" -Context "Security Trade-off — only runs with -IncludeSecurityTradeoffs"
 
-Run-Step "Disable Memory Integrity (HVCI)" {
-    Set-TrackedRegistry -Id "reg:HVCIEnabled" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity" -Name "Enabled" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
-}
-Run-Step "Disable VBS" {
-    Set-TrackedRegistry -Id "reg:EnableVBS" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard" -Name "EnableVirtualizationBasedSecurity" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
-}
-Run-Step "Disable LSA protection" {
-    Set-TrackedRegistry -Id "reg:RunAsPPL" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name "RunAsPPL" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
-    Set-TrackedRegistry -Id "reg:LsaCfgFlags" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name "LsaCfgFlags" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
-}
-Run-Step "Disable Spectre / Meltdown CPU mitigations" {
-    # Source: FR33THYFR33THY/Ultimate — 8 Advanced/3 Spectre Meltdown.ps1
-    # Tier matches the surrounding section (VBS / HVCI / LSA also Security Trade-off).
-    $mmPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"
-    Set-TrackedRegistry -Id "reg:FeatureSettingsOverride" -Path $mmPath -Name "FeatureSettingsOverride" -Value 3 -Type "DWord" -Tier "Security Trade-off" -Step "security"
-    Set-TrackedRegistry -Id "reg:FeatureSettingsOverrideMask" -Path $mmPath -Name "FeatureSettingsOverrideMask" -Value 3 -Type "DWord" -Tier "Security Trade-off" -Step "security"
+if ($IncludeSecurityTradeoffs) {
+    UI-Note -Message "[!] ANTI-CHEAT: HVCI/VBS changes may affect BattlEye and EAC on Win11 24H2+." -Color "Red"
+    UI-Note -Message "    R6 Siege and other BattlEye titles may refuse to launch. Test after reboot." -Color "Red"
+    UI-Note -Message "    Revert via REVERT-EVERYTHING.ps1 if affected titles stop working." -Color "Yellow"
+    Write-Host ""
+
+    Run-Step "Disable Memory Integrity (HVCI)" {
+        Set-TrackedRegistry -Id "reg:HVCIEnabled" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity" -Name "Enabled" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
+    }
+    Run-Step "Disable VBS" {
+        Set-TrackedRegistry -Id "reg:EnableVBS" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard" -Name "EnableVirtualizationBasedSecurity" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
+    }
+    Run-Step "Disable LSA protection" {
+        Set-TrackedRegistry -Id "reg:RunAsPPL" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name "RunAsPPL" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
+        Set-TrackedRegistry -Id "reg:LsaCfgFlags" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name "LsaCfgFlags" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
+    }
+    Run-Step "Disable Spectre / Meltdown CPU mitigations" {
+        # Source: FR33THYFR33THY/Ultimate — 8 Advanced/3 Spectre Meltdown.ps1
+        # Tier matches the surrounding section (VBS / HVCI / LSA also Security Trade-off).
+        $mmPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"
+        Set-TrackedRegistry -Id "reg:FeatureSettingsOverride" -Path $mmPath -Name "FeatureSettingsOverride" -Value 3 -Type "DWord" -Tier "Security Trade-off" -Step "security"
+        Set-TrackedRegistry -Id "reg:FeatureSettingsOverrideMask" -Path $mmPath -Name "FeatureSettingsOverrideMask" -Value 3 -Type "DWord" -Tier "Security Trade-off" -Step "security"
+    }
+} else {
+    Skip-Step -Description "phase10-security-tradeoffs" -Reason "Skipped — pass -IncludeSecurityTradeoffs to include" -Tier "Security Trade-off"
 }
 
 # ============================================================

@@ -2,11 +2,18 @@
 # VBS / Memory Integrity Configuration (Smart)
 # Windows 11 Gaming Optimization Guide
 # ============================================================
+# Tier: Security Trade-off
+#
 # Disables VBS, HVCI (Memory Integrity), and optionally LSA
 # Protection for maximum gaming performance (+5-25% FPS).
 #
 # Pre-checks current state, skips if already configured.
 # Tracks all changes in manifest for exact rollback.
+#
+# ANTI-CHEAT WARNING: HVCI/VBS changes may affect BattlEye and EAC
+# on Win11 24H2+. R6 Siege and other BattlEye titles may refuse to
+# launch after this script runs. Test affected titles after reboot.
+# If a game stops working, re-run with -Enable or use REVERT-EVERYTHING.ps1.
 #
 # Replaces: disable-vbs.bat, enable-vbs.bat
 # Must be run as Administrator. Requires reboot.
@@ -100,6 +107,10 @@ if ($Enable) {
     Write-Host ""
     Write-Host "  Benefits: +5-25% FPS improvement in many games" -ForegroundColor Green
     Write-Host "  Risk:     Reduced protection against kernel-level exploits" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "  ANTI-CHEAT: BattlEye and EAC on Win11 24H2+ may stop working." -ForegroundColor Red
+    Write-Host "  R6 Siege and other BattlEye titles may refuse to launch." -ForegroundColor Red
+    Write-Host "  Test affected titles after reboot; revert if needed." -ForegroundColor Yellow
     Write-Host ""
     Write-Host "  Press Ctrl+C to cancel, or" -ForegroundColor Yellow
     Read-Host "  Press Enter to continue"

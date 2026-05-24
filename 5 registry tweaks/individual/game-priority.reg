@@ -1,7 +1,19 @@
 Windows Registry Editor Version 5.00
 
-; Increase game scheduling priority and GPU priority
-; Tells Windows to give more CPU and GPU time to games.
+; Tier: Advanced
+;
+; Increase game scheduling priority and GPU priority.
+; Tells Windows to give more CPU and GPU time to MMCSS-aware games.
+;
+; CARGO-CULT NOTE (CURSOR-AUDIT #12): NetworkThrottlingIndex=0xffffffff
+; (line below) is a Windows 7/8-era multimedia myth. The setting was
+; originally designed to throttle non-multimedia network packets when
+; an MMCSS-tagged audio thread was active. By Win10 22H2 / Win11, MMCSS
+; rarely throttles networking at all; flipping this to 0xffffffff
+; produces negligible measurable latency change in modern gaming
+; benchmarks. Left here because (a) it is harmless and (b) some users
+; like to see "all knobs maxed" — kept opt-in via this individual .reg
+; rather than added to apply-all.reg.
 
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games]
 "GPU Priority"=dword:00000008

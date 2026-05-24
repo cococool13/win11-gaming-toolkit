@@ -42,7 +42,11 @@ Windows Registry Editor Version 5.00
 "Scheduling Category"="High"
 "SFIO Priority"="High"
 
-; --- Disable network throttling ---
+; --- Disable network throttling (NetworkThrottlingIndex is cargo-cult on Win11) ---
+; CURSOR-AUDIT #12: NetworkThrottlingIndex=0xffffffff is a Win7/8-era MMCSS
+; myth; negligible measurable benefit on Win11. SystemResponsiveness=0 still
+; has a small effect on MMCSS scheduling. Kept here because users running the
+; .reg bundle expect "all knobs"; documented so behavior is auditable.
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile]
 "SystemResponsiveness"=dword:00000000
 "NetworkThrottlingIndex"=dword:ffffffff

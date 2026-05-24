@@ -39,6 +39,14 @@ function Get-ToolkitMapValue {
 }
 
 function Set-ToolkitMapValue {
+    # In-memory hashtable / PSObject mutation only — does NOT touch
+    # registry, services, files, or any system state. PSUseShouldProcess
+    # is a heuristic on the "Set-" verb and gives a false positive here.
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+        'PSUseShouldProcessForStateChangingFunctions', '',
+        Justification = 'In-memory state mutation only; no system side effect.'
+    )]
+    [CmdletBinding()]
     param($Map, [string]$Key, $Value)
     if ($Map -is [hashtable]) {
         $Map[$Key] = $Value
@@ -253,6 +261,7 @@ function Get-ToolkitRegistryState {
 }
 
 function Set-ToolkitRegistryValue {
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     param(
         [string]$Id,
         [string]$Path,
@@ -276,7 +285,13 @@ function Set-ToolkitRegistryValue {
     }
 
     if (-not (Test-Path $Path)) {
-        New-Item -Path $Path -Force | Out-Null
+        # ShouldProcess gate on parent-key creation — propagates -WhatIf
+        # from the calling script via the standard PSCmdlet preference chain.
+        if ($PSCmdlet.ShouldProcess($Path, 'New-Item (registry key)')) {
+            New-Item -Path $Path -Force | Out-Null
+        } else {
+            return
+        }
     }
     $propertyType = switch ($Type) {
         "DWord" { "DWord" }
@@ -312,6 +327,11 @@ function Set-ToolkitRegistryValue {
         }
     }
     if ($skipWrite) {
+        return
+    }
+
+    $target = if ($Name -eq "") { "$Path\(default)" } else { "$Path\$Name" }
+    if (-not $PSCmdlet.ShouldProcess($target, "Set value '$Value' (type $propertyType)")) {
         return
     }
 
@@ -358,6 +378,7 @@ function Restore-ToolkitRegistryValue {
 }
 
 function Set-ToolkitServiceStartMode {
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     param(
         [string]$Name,
         [string]$Mode,
@@ -376,6 +397,10 @@ function Set-ToolkitServiceStartMode {
                 before = if ($service) { $service.StartMode } else { $null }
             })
         Save-ToolkitState
+    }
+
+    if (-not $PSCmdlet.ShouldProcess("service:$Name", "Set start mode to '$Mode'")) {
+        return
     }
 
     $output = sc.exe config $Name start= $Mode 2>&1
@@ -483,6 +508,7 @@ function Capture-ToolkitDnsState {
 }
 
 function Set-ToolkitDnsServers {
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     param(
         [string[]]$ServerAddresses,
         [string]$Tier,
@@ -508,6 +534,9 @@ function Set-ToolkitDnsServers {
                 }
 
                 $target = Get-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -AddressFamily $family -ErrorAction Stop
+                if (-not $PSCmdlet.ShouldProcess("$($adapter.Name)/$family", "Set DNS servers to $($familyServers -join ',')")) {
+                    continue
+                }
                 Set-DnsClientServerAddress -InputObject $target -ServerAddresses $familyServers -ErrorAction Stop
 
                 $current = Get-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -AddressFamily $family -ErrorAction Stop

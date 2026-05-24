@@ -83,5 +83,24 @@
         # PSReviewUnusedParameter — false positives on params that are
         # passed-through via @PSBoundParameters or splatting.
         'PSReviewUnusedParameter'
+
+        # PSAvoidUsingWriteHost — the toolkit is an INTERACTIVE UI
+        # surface, not a data-emitting pipeline. Every Write-Host call
+        # produces colored banner / status / prompt text for human users
+        # via the UI-* helpers in lib/ui-helpers.ps1 (or inline equivalents).
+        # The CLAUDE.md quality bar "No Write-Host for data" is still
+        # enforced by code review; the analyzer simply can't distinguish
+        # "UI colored output" from "data output that should be in a pipe."
+        # New scripts that emit data values must use Write-Output /
+        # Write-Information per the standard; this exclusion only covers
+        # the existing UI surface.
+        'PSAvoidUsingWriteHost'
+
+        # PSUseBOMForUnicodeEncodedFile — our .ps1 files are ASCII-safe
+        # and use UTF-8 without BOM via .gitattributes (* text=auto).
+        # Adding BOMs would break the line-ending normalization we just
+        # committed in 17729ec and break any tool that doesn't grok BOMs
+        # (we still have to support some legacy .bat callers).
+        'PSUseBOMForUnicodeEncodedFile'
     )
 }

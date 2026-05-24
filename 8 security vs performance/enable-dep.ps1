@@ -15,6 +15,11 @@ $Host.UI.RawUI.WindowTitle = "Re-enable DEP"
 UI-Header -Title "Re-enable Data Execution Prevention" -Subtitle "Restore prior nx policy"
 UI-RequireAdmin -ScriptName "Re-enable DEP"
 
+# Audit-trail: log this script invocation to
+# %ProgramData%\Win11GamingToolkit\logs\<stem>-<ts>-<pid>.log
+# (or $XDG_DATA_HOME on dev macOS). Idempotent per process.
+Write-ToolkitScriptStart
+
 UI-ResetCounters
 $beforePath = Join-Path $env:ProgramData "Win11GamingToolkit\state\dep-before.json"
 

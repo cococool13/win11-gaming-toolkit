@@ -15,6 +15,11 @@ $Host.UI.RawUI.WindowTitle = "Revert MMAgent"
 UI-Header -Title "Revert MMAgent" -Subtitle "Restore MMAgent baseline"
 UI-RequireAdmin -ScriptName "Revert MMAgent"
 
+# Audit-trail: log this script invocation to
+# %ProgramData%\Win11GamingToolkit\logs\<stem>-<ts>-<pid>.log
+# (or $XDG_DATA_HOME on dev macOS). Idempotent per process.
+Write-ToolkitScriptStart
+
 if (-not (Get-Command Set-MMAgent -ErrorAction SilentlyContinue)) {
     UI-Note -Message "[ERROR] MMAgent cmdlets are not available on this Windows edition." -Color $script:UI_Error
     UI-Exit

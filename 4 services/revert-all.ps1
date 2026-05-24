@@ -33,6 +33,11 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     exit 1
 }
 
+# Audit-trail: log this script invocation to
+# %ProgramData%\Win11GamingToolkit\logs\<stem>-<ts>-<pid>.log
+# (or $XDG_DATA_HOME on dev macOS). Idempotent per process.
+Write-ToolkitScriptStart
+
 # Services this toolkit knows how to disable. Default-restore targets
 # match disable-services.ps1 for parity with the old .bat behavior.
 # These defaults are only used when the manifest has no entry for the

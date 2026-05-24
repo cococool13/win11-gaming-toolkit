@@ -24,6 +24,13 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 . "$PSScriptRoot\..\lib\download-helpers.ps1"
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"
 
+# Audit-trail: log this script invocation to
+# %ProgramData%\Win11GamingToolkit\logs\<stem>-<ts>-<pid>.log
+# (or $XDG_DATA_HOME on dev macOS). Idempotent per process.
+# Must come AFTER lib/toolkit-state.ps1 dot-source — that's where
+# Write-ToolkitScriptStart is defined.
+Write-ToolkitScriptStart
+
 $extractDir = Join-Path $env:TEMP "NvidiaDriverExtract"
 
 function Install-NvidiaDriver {

@@ -18,6 +18,15 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     exit 1
 }
 
+# Dot-source the toolkit-state lib so Write-ToolkitScriptStart (and any
+# manifest helpers a future enhancement might need) are defined.
+. "$PSScriptRoot\..\..\lib\toolkit-state.ps1"
+
+# Audit-trail: log this script invocation to
+# %ProgramData%\Win11GamingToolkit\logs\<stem>-<ts>-<pid>.log
+# (or $XDG_DATA_HOME on dev macOS). Idempotent per process.
+Write-ToolkitScriptStart
+
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host "  RE-ENABLING WINDOWS UPDATE" -ForegroundColor Cyan

@@ -29,7 +29,7 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 }
 
 $state = Initialize-ToolkitState
-$profile = $state.context
+$machineProfile = $state.context
 $succeeded = 0
 $skippedSmart = 0
 $skippedAlready = 0
@@ -48,9 +48,9 @@ $services = @(
 )
 
 # Show what will happen based on machine profile
-Write-Host "  Machine: $($profile.manufacturer) $($profile.model)" -ForegroundColor Gray
-Write-Host "  Printers: $($profile.printerCount)" -ForegroundColor Gray
-Write-Host "  Domain: $($profile.partOfDomain)" -ForegroundColor Gray
+Write-Host "  Machine: $($machineProfile.manufacturer) $($machineProfile.model)" -ForegroundColor Gray
+Write-Host "  Printers: $($machineProfile.printerCount)" -ForegroundColor Gray
+Write-Host "  Domain: $($machineProfile.partOfDomain)" -ForegroundColor Gray
 Write-Host ""
 
 # Preview changes
@@ -65,8 +65,8 @@ foreach ($svc in $services) {
     $skipReason = $null
 
     # Condition checks
-    if ($svc.Condition -eq "NoPrinters" -and $profile.printerCount -gt 0) {
-        $skipReason = "Printers detected ($($profile.printerCount))"
+    if ($svc.Condition -eq "NoPrinters" -and $machineProfile.printerCount -gt 0) {
+        $skipReason = "Printers detected ($($machineProfile.printerCount))"
     }
 
     # Already disabled?
@@ -107,9 +107,9 @@ foreach ($svc in $services) {
     $current++
 
     # Re-check conditions
-    if ($svc.Condition -eq "NoPrinters" -and $profile.printerCount -gt 0) {
+    if ($svc.Condition -eq "NoPrinters" -and $machineProfile.printerCount -gt 0) {
         Add-ToolkitStepResult -Key "svc:$($svc.Name)" -Tier $svc.Tier -Status "skipped" `
-            -Reason "Printers detected ($($profile.printerCount))"
+            -Reason "Printers detected ($($machineProfile.printerCount))"
         $skippedSmart++
         Write-Host "  [$current] $($svc.Name) — SKIPPED (printers detected)" -ForegroundColor Yellow
         continue

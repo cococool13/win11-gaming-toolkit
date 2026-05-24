@@ -38,11 +38,16 @@ if ($state -and $state.PSObject.Properties["registry"] -and $state.registry) {
     }
 }
 
-# Best-effort defaults restore via Set-MpPreference
+# Best-effort defaults restore via Set-MpPreference. Tamper Protection
+# almost never blocks an *enable* operation, but on stripped images
+# Set-MpPreference itself may be absent — catch logs that case.
 try {
-    Set-MpPreference -DisableRealtimeMonitoring $false -ErrorAction SilentlyContinue
-    Set-MpPreference -DisableIOAVProtection $false -ErrorAction SilentlyContinue
-} catch { }
+    Set-MpPreference -DisableRealtimeMonitoring $false -ErrorAction Stop
+    Set-MpPreference -DisableIOAVProtection $false -ErrorAction Stop
+} catch {
+    Write-Host "  [INFO] Set-MpPreference fallback unavailable; manifest restore handled the primary path." -ForegroundColor DarkGray
+    Write-Host "         $($_.Exception.Message)" -ForegroundColor DarkGray
+}
 
 if ($restored -eq 0) {
     UI-Note -Message "No Defender entries in manifest. Removing policy keys blindly as a fallback." -Color $script:UI_Warning

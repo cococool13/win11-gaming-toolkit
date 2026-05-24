@@ -99,11 +99,16 @@ Set-ToolkitRegistryValue -Id "reg:DefenderSubmitSamplesConsent" `
     -Path $spynetPath -Name "SubmitSamplesConsent" -Value 2 -Type "DWord" `
     -Tier "Security Trade-off" -Step $stepName
 
-# Best-effort: try Set-MpPreference too (will silently fail if Tamper Protection is on)
+# Best-effort: try Set-MpPreference too. Tamper Protection will block on
+# Win11 24H2+ — the catch logs the rejection but does not re-throw because
+# the policy-key writes above are the primary path and this is a fallback.
 try {
-    Set-MpPreference -DisableRealtimeMonitoring $true -ErrorAction SilentlyContinue
-    Set-MpPreference -DisableIOAVProtection $true -ErrorAction SilentlyContinue
-} catch { }
+    Set-MpPreference -DisableRealtimeMonitoring $true -ErrorAction Stop
+    Set-MpPreference -DisableIOAVProtection $true -ErrorAction Stop
+} catch {
+    Write-Host "  [INFO] Set-MpPreference fallback blocked (likely Tamper Protection)." -ForegroundColor DarkGray
+    Write-Host "         $($_.Exception.Message)" -ForegroundColor DarkGray
+}
 
 Add-ToolkitStepResult -Key $stepName -Tier "Security Trade-off" -Status "applied" `
     -Reason "Defender wholesale-disable policy writes applied (Tamper Protection may revert)"

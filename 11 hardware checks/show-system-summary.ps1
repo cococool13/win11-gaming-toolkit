@@ -24,8 +24,8 @@
 UI-Header -Title "System Summary" -Subtitle "Read-only hardware + Windows baseline"
 
 # Reuse the machine-profile helper that the launcher already uses.
-$profile = Get-ToolkitMachineProfile
-UI-ShowProfile -Profile $profile
+$machineProfile = Get-ToolkitMachineProfile
+UI-ShowProfile -Profile $machineProfile
 
 # Additional details not in the profile
 $cpu = Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue | Select-Object -First 1

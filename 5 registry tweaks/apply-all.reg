@@ -17,6 +17,12 @@ Windows Registry Editor Version 5.00
 "MouseHoverTime"="10"
 
 ; --- Disable startup delay (default: not set) ---
+; CURSOR-AUDIT #23: Win11 24H2 uses the StartupApproved model for
+; startup-app dispatch; the legacy StartupDelayInMSec value at the
+; Serialize key is largely ignored on modern builds. Kept here for
+; (a) backward compat with Win10 and pre-22H2 Win11 and (b) it's a
+; harmless dword write. Confirmed-noop on Win11 24H2+ -- remove in
+; a future cleanup once the project drops Win10 support.
 [HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize]
 "StartupDelayInMSec"=dword:00000000
 

@@ -132,8 +132,11 @@ function Test-ToolkitInvariants {
         throw "RepoRoot not found: $RepoRoot"
     }
 
+    # Path-separator-agnostic excludes so the helper works on macOS dev
+    # boxes (forward slash) AND Windows runners (backslash).
+    $excludePattern = '(^|[\\/])(\.git|tests|profile|tools|lib)([\\/]|$)'
     $ps1Files = Get-ChildItem -LiteralPath $RepoRoot -Recurse -Filter '*.ps1' -File |
-        Where-Object { $_.FullName -notmatch '\\.git\\' -and $_.FullName -notmatch '\\tests\\' -and $_.FullName -notmatch '\\profile\\' -and $_.FullName -notmatch '\\tools\\' }
+        Where-Object { $_.FullName -notmatch $excludePattern }
 
     foreach ($f in $ps1Files) {
         $content = Get-Content -Raw -LiteralPath $f.FullName

@@ -433,7 +433,30 @@ function Invoke-QuickAction {
     Write-Host ""
     Write-Host ("  Running: {0}" -f $action.Label) -ForegroundColor $script:UI_Header
     Write-Host ""
-    & $full
+
+    if ($Key -eq "A") {
+        # Apply All: prompt for the Security Trade-offs gate (default OFF).
+        # Phases 9 (Windows Update suppression) and 10 (VBS / HVCI / LSA /
+        # Spectre) are skipped unless the user explicitly opts in here.
+        Write-Host "  Security Trade-offs (default: NO)" -ForegroundColor $script:UI_Warning
+        Write-Host "  Include Phase 9 (Windows Update suppression) and Phase 10" -ForegroundColor $script:UI_Soft
+        Write-Host "  (VBS / HVCI / LSA / Spectre/Meltdown disable)?" -ForegroundColor $script:UI_Soft
+        Write-Host ""
+        Write-Host "  [!] ANTI-CHEAT: HVCI/VBS changes may break BattlEye and EAC on" -ForegroundColor $script:UI_Error
+        Write-Host "      Win11 24H2+ (R6 Siege and similar titles)." -ForegroundColor $script:UI_Error
+        Write-Host "  [!] Windows Update suppression stalls anti-cheat/security patches." -ForegroundColor $script:UI_Error
+        Write-Host ""
+        $includeTradeoffs = UI-AskYesNo -Prompt "  Include Security Trade-offs?" -DefaultNo $true
+        Write-Host ""
+        if ($includeTradeoffs) {
+            & $full -IncludeSecurityTradeoffs
+        } else {
+            & $full
+        }
+    } else {
+        & $full
+    }
+
     Write-Host ""
     Read-Host "  Press Enter to return"
 }

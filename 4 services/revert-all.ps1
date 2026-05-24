@@ -38,14 +38,14 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 # These defaults are only used when the manifest has no entry for the
 # service (legacy disable path or wiped manifest).
 $serviceDefaults = [ordered]@{
-    "DiagTrack"  = @{ Mode = "auto";   Desc = "Connected User Experiences (Telemetry)"; Start = $true  }
-    "PhoneSvc"   = @{ Mode = "demand"; Desc = "Phone Service";                            Start = $false }
-    "lfsvc"      = @{ Mode = "demand"; Desc = "Geolocation Service";                      Start = $false }
-    "RetailDemo" = @{ Mode = "demand"; Desc = "Retail Demo Service";                      Start = $false }
-    "MapsBroker" = @{ Mode = "auto";   Desc = "Downloaded Maps Manager";                  Start = $false }
-    "Fax"        = @{ Mode = "demand"; Desc = "Fax Service";                              Start = $false }
-    "Spooler"    = @{ Mode = "auto";   Desc = "Print Spooler";                            Start = $true  }
-    "WSearch"    = @{ Mode = "auto";   Desc = "Windows Search";                           Start = $true  }
+    "DiagTrack" = @{ Mode = "auto"; Desc = "Connected User Experiences (Telemetry)"; Start = $true }
+    "PhoneSvc" = @{ Mode = "demand"; Desc = "Phone Service"; Start = $false }
+    "lfsvc" = @{ Mode = "demand"; Desc = "Geolocation Service"; Start = $false }
+    "RetailDemo" = @{ Mode = "demand"; Desc = "Retail Demo Service"; Start = $false }
+    "MapsBroker" = @{ Mode = "auto"; Desc = "Downloaded Maps Manager"; Start = $false }
+    "Fax" = @{ Mode = "demand"; Desc = "Fax Service"; Start = $false }
+    "Spooler" = @{ Mode = "auto"; Desc = "Print Spooler"; Start = $true }
+    "WSearch" = @{ Mode = "auto"; Desc = "Windows Search"; Start = $true }
 }
 
 $state = Get-ToolkitState

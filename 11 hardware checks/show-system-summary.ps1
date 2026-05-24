@@ -35,7 +35,7 @@ $bios = Get-CimInstance -ClassName Win32_BIOS -ErrorAction SilentlyContinue
 $os = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction SilentlyContinue
 
 Write-Host ""
-UI-KeyValue -Label "CPU"     -Value $(if ($cpu)  { "$($cpu.Name) ($($cpu.NumberOfCores)c/$($cpu.NumberOfLogicalProcessors)t)" } else { "unknown" })
+UI-KeyValue -Label "CPU"     -Value $(if ($cpu) { "$($cpu.Name) ($($cpu.NumberOfCores)c/$($cpu.NumberOfLogicalProcessors)t)" } else { "unknown" })
 UI-KeyValue -Label "RAM"     -Value "${totalRamGB} GB ($(if ($ram) { $ram.Count } else { 0 }) sticks)"
 UI-KeyValue -Label "BIOS"    -Value $(if ($bios) { "$($bios.Manufacturer) $($bios.SMBIOSBIOSVersion) ($($bios.ReleaseDate))" } else { "unknown" })
 UI-KeyValue -Label "OS build" -Value $(if ($os) { "$($os.BuildNumber).$((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -ErrorAction SilentlyContinue).UBR)" } else { "unknown" })

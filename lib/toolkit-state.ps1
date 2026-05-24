@@ -102,13 +102,13 @@ function Get-ToolkitMachineProfile {
     $dnsSnapshot = @()
     if (Test-ToolkitCommand "Get-DnsClientServerAddress") {
         $dnsSnapshot = @(Get-DnsClientServerAddress -ErrorAction SilentlyContinue | ForEach-Object {
-            [PSCustomObject]@{
-                InterfaceAlias = $_.InterfaceAlias
-                InterfaceIndex = $_.InterfaceIndex
-                AddressFamily = $_.AddressFamily
-                ServerAddresses = @($_.ServerAddresses)
-            }
-        })
+                [PSCustomObject]@{
+                    InterfaceAlias = $_.InterfaceAlias
+                    InterfaceIndex = $_.InterfaceIndex
+                    AddressFamily = $_.AddressFamily
+                    ServerAddresses = @($_.ServerAddresses)
+                }
+            })
     }
 
     return [PSCustomObject]@{
@@ -206,11 +206,11 @@ function Add-ToolkitStepResult {
     )
     $state = Get-ToolkitState
     Set-ToolkitMapValue -Map $state.steps -Key $Key -Value ([ordered]@{
-        tier = $Tier
-        status = $Status
-        reason = $Reason
-        updatedAt = (Get-Date).ToString("o")
-    })
+            tier = $Tier
+            status = $Status
+            reason = $Reason
+            updatedAt = (Get-Date).ToString("o")
+        })
     Save-ToolkitState
 }
 
@@ -266,12 +266,12 @@ function Set-ToolkitRegistryValue {
     $state = Get-ToolkitState
     if (-not (Test-ToolkitMapHasKey -Map $state.registry -Key $Id)) {
         Set-ToolkitMapValue -Map $state.registry -Key $Id -Value ([ordered]@{
-            path = $Path
-            name = $Name
-            tier = $Tier
-            step = $Step
-            before = Get-ToolkitRegistryState -Path $Path -Name $Name
-        })
+                path = $Path
+                name = $Name
+                tier = $Tier
+                step = $Step
+                before = Get-ToolkitRegistryState -Path $Path -Name $Name
+            })
         Save-ToolkitState
     }
 
@@ -304,8 +304,8 @@ function Set-ToolkitRegistryValue {
     # already; for strings, do a string compare; binaries skip the fast-path
     # (compare byte arrays correctly is fragile) and always write.
     $skipWrite = $false
-    if ($null -ne $current -and $propertyType -notin @("Binary","MultiString")) {
-        if ($propertyType -in @("DWord","QWord")) {
+    if ($null -ne $current -and $propertyType -notin @("Binary", "MultiString")) {
+        if ($propertyType -in @("DWord", "QWord")) {
             if ([int64]$current -eq [int64]$Value) { $skipWrite = $true }
         } else {
             if ([string]$current -eq [string]$Value) { $skipWrite = $true }
@@ -369,12 +369,12 @@ function Set-ToolkitServiceStartMode {
     if (-not (Test-ToolkitMapHasKey -Map $state.services -Key $Name)) {
         $service = Get-CimInstance -ClassName Win32_Service -Filter "Name='$Name'" -ErrorAction SilentlyContinue
         Set-ToolkitMapValue -Map $state.services -Key $Name -Value ([ordered]@{
-            name = $Name
-            tier = $Tier
-            step = $Step
-            installed = $null -ne $service
-            before = if ($service) { $service.StartMode } else { $null }
-        })
+                name = $Name
+                tier = $Tier
+                step = $Step
+                installed = $null -ne $service
+                before = if ($service) { $service.StartMode } else { $null }
+            })
         Save-ToolkitState
     }
 
@@ -473,10 +473,10 @@ function Capture-ToolkitDnsState {
         }
         $snapshotKey = "{0}:{1}" -f $item.InterfaceIndex, $addressFamily
         Set-ToolkitMapValue -Map $state.dns.interfaces -Key $snapshotKey -Value ([ordered]@{
-            interfaceAlias = $item.InterfaceAlias
-            addressFamily = $addressFamily
-            serverAddresses = @($item.ServerAddresses)
-        })
+                interfaceAlias = $item.InterfaceAlias
+                addressFamily = $addressFamily
+                serverAddresses = @($item.ServerAddresses)
+            })
     }
     $state.dns.captured = $true
     Save-ToolkitState

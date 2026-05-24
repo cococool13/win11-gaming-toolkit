@@ -67,10 +67,10 @@ foreach ($a in $adapters) {
     # NIC driver churn on re-apply.
     $pm = Get-NetAdapterPowerManagement -Name $a.Name -ErrorAction SilentlyContinue
     $alreadyTarget = $pm -and `
-        ([string]$pm.DeviceSleepOnDisconnect) -eq "Disabled" -and `
-        ([string]$pm.SelectiveSuspend) -eq "Disabled" -and `
-        ([string]$pm.WakeOnMagicPacket) -eq "Disabled" -and `
-        ([string]$pm.WakeOnPattern) -eq "Disabled"
+    ([string]$pm.DeviceSleepOnDisconnect) -eq "Disabled" -and `
+    ([string]$pm.SelectiveSuspend) -eq "Disabled" -and `
+    ([string]$pm.WakeOnMagicPacket) -eq "Disabled" -and `
+    ([string]$pm.WakeOnPattern) -eq "Disabled"
     if ($alreadyTarget) {
         UI-Skip -Label "Tuning $($a.Name)" -Reason "Already at target state"
         Add-ToolkitStepResult -Key "nic-power:$($a.Name)" -Tier "Advanced" -Status "preexisting" -Reason "Power-savings + WoL already disabled"

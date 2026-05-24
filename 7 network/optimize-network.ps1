@@ -130,10 +130,10 @@ Write-Host ""
 do {
     $dnsChoice = Read-Host "  Enter choice (1/2/3) [1]"
     if ($dnsChoice -eq "") { $dnsChoice = "1" }
-    if ($dnsChoice -notin @("1","2","3")) {
+    if ($dnsChoice -notin @("1", "2", "3")) {
         Write-Host "  Invalid choice. Enter 1, 2, or 3." -ForegroundColor Yellow
     }
-} while ($dnsChoice -notin @("1","2","3"))
+} while ($dnsChoice -notin @("1", "2", "3"))
 
 if ($dnsChoice -ne "3") {
     $dnsServers = switch ($dnsChoice) {

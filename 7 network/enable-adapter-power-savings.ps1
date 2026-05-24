@@ -42,9 +42,9 @@ if (-not (Test-Path $beforePath)) {
         UI-Step -Label "Restoring $($entry.Name)" -Action {
             $params = @{ Name = $entry.Name; ErrorAction = "SilentlyContinue" }
             if ($entry.DeviceSleepOnDisconnect) { $params["DeviceSleepOnDisconnect"] = $entry.DeviceSleepOnDisconnect }
-            if ($entry.SelectiveSuspend)        { $params["SelectiveSuspend"] = $entry.SelectiveSuspend }
-            if ($entry.WakeOnMagicPacket)       { $params["WakeOnMagicPacket"] = $entry.WakeOnMagicPacket }
-            if ($entry.WakeOnPattern)           { $params["WakeOnPattern"] = $entry.WakeOnPattern }
+            if ($entry.SelectiveSuspend) { $params["SelectiveSuspend"] = $entry.SelectiveSuspend }
+            if ($entry.WakeOnMagicPacket) { $params["WakeOnMagicPacket"] = $entry.WakeOnMagicPacket }
+            if ($entry.WakeOnPattern) { $params["WakeOnPattern"] = $entry.WakeOnPattern }
             Set-NetAdapterPowerManagement @params
         }
     }

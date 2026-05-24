@@ -76,12 +76,12 @@ Write-Host "  Backup folder: $backupDir" -ForegroundColor Gray
 
 # Comprehensive registry paths — covers ALL areas the toolkit modifies
 $registryPaths = @(
-    @{ Key = "HKCU\Control Panel\Desktop";                     Name = "Desktop" }
-    @{ Key = "HKCU\Control Panel\Mouse";                       Name = "Mouse" }
+    @{ Key = "HKCU\Control Panel\Desktop"; Name = "Desktop" }
+    @{ Key = "HKCU\Control Panel\Mouse"; Name = "Mouse" }
     @{ Key = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer"; Name = "Explorer" }
     @{ Key = "HKCU\Software\Microsoft\Windows\CurrentVersion\GameDVR"; Name = "GameDVR" }
-    @{ Key = "HKCU\System\GameConfigStore";                    Name = "GameConfigStore" }
-    @{ Key = "HKCU\Software\Microsoft\GameBar";                Name = "GameBar" }
+    @{ Key = "HKCU\System\GameConfigStore"; Name = "GameConfigStore" }
+    @{ Key = "HKCU\Software\Microsoft\GameBar"; Name = "GameBar" }
     @{ Key = "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"; Name = "Personalize" }
     @{ Key = "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"; Name = "ContentDelivery" }
     @{ Key = "HKCU\Software\Microsoft\Windows\CurrentVersion\Search"; Name = "Search" }
@@ -89,9 +89,9 @@ $registryPaths = @(
     @{ Key = "HKCU\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo"; Name = "AdvertisingInfo" }
     @{ Key = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching"; Name = "DriverSearching" }
     @{ Key = "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power"; Name = "SessionManagerPower" }
-    @{ Key = "HKLM\SYSTEM\CurrentControlSet\Control\Power";   Name = "Power" }
+    @{ Key = "HKLM\SYSTEM\CurrentControlSet\Control\Power"; Name = "Power" }
     @{ Key = "HKLM\SYSTEM\CurrentControlSet\Control\DeviceGuard"; Name = "DeviceGuard" }
-    @{ Key = "HKLM\SYSTEM\CurrentControlSet\Control\Lsa";     Name = "LSA" }
+    @{ Key = "HKLM\SYSTEM\CurrentControlSet\Control\Lsa"; Name = "LSA" }
     @{ Key = "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces"; Name = "TcpipInterfaces" }
     @{ Key = "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"; Name = "SystemProfile" }
     @{ Key = "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl"; Name = "PriorityControl" }

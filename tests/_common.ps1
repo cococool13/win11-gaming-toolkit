@@ -68,11 +68,11 @@ function Test-ToolkitParameterShape {
     }
 
     [PSCustomObject]@{
-        Path                  = $Path
-        HasParamBlock         = $null -ne $params
-        HasCmdletBinding      = $cmdletBinding
+        Path = $Path
+        HasParamBlock = $null -ne $params
+        HasCmdletBinding = $cmdletBinding
         SupportsShouldProcess = $shouldProcess
-        Passes                = -not $RequireShouldProcess -or $shouldProcess
+        Passes = -not $RequireShouldProcess -or $shouldProcess
     }
 }
 
@@ -92,10 +92,10 @@ function Test-ToolkitAdminCheck {
     $hasUI = $head -match 'UI-RequireAdmin'
     $hasInline = $head -match 'IsInRole.*Administrator'
     [PSCustomObject]@{
-        Path                = $Path
-        HasUIRequireAdmin   = $hasUI
+        Path = $Path
+        HasUIRequireAdmin = $hasUI
         HasInlineAdminCheck = $hasInline
-        Passes              = $hasUI -or $hasInline
+        Passes = $hasUI -or $hasInline
     }
 }
 
@@ -112,11 +112,11 @@ function Test-ToolkitCommentBasedHelp {
     $content = Get-Content -LiteralPath $Path -Raw
     $head = ($content -split "`n" | Select-Object -First 100) -join "`n"
     [PSCustomObject]@{
-        Path           = $Path
-        HasSynopsis    = $head -match '\.SYNOPSIS'
+        Path = $Path
+        HasSynopsis = $head -match '\.SYNOPSIS'
         HasDescription = $head -match '\.DESCRIPTION'
-        HasExample     = $head -match '\.EXAMPLE'
-        HasNotes       = $head -match '\.NOTES'
-        Passes         = ($head -match '\.SYNOPSIS') -and ($head -match '\.DESCRIPTION')
+        HasExample = $head -match '\.EXAMPLE'
+        HasNotes = $head -match '\.NOTES'
+        Passes = ($head -match '\.SYNOPSIS') -and ($head -match '\.DESCRIPTION')
     }
 }

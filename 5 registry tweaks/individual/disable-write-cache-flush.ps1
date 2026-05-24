@@ -51,7 +51,7 @@ $beforePath = Join-Path $stateRoot "writecache-before.json"
 # We capture and write per-disk so the matching enable script can flip
 # things back exactly.
 $disks = @(Get-CimInstance -ClassName Win32_DiskDrive -ErrorAction SilentlyContinue |
-    Where-Object { $_.MediaType -match "Fixed" })
+        Where-Object { $_.MediaType -match "Fixed" })
 
 if ($disks.Count -eq 0) {
     UI-Note -Message "[SKIP] No fixed disks detected." -Color $script:UI_Warning

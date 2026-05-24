@@ -77,14 +77,14 @@ function Clear-FolderSafe {
 Write-Host "  Estimating space to free..." -ForegroundColor Gray
 
 $targets = @(
-    @{ Path = $env:TEMP;                                    Desc = "User temp folder" }
-    @{ Path = "$env:WINDIR\Temp";                           Desc = "Windows temp folder" }
-    @{ Path = "$env:WINDIR\SoftwareDistribution\Download";  Desc = "Windows Update cache" }
+    @{ Path = $env:TEMP; Desc = "User temp folder" }
+    @{ Path = "$env:WINDIR\Temp"; Desc = "Windows temp folder" }
+    @{ Path = "$env:WINDIR\SoftwareDistribution\Download"; Desc = "Windows Update cache" }
     @{ Path = "$env:LOCALAPPDATA\Microsoft\Windows\Explorer"; Desc = "Thumbnail cache" }
-    @{ Path = "$env:LOCALAPPDATA\D3DSCache";                Desc = "DirectX Shader Cache" }
-    @{ Path = "$env:LOCALAPPDATA\NVIDIA\DXCache";           Desc = "NVIDIA Shader Cache" }
-    @{ Path = "$env:LOCALAPPDATA\NVIDIA\GLCache";           Desc = "NVIDIA GL Cache" }
-    @{ Path = "$env:LOCALAPPDATA\AMD\DxCache";              Desc = "AMD Shader Cache" }
+    @{ Path = "$env:LOCALAPPDATA\D3DSCache"; Desc = "DirectX Shader Cache" }
+    @{ Path = "$env:LOCALAPPDATA\NVIDIA\DXCache"; Desc = "NVIDIA Shader Cache" }
+    @{ Path = "$env:LOCALAPPDATA\NVIDIA\GLCache"; Desc = "NVIDIA GL Cache" }
+    @{ Path = "$env:LOCALAPPDATA\AMD\DxCache"; Desc = "AMD Shader Cache" }
 )
 
 $estimatedTotal = 0

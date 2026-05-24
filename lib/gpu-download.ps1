@@ -36,19 +36,19 @@ function Resolve-NvidiaDriverUrl {
     if ($AutoDetect -and $DeviceId -ne "") {
         try {
             $apiUrl = "https://gfwsl.geforce.com/services_toolkit/services/com/nvidia/services/AjaxDriverService.php?" +
-                "func=DriverManualLookup&pfid=0&osID=57&languageCode=1033&isWHQL=1&dch=1&sort1=0&numberOfResults=1"
+            "func=DriverManualLookup&pfid=0&osID=57&languageCode=1033&isWHQL=1&dch=1&sort1=0&numberOfResults=1"
 
             $response = Invoke-WebRequest -Uri $apiUrl -UseBasicParsing -ErrorAction Stop
             $json = $response.Content | ConvertFrom-Json
             if ($json.IDS -and $json.IDS[0].downloadInfo) {
                 $info = $json.IDS[0].downloadInfo
                 return [PSCustomObject]@{
-                    Version          = $info.Version
-                    Url              = $info.DownloadURL
-                    ExpectedHash     = ""
+                    Version = $info.Version
+                    Url = $info.DownloadURL
+                    ExpectedHash = ""
                     ExpectedSignerCN = "NVIDIA Corporation"
-                    Components       = @("Display.Driver", "HDAudio")
-                    AutoDetected     = $true
+                    Components = @("Display.Driver", "HDAudio")
+                    AutoDetected = $true
                 }
             }
         } catch {
@@ -58,10 +58,10 @@ function Resolve-NvidiaDriverUrl {
 
     $nv = $Manifest.nvidia
     return [PSCustomObject]@{
-        Version      = $nv.version
-        Url          = $nv.url
+        Version = $nv.version
+        Url = $nv.url
         ExpectedHash = $nv.sha256
-        Components   = @($nv.components)
+        Components = @($nv.components)
         AutoDetected = $false
     }
 }
@@ -76,8 +76,8 @@ function Resolve-AmdDriverUrl {
 
     $amd = $Manifest.amd
     return [PSCustomObject]@{
-        Version      = $amd.version
-        Url          = $amd.url
+        Version = $amd.version
+        Url = $amd.url
         ExpectedHash = $amd.sha256
         AutoDetected = $false
     }
@@ -92,11 +92,11 @@ function Resolve-IntelDriverUrl {
 
     $intel = $Manifest.intel
     return [PSCustomObject]@{
-        Version        = $intel.version
-        Url            = $intel.url
-        ExpectedHash   = $intel.sha256
-        DriverOnlyInf  = [bool]$intel.driverOnlyInf
-        AutoDetected   = $false
+        Version = $intel.version
+        Url = $intel.url
+        ExpectedHash = $intel.sha256
+        DriverOnlyInf = [bool]$intel.driverOnlyInf
+        AutoDetected = $false
     }
 }
 

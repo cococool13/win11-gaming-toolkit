@@ -39,28 +39,28 @@ $stepName = "debloat"
 
 # Apps to remove — categorized by confidence level
 $appsToRemove = @(
-    @{ Name = "Clipchamp.Clipchamp";                   Desc = "Clipchamp Video Editor";    Tier = "Safe" }
-    @{ Name = "Microsoft.BingNews";                    Desc = "Bing News";                 Tier = "Safe" }
-    @{ Name = "Microsoft.BingWeather";                 Desc = "Bing Weather";              Tier = "Safe" }
-    @{ Name = "Microsoft.GetHelp";                     Desc = "Get Help";                  Tier = "Safe" }
-    @{ Name = "Microsoft.Getstarted";                  Desc = "Tips";                      Tier = "Safe" }
-    @{ Name = "Microsoft.MicrosoftOfficeHub";          Desc = "Office Hub";                Tier = "Safe" }
-    @{ Name = "Microsoft.MicrosoftSolitaireCollection"; Desc = "Solitaire Collection";     Tier = "Safe" }
-    @{ Name = "Microsoft.MicrosoftStickyNotes";        Desc = "Sticky Notes";              Tier = "Safe" }
-    @{ Name = "Microsoft.People";                      Desc = "People";                    Tier = "Safe" }
-    @{ Name = "Microsoft.PowerAutomateDesktop";        Desc = "Power Automate";            Tier = "Safe" }
-    @{ Name = "Microsoft.Todos";                       Desc = "Microsoft To Do";           Tier = "Safe" }
-    @{ Name = "Microsoft.WindowsAlarms";               Desc = "Alarms & Clock";            Tier = "Safe" }
-    @{ Name = "Microsoft.WindowsFeedbackHub";          Desc = "Feedback Hub";              Tier = "Safe" }
-    @{ Name = "Microsoft.WindowsMaps";                 Desc = "Maps";                      Tier = "Safe" }
-    @{ Name = "Microsoft.WindowsSoundRecorder";        Desc = "Sound Recorder";            Tier = "Safe" }
-    @{ Name = "Microsoft.YourPhone";                   Desc = "Phone Link";                Tier = "Safe" }
-    @{ Name = "Microsoft.ZuneMusic";                   Desc = "Groove Music / Media Player"; Tier = "Safe" }
-    @{ Name = "Microsoft.ZuneVideo";                   Desc = "Movies & TV";               Tier = "Safe" }
-    @{ Name = "MicrosoftCorporationII.QuickAssist";    Desc = "Quick Assist";              Tier = "Safe" }
-    @{ Name = "MicrosoftTeams";                        Desc = "Teams (personal)";          Tier = "Safe" }
-    @{ Name = "Microsoft.549981C3F5F10";               Desc = "Cortana";                   Tier = "Safe" }
-    @{ Name = "Microsoft.GamingApp";                   Desc = "Xbox App";                  Tier = "Advanced" }
+    @{ Name = "Clipchamp.Clipchamp"; Desc = "Clipchamp Video Editor"; Tier = "Safe" }
+    @{ Name = "Microsoft.BingNews"; Desc = "Bing News"; Tier = "Safe" }
+    @{ Name = "Microsoft.BingWeather"; Desc = "Bing Weather"; Tier = "Safe" }
+    @{ Name = "Microsoft.GetHelp"; Desc = "Get Help"; Tier = "Safe" }
+    @{ Name = "Microsoft.Getstarted"; Desc = "Tips"; Tier = "Safe" }
+    @{ Name = "Microsoft.MicrosoftOfficeHub"; Desc = "Office Hub"; Tier = "Safe" }
+    @{ Name = "Microsoft.MicrosoftSolitaireCollection"; Desc = "Solitaire Collection"; Tier = "Safe" }
+    @{ Name = "Microsoft.MicrosoftStickyNotes"; Desc = "Sticky Notes"; Tier = "Safe" }
+    @{ Name = "Microsoft.People"; Desc = "People"; Tier = "Safe" }
+    @{ Name = "Microsoft.PowerAutomateDesktop"; Desc = "Power Automate"; Tier = "Safe" }
+    @{ Name = "Microsoft.Todos"; Desc = "Microsoft To Do"; Tier = "Safe" }
+    @{ Name = "Microsoft.WindowsAlarms"; Desc = "Alarms & Clock"; Tier = "Safe" }
+    @{ Name = "Microsoft.WindowsFeedbackHub"; Desc = "Feedback Hub"; Tier = "Safe" }
+    @{ Name = "Microsoft.WindowsMaps"; Desc = "Maps"; Tier = "Safe" }
+    @{ Name = "Microsoft.WindowsSoundRecorder"; Desc = "Sound Recorder"; Tier = "Safe" }
+    @{ Name = "Microsoft.YourPhone"; Desc = "Phone Link"; Tier = "Safe" }
+    @{ Name = "Microsoft.ZuneMusic"; Desc = "Groove Music / Media Player"; Tier = "Safe" }
+    @{ Name = "Microsoft.ZuneVideo"; Desc = "Movies & TV"; Tier = "Safe" }
+    @{ Name = "MicrosoftCorporationII.QuickAssist"; Desc = "Quick Assist"; Tier = "Safe" }
+    @{ Name = "MicrosoftTeams"; Desc = "Teams (personal)"; Tier = "Safe" }
+    @{ Name = "Microsoft.549981C3F5F10"; Desc = "Cortana"; Tier = "Safe" }
+    @{ Name = "Microsoft.GamingApp"; Desc = "Xbox App"; Tier = "Advanced" }
 )
 
 # Apps we NEVER remove (safety list)

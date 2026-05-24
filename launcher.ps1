@@ -354,7 +354,7 @@ function Show-CategoryMenu {
             Write-Host ""
             Write-Host "    [Q] Back" -ForegroundColor $script:UI_Soft
             Write-Host ""
-            $exit = Read-Host "  Press Enter or Q to return"
+            Read-Host "  Press Enter or Q to return" | Out-Null
             return
         }
 

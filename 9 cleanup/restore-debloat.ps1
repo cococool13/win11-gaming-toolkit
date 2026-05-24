@@ -99,7 +99,9 @@ foreach ($name in $work) {
     }
 
     Write-Host "  [$current/$($work.Count)] winget install $name..." -NoNewline -ForegroundColor Gray
-    $wingetOutput = & winget install --exact --id $name --accept-source-agreements --accept-package-agreements --silent 2>&1
+    # Discard stdout/stderr; we make the success/failure decision off
+    # $LASTEXITCODE alone. Capture suppressed for cleaner console output.
+    & winget install --exact --id $name --accept-source-agreements --accept-package-agreements --silent 2>&1 | Out-Null
     if ($LASTEXITCODE -eq 0) {
         Write-Host " Installed" -ForegroundColor Green
         $installed++

@@ -116,8 +116,7 @@ function Apply-NvidiaSystemSettings {
 
 # --- Execute ---
 try {
-    $state = Initialize-ToolkitState
-
+    Initialize-ToolkitState | Out-Null
     $gpu = Get-GpuVendor | Where-Object { $_.Vendor -eq "nvidia" } | Select-Object -First 1
     if (-not $gpu) {
         throw "No NVIDIA GPU detected"

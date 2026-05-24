@@ -78,8 +78,7 @@ try {
 }
 
 # --- Initialize state ---
-$state = Initialize-ToolkitState
-
+Initialize-ToolkitState | Out-Null
 # --- Detect GPU ---
 Write-Info "Detecting GPU..."
 

@@ -27,8 +27,8 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     exit 1
 }
 
-. "$PSScriptRoot\..\lib\toolkit-state.ps1"
-. "$PSScriptRoot\..\lib\gpu-detection.ps1"
+. "$PSScriptRoot\..\..\lib\toolkit-state.ps1"
+. "$PSScriptRoot\..\..\lib\gpu-detection.ps1"
 
 $stepName = "gpu-nvidia-settings"
 

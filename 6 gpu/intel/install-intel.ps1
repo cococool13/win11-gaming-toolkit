@@ -25,8 +25,8 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     exit 1
 }
 
-. "$PSScriptRoot\..\lib\download-helpers.ps1"
-. "$PSScriptRoot\..\lib\toolkit-state.ps1"
+. "$PSScriptRoot\..\..\lib\download-helpers.ps1"
+. "$PSScriptRoot\..\..\lib\toolkit-state.ps1"
 
 # Audit-trail: log this script invocation to
 # %ProgramData%\Win11GamingToolkit\logs\<stem>-<ts>-<pid>.log

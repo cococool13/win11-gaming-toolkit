@@ -248,15 +248,20 @@ to PowerShell-approved verbs + nouns is queued as a v2 refactor. Estimated
 catch any regressions, since the codebase still lacks runtime tests for
 most paths.
 
-#### GPU configure scripts dot-source path bug
+#### GPU configure scripts dot-source path bug  *(RESOLVED in commit 8d4f1e — see CHANGELOG `[Unreleased]`)*
 
-`6 gpu/{nvidia,amd,intel}/configure-*.ps1` dot-source `..\lib\*` which
-resolves to `6 gpu\lib\*` (does not exist) instead of repo root. The
-scripts only work because their `&`-invocation parent
-(`install-gpu-driver.ps1`) has already loaded the helpers into scope.
-Workaround applied in CURSOR-AUDIT #6 was an inline admin check.
-Real fix: change paths to `..\..\lib\*`. Deferred to keep this loop
-focused on quality gates.
+Original gap: `6 gpu/{nvidia,amd,intel}/configure-*.ps1` and
+`install-*.ps1` dot-sourced `..\lib\*` which resolves to `6 gpu\lib\*`
+(does not exist) instead of repo root. The scripts only worked because
+their `&`-invocation parent (`install-gpu-driver.ps1`) had already
+loaded the helpers into scope; standalone invocation produced silent
+no-ops or "command not found" later.
+
+Resolution: all 6 scripts now dot-source `..\..\lib\*` correctly.
+Inline admin-check workaround comments from CURSOR-AUDIT #6 are
+preserved for clarity but the dot-source now actually loads
+`lib/ui-helpers.ps1` if a future cleanup wants to switch from inline
+`IsInRole` to the canonical `UI-RequireAdmin`.
 
 #### Phase 5 / Phase 11 Reg-Add cosmetic writes (CURSOR-AUDIT #13 remainder)
 

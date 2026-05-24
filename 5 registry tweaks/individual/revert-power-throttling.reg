@@ -1,0 +1,9 @@
+Windows Registry Editor Version 5.00
+
+; Revert: enable Power Throttling (remove override)
+; Pair with: disable-power-throttling.reg
+; CURSOR-AUDIT #20: per-file revert restores Windows default behavior
+; (PowerThrottlingOff absent = OS-managed throttling).
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling]
+"PowerThrottlingOff"=-

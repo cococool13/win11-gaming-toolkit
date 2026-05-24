@@ -1,0 +1,15 @@
+Windows Registry Editor Version 5.00
+
+; Revert: remove MMCSS game priority overrides
+; Pair with: game-priority.reg
+; CURSOR-AUDIT #20
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games]
+"GPU Priority"=-
+"Priority"=-
+"Scheduling Category"=-
+"SFIO Priority"=-
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile]
+"SystemResponsiveness"=-
+"NetworkThrottlingIndex"=-

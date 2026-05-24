@@ -1,0 +1,9 @@
+Windows Registry Editor Version 5.00
+
+; Revert: re-enable automatic driver searching
+; Pair with: disable-driver-searching.reg
+; CURSOR-AUDIT #20: SearchOrderConfig=1 is the Win11 default (allow
+; Windows Update to search for driver updates).
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching]
+"SearchOrderConfig"=dword:00000001

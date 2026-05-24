@@ -5,7 +5,18 @@
 # Extracted from DduManual.ps1 for reuse by GPU driver scripts.
 # ============================================================
 
-$script:GamingOptRoot = Join-Path $env:ProgramData "GamingOpt"
+# Cross-platform staging root. $env:ProgramData is null on macOS / Linux
+# dev machines (lib gets dot-sourced by Pester tests on macOS); fall
+# back to $XDG_DATA_HOME / ~/.local/share so dot-source doesn't throw.
+# Production (Windows) keeps the historical %ProgramData%\GamingOpt path.
+$script:GamingOptDataHome = if ($env:ProgramData) {
+    $env:ProgramData
+} elseif ($env:XDG_DATA_HOME) {
+    $env:XDG_DATA_HOME
+} else {
+    Join-Path $HOME '.local/share'
+}
+$script:GamingOptRoot = Join-Path $script:GamingOptDataHome 'GamingOpt'
 
 function Write-Info {
     param([string]$Message)

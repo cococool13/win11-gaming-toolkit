@@ -1,0 +1,35 @@
+Windows Registry Editor Version 5.00
+
+; ============================================================
+; DWM Flip Model Tweaks (Hardware Legacy + Composed Independent)
+; Windows 11 Gaming Optimization Guide
+; Source: FR33THYFR33THY/Ultimate
+;   - 8 Advanced/12 Hardware Legacy Flip.ps1
+;   - 8 Advanced/13 Hardware Composed Independent Flip.ps1
+; Copyright FR33THY (MIT)
+; ============================================================
+; Tier: Advanced
+;
+; Two related DWM (Desktop Window Manager) tweaks that influence the
+; presentation path the OS chooses for borderless / fullscreen apps.
+; Complementary to our existing MPO disable.
+;
+;   ForceHWComposed = 1
+;     Forces DWM to use hardware-composed presentation when available.
+;     Pairs with disable-mpo to avoid the OS falling back to a software
+;     compositor under multi-monitor scenarios.
+;
+;   ForceHWLegacy = 1
+;     Re-enables the legacy presentation path on systems where modern
+;     DWM negotiation is unstable (rare; documented for completeness).
+;
+; If you've already run disable-mpo.ps1, applying this is usually
+; redundant. If you haven't, this can help stutter in some
+; borderless-window setups.
+;
+; Pair: revert-dwm-flip-model.reg
+; ============================================================
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\Dwm]
+"ForceHWComposed"=dword:00000001
+"ForceHWLegacy"=dword:00000001

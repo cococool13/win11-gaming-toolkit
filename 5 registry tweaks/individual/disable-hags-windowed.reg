@@ -1,0 +1,23 @@
+Windows Registry Editor Version 5.00
+
+; ============================================================
+; Disable Hardware-Accelerated GPU Scheduling for Windowed Apps
+; Windows 11 Gaming Optimization Guide
+; Source: FR33THYFR33THY/Ultimate — 5 Graphics/13 Hags Windowed.ps1
+; Copyright FR33THY (MIT)
+; ============================================================
+; Tier: Advanced
+;
+; HAGS (Hardware-Accelerated GPU Scheduling) is fine for fullscreen
+; games but can introduce input latency for windowed / borderless
+; games on some configs. This tweak disables HAGS for windowed
+; presentation only — leaves it on for true exclusive fullscreen.
+;
+; If you experience input latency in borderless titles after enabling
+; HAGS in Windows Settings, try this.
+;
+; Pair: revert-hags-windowed.reg
+; ============================================================
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers]
+"DirectFlipDisabled"=dword:00000001

@@ -13,8 +13,20 @@ function Write-Info {
 }
 
 function Ensure-Internet {
-    if (-not (Test-Connection -ComputerName "8.8.8.8" -Count 1 -Quiet -ErrorAction SilentlyContinue)) {
+    # Direct .NET ping. Avoids Test-Connection's CimInstance overhead
+    # and the PSAvoidUsingComputerNameHardcoded false positive on
+    # well-known public DNS reachability targets. 1500ms is generous
+    # for any non-loopback environment.
+    $ping = [System.Net.NetworkInformation.Ping]::new()
+    try {
+        $reply = $ping.Send('8.8.8.8', 1500)
+        if ($reply.Status -ne [System.Net.NetworkInformation.IPStatus]::Success) {
+            throw "Internet connection required"
+        }
+    } catch [System.Net.NetworkInformation.PingException] {
         throw "Internet connection required"
+    } finally {
+        $ping.Dispose()
     }
 }
 

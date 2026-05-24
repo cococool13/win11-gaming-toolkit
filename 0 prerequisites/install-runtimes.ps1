@@ -32,8 +32,20 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     exit 1
 }
 
-# Check internet
-if (-not (Test-Connection -ComputerName "8.8.8.8" -Count 1 -Quiet -ErrorAction SilentlyContinue)) {
+# Check internet — direct .NET ping (avoids Test-Connection CimInstance
+# overhead + the PSAvoidUsingComputerNameHardcoded false positive on
+# well-known public DNS reachability targets).
+$reachable = $false
+$ping = [System.Net.NetworkInformation.Ping]::new()
+try {
+    $reply = $ping.Send('8.8.8.8', 1500)
+    $reachable = ($reply.Status -eq [System.Net.NetworkInformation.IPStatus]::Success)
+} catch [System.Net.NetworkInformation.PingException] {
+    $reachable = $false
+} finally {
+    $ping.Dispose()
+}
+if (-not $reachable) {
     Write-Host "[ERROR] Internet connection required." -ForegroundColor Red
     Read-Host "Press Enter to exit"
     exit 1

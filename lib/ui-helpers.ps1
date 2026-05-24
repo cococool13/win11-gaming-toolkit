@@ -37,7 +37,20 @@ function UI-RequireAdmin {
 }
 
 function UI-RequireInternet {
-    if (-not (Test-Connection -ComputerName "8.8.8.8" -Count 1 -Quiet -ErrorAction SilentlyContinue)) {
+    # Direct .NET ping. Avoids Test-Connection's CimInstance overhead
+    # and the PSAvoidUsingComputerNameHardcoded false positive on
+    # well-known public DNS reachability targets.
+    $reachable = $false
+    $ping = [System.Net.NetworkInformation.Ping]::new()
+    try {
+        $reply = $ping.Send('8.8.8.8', 1500)
+        $reachable = ($reply.Status -eq [System.Net.NetworkInformation.IPStatus]::Success)
+    } catch [System.Net.NetworkInformation.PingException] {
+        $reachable = $false
+    } finally {
+        $ping.Dispose()
+    }
+    if (-not $reachable) {
         Write-Host ""
         Write-Host "  [ERROR] Internet connection required." -ForegroundColor $script:UI_Error
         Write-Host ""

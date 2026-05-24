@@ -287,6 +287,34 @@ function Set-ToolkitRegistryValue {
         default { "String" }
     }
 
+    # CURSOR-AUDIT #19: skip the write when the value already matches.
+    # Reduces unnecessary registry churn on re-apply and keeps audit logs
+    # clean. before-state capture above already ran, so manifest is consistent.
+    $current = $null
+    try {
+        if ($Name -eq "") {
+            $current = (Get-ItemProperty -Path $Path -ErrorAction SilentlyContinue).'(default)'
+        } else {
+            $current = (Get-ItemProperty -Path $Path -Name $Name -ErrorAction SilentlyContinue).$Name
+        }
+    } catch {
+        $current = $null
+    }
+    # Type-aware compare. For DWord/QWord the registry returns an integer
+    # already; for strings, do a string compare; binaries skip the fast-path
+    # (compare byte arrays correctly is fragile) and always write.
+    $skipWrite = $false
+    if ($null -ne $current -and $propertyType -notin @("Binary","MultiString")) {
+        if ($propertyType -in @("DWord","QWord")) {
+            if ([int64]$current -eq [int64]$Value) { $skipWrite = $true }
+        } else {
+            if ([string]$current -eq [string]$Value) { $skipWrite = $true }
+        }
+    }
+    if ($skipWrite) {
+        return
+    }
+
     if ($Name -eq "") {
         $item = Get-Item -Path $Path -ErrorAction Stop
         $item.SetValue("", $Value)

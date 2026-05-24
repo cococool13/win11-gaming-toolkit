@@ -62,6 +62,20 @@ if (-not (Test-Path $beforePath)) {
 
 UI-Section -Title "Applying"
 foreach ($a in $adapters) {
+    # CURSOR-AUDIT #24: pre-check current power-management state; skip
+    # the write when every setting is already at our target. Reduces
+    # NIC driver churn on re-apply.
+    $pm = Get-NetAdapterPowerManagement -Name $a.Name -ErrorAction SilentlyContinue
+    $alreadyTarget = $pm -and `
+        ([string]$pm.DeviceSleepOnDisconnect) -eq "Disabled" -and `
+        ([string]$pm.SelectiveSuspend) -eq "Disabled" -and `
+        ([string]$pm.WakeOnMagicPacket) -eq "Disabled" -and `
+        ([string]$pm.WakeOnPattern) -eq "Disabled"
+    if ($alreadyTarget) {
+        UI-Skip -Label "Tuning $($a.Name)" -Reason "Already at target state"
+        Add-ToolkitStepResult -Key "nic-power:$($a.Name)" -Tier "Advanced" -Status "preexisting" -Reason "Power-savings + WoL already disabled"
+        continue
+    }
     UI-Step -Label "Tuning $($a.Name)" -Action {
         Set-NetAdapterPowerManagement -Name $a.Name `
             -DeviceSleepOnDisconnect Disabled `

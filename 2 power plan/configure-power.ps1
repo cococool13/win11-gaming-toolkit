@@ -135,7 +135,16 @@ if ($verifyOutput -match "([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a
 }
 
 # Helper — sets both AC (plugged in) and DC (battery)
-function Set-PowerIndex($subgroup, $setting, $value) {
+function Set-PowerIndex {
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]
+    param(
+        [Parameter(Mandatory)][string]$subgroup,
+        [Parameter(Mandatory)][string]$setting,
+        [Parameter(Mandatory)][string]$value
+    )
+    if (-not $PSCmdlet.ShouldProcess("power-plan $activePlan", "set $subgroup/$setting = $value (AC+DC)")) {
+        return
+    }
     powercfg /setacvalueindex $activePlan $subgroup $setting $value 2>$null
     powercfg /setdcvalueindex $activePlan $subgroup $setting $value 2>$null
 }

@@ -116,6 +116,7 @@ shutdown -r -t 5
 }
 
 function New-DduResumeScript {
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     param(
         [string]$DduExe,
         [string[]]$DduArguments,
@@ -187,11 +188,19 @@ function Register-DduRunOnce {
 }
 
 function Remove-DduRunOnce {
-    Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" -Name $runOnceName -ErrorAction SilentlyContinue
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]
+    param()
+    if ($PSCmdlet.ShouldProcess("HKLM:\...\RunOnce\$runOnceName", 'Remove-ItemProperty')) {
+        Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" -Name $runOnceName -ErrorAction SilentlyContinue
+    }
 }
 
 function Set-DriverSearchPolicy {
-    reg add "HKLM\Software\Microsoft\Windows\CurrentVersion\DriverSearching" /v "SearchOrderConfig" /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
+    param()
+    if ($PSCmdlet.ShouldProcess('HKLM:\...\DriverSearching\SearchOrderConfig', 'set DWORD = 0 (disable WU driver search)')) {
+        reg add "HKLM\Software\Microsoft\Windows\CurrentVersion\DriverSearching" /v "SearchOrderConfig" /t REG_DWORD /d 0 /f 2>&1 | Out-Null
+    }
 }
 
 try {

@@ -99,6 +99,12 @@ function Reg-Add {
 }
 
 function Set-TrackedRegistry {
+    # Thin pass-through to Set-ToolkitRegistryValue + step-result record.
+    # ShouldProcess() called explicitly at the wrapper level so PSShouldProcess
+    # is satisfied. The inner Set-ToolkitRegistryValue also calls ShouldProcess;
+    # both gates are checked, which is correct (outer can decline before any
+    # state-capture happens; inner gates the actual write).
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     param(
         [string]$Id,
         [string]$Path,
@@ -108,17 +114,26 @@ function Set-TrackedRegistry {
         [string]$Tier,
         [string]$Step
     )
+    $target = if ($Name -eq '') { "$Path\(default)" } else { "$Path\$Name" }
+    if (-not $PSCmdlet.ShouldProcess($target, "Set tracked registry value '$Value' (type $Type, tier $Tier)")) {
+        return
+    }
     Set-ToolkitRegistryValue -Id $Id -Path $Path -Name $Name -Value $Value -Type $Type -Tier $Tier -Step $Step
     Add-ToolkitStepResult -Key $Id -Tier $Tier -Status "applied" -Reason $Step
 }
 
 function Set-TrackedService {
+    # Thin pass-through; explicit ShouldProcess at this layer.
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     param(
         [string]$Name,
         [string]$Mode,
         [string]$Tier,
         [string]$Step
     )
+    if (-not $PSCmdlet.ShouldProcess("service:$Name", "Set tracked start mode '$Mode' (tier $Tier)")) {
+        return
+    }
     Set-ToolkitServiceStartMode -Name $Name -Mode $Mode -Tier $Tier -Step $Step
     Add-ToolkitStepResult -Key "service:$Name" -Tier $Tier -Status "applied" -Reason $Step
 }
@@ -167,7 +182,18 @@ Run-Step "Activating Ultimate Performance plan" {
     cmd /c "powercfg /SETACTIVE $planGuid" 2>&1 | Out-Null
 }
 
-function Set-PowerIdx($SubGroup, $Setting, $Value) {
+function Set-PowerIdx {
+    # Power-plan AC/DC index setter. Mutates the running power profile —
+    # ShouldProcess gate respects -WhatIf for the outer script.
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]
+    param(
+        [Parameter(Mandatory)][string]$SubGroup,
+        [Parameter(Mandatory)][string]$Setting,
+        [Parameter(Mandatory)][string]$Value
+    )
+    if (-not $PSCmdlet.ShouldProcess("power-plan $planGuid", "set $SubGroup/$Setting = $Value (AC+DC)")) {
+        return
+    }
     powercfg /setacvalueindex $planGuid $SubGroup $Setting $Value 2>&1 | Out-Null
     powercfg /setdcvalueindex $planGuid $SubGroup $Setting $Value 2>&1 | Out-Null
 }

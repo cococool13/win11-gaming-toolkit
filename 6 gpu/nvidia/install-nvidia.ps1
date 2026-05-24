@@ -55,6 +55,8 @@ function Install-NvidiaDriver {
 }
 
 function Remove-NvidiaTelemetry {
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
+    param()
     Write-Info "Disabling NVIDIA telemetry..."
 
     # Disable NvTelemetryContainer service

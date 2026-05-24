@@ -2,6 +2,8 @@
 # Intel GPU — Hidden Performance Settings
 # Windows 11 Gaming Optimization Guide
 # ============================================================
+# Tier: Advanced
+#
 # Applies registry-based performance settings for competitive gaming.
 # All changes tracked via Set-ToolkitRegistryValue for rollback.
 #
@@ -9,8 +11,24 @@
 # This script checks and warns if ReBAR is disabled.
 #
 # Requires: lib/toolkit-state.ps1, lib/gpu-detection.ps1
-# Called by: 6 gpu/install-gpu-driver.ps1
+# Called by: 6 gpu/install-gpu-driver.ps1 (which already verifies admin),
+# but also safe to invoke standalone — admin self-check below ensures
+# the script fails fast rather than producing cryptic Set-ItemProperty
+# errors when run from a non-admin shell. (CLAUDE.md invariant #6)
 # ============================================================
+
+# CURSOR-AUDIT #6: explicit per-script admin gate. Inline rather than
+# UI-RequireAdmin because the dot-source paths in this folder reach
+# ..\lib\* (intentional sibling sourcing from install-gpu-driver.ps1's
+# scope when invoked via &); going through ui-helpers.ps1 would require
+# fixing those resolutions in a separate change.
+if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Host ""
+    Write-Host "  [ERROR] configure-intel.ps1 must be run as Administrator." -ForegroundColor Red
+    Write-Host "  Re-launch PowerShell as Admin or invoke via 6 gpu\install-gpu-driver.ps1." -ForegroundColor Red
+    Write-Host ""
+    exit 1
+}
 
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"
 . "$PSScriptRoot\..\lib\gpu-detection.ps1"

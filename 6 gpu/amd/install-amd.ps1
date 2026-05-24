@@ -33,6 +33,11 @@ function Install-AmdDriver {
 }
 
 function Remove-AmdBloat {
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
+    param()
+    if (-not $PSCmdlet.ShouldProcess('AMD GPU stack', 'Remove Adrenalin / RadeonSoftware UWP, disable amdfendr + Crash Defender services')) {
+        return
+    }
     Write-Info "Removing AMD bloatware..."
 
     # Remove Adrenalin Software UWP app (keeps core driver)

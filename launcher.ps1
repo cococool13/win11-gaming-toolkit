@@ -570,6 +570,16 @@ function Read-MenuChoice {
 }
 
 function Start-Launcher {
+    # Top-level interactive orchestrator. Doesn't directly mutate system
+    # state — every state change happens via the dispatched scripts, each
+    # of which has its own ShouldProcess gate. ShouldProcess at this level
+    # would be a UX nuisance (prompts before showing the menu).
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+        'PSUseShouldProcessForStateChangingFunctions', '',
+        Justification = 'Top-level menu orchestrator; mutations happen in dispatched child scripts which each have their own ShouldProcess gates.'
+    )]
+    [CmdletBinding()]
+    param()
     Initialize-LauncherEnvironment
 
     $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)

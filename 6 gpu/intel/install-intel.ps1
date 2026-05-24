@@ -99,6 +99,11 @@ function Install-IntelDriverViaExe {
 }
 
 function Remove-IntelBloat {
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
+    param()
+    if (-not $PSCmdlet.ShouldProcess('Intel GPU stack', 'Remove Arc Control + IGE UWP, disable CIP + igfxCUIService, disable \\Intel\\* scheduled tasks')) {
+        return
+    }
     Write-Info "Removing Intel bloatware..."
 
     # Remove Intel Arc Control UWP app

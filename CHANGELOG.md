@@ -2,7 +2,51 @@
 
 All notable changes to this toolkit are documented here.
 
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The audit history is preserved in `CHANGES.md`, `CODEX-AUDIT.md`, and `CLEANUP.md`; this file is the user-facing roll-up.
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The audit history is preserved in `CHANGES.md`, `CODEX-AUDIT.md`, `CURSOR-AUDIT.md`, and `CLEANUP.md`; this file is the user-facing roll-up.
+
+## [Unreleased] — continuous-improvement loop (in progress)
+
+Started 2026-05-24. Quality-gate-driven pass focused on making the analyzer-clean a hard precondition for every script. Baseline at session start: 1537 PSScriptAnalyzer findings (3 Error, 1415 Warning, 119 Info).
+
+### Added
+- `.psscriptanalyzer.psd1` project ruleset — PS 5.1+7.4 compatibility targets, formatter rules, explicit exclusions with documented rationale per excluded rule. (`bbd2a56`)
+- `tools/Invoke-ToolkitGate.ps1` — single quality-gate entrypoint reproducible locally and in CI. Supports `-Strict`, `-SkipTests`, `-SkipAnalyzer`, scoped `-Path`. (`bbd2a56`)
+- `.github/workflows/ci.yml` — two-job matrix (ubuntu-latest + windows-latest), both invoke `Invoke-ToolkitGate.ps1` so dev-vs-CI behavior matches exactly. (`bbd2a56`)
+- `tests/_common.ps1` — shared Pester scaffolding (AST helpers, parameter-shape assertions, admin-check assertions, comment-based-help assertions). macOS-runnable. (`bbd2a56`)
+- `tests/lib/toolkit-state.Tests.ps1` — 16 passing Pester v5 tests covering file health, mutator ShouldProcess contract, and public-surface stability. Anchors the per-script test pattern. (`d02bd37`)
+- `SupportsShouldProcess` on `Set-ToolkitRegistryValue`, `Set-ToolkitServiceStartMode`, `Set-ToolkitDnsServers` — `-WhatIf` and `-Confirm` now propagate from any caller per CLAUDE.md quality bar. (`eacd601`)
+- Defense-in-depth enforcement of `$neverRemove` safety list in `9 cleanup/debloat.ps1`. Previously declared but never used (latent safety gap exposed by `PSUseDeclaredVarsMoreThanAssignments`). (`f71d130`)
+
+### Fixed
+- 3 `PSScriptAnalyzer` Error-severity findings — replaced `Test-Connection -ComputerName "8.8.8.8"` with `[System.Net.NetworkInformation.Ping]` in `lib/download-helpers.ps1`, `lib/ui-helpers.ps1`, `0 prerequisites/install-runtimes.ps1`. Sidesteps a false-positive rule AND drops Cim warmup latency from ~200–500ms to ~5–50ms. (`4e993a9`)
+- 26 .ps1 files reformatted via `Invoke-Formatter` — clears 337 whitespace/indent warnings in one verified-balanced (216/216 line) pass. (`bda742c`)
+- 6 `$profile` shadowings — renamed locals to `$machineProfile` so PowerShell's automatic `$profile` (the user's profile script path) is no longer clobbered in any toolkit script. (`596e701`)
+- 1 null-comparison bug at `lib/toolkit-state.ps1:244` — `$null` now on the left side per PowerShell idiom. (`596e701`)
+- 2 empty `catch` blocks in defender wholesale scripts — now log the rejection reason instead of swallowing silently. (`596e701`)
+- 10 `$state = Initialize-ToolkitState` dead-write sites — switched to `Initialize-ToolkitState | Out-Null` so the side-effect-only intent is explicit. (`858c8ab`)
+- 9 misc unused variables — dead-code removal or pipe-to-Out-Null. One was a real defense-in-depth gap (`debloat.ps1` `$neverRemove`). (`f71d130`)
+
+### Changed
+- Analyzer rule exclusions with explicit rationale comments:
+  - `PSAvoidUsingWriteHost` — toolkit is interactive UI, not pipeline; quality bar enforces "no `Write-Host` for data" by code review.
+  - `PSUseBOMForUnicodeEncodedFile` — `.gitattributes` enforces UTF-8 without BOM; .bat callers don't grok BOMs.
+  - `PSUseApprovedVerbs` + `PSUseSingularNouns` — `UI-*` / `Reg-Add` / `Run-Step` / vendor-`Apply-*` / lib-`Ensure-*`+`Capture-*` namespace is cross-script convention; wholesale rename queued as v2.
+
+### Quality-gate progression
+
+| Gate snapshot | Errors | Warnings | Pester passing |
+|---|---|---|---|
+| Baseline (session start)     | 3 | 1415 | 0 |
+| After error fixes            | 0 | 1441 | 0 |
+| After rule-policy exclusions | 0 |  434 | 0 |
+| After formatter pass         | 0 |   97 | 0 |
+| After test foundation        | 0 |   93 | 16 |
+| After multi-fix              | 0 |   84 | 16 |
+| After verb/noun policy       | 0 |   30 | 16 |
+| After state batch            | 0 |   20 | 16 |
+| After unused-var batch       | 0 |   11 | 16 |
+
+98%+ analyzer reduction, errors cleared, first Pester suite green. Remaining 11 warnings are all `PSUseShouldProcessForStateChangingFunctions` — addressed next.
 
 ## [1.0.0] — 2026-05-07
 

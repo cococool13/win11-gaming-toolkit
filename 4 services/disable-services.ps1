@@ -37,14 +37,14 @@ $failed = 0
 
 # Service definitions with conditions
 $services = @(
-    @{ Name = "DiagTrack";   Desc = "Connected User Experiences (Telemetry)"; Tier = "Safe";     Condition = $null }
-    @{ Name = "PhoneSvc";    Desc = "Phone Service";                          Tier = "Safe";     Condition = $null }
-    @{ Name = "lfsvc";       Desc = "Geolocation Service";                    Tier = "Safe";     Condition = $null }
-    @{ Name = "RetailDemo";  Desc = "Retail Demo Service";                    Tier = "Safe";     Condition = $null }
-    @{ Name = "MapsBroker";  Desc = "Downloaded Maps Manager";                Tier = "Safe";     Condition = $null }
-    @{ Name = "Fax";         Desc = "Fax Service";                            Tier = "Safe";     Condition = $null }
-    @{ Name = "Spooler";     Desc = "Print Spooler";                          Tier = "Advanced"; Condition = "NoPrinters" }
-    @{ Name = "WSearch";     Desc = "Windows Search";                         Tier = "Advanced"; Condition = $null }
+    @{ Name = "DiagTrack"; Desc = "Connected User Experiences (Telemetry)"; Tier = "Safe"; Condition = $null }
+    @{ Name = "PhoneSvc"; Desc = "Phone Service"; Tier = "Safe"; Condition = $null }
+    @{ Name = "lfsvc"; Desc = "Geolocation Service"; Tier = "Safe"; Condition = $null }
+    @{ Name = "RetailDemo"; Desc = "Retail Demo Service"; Tier = "Safe"; Condition = $null }
+    @{ Name = "MapsBroker"; Desc = "Downloaded Maps Manager"; Tier = "Safe"; Condition = $null }
+    @{ Name = "Fax"; Desc = "Fax Service"; Tier = "Safe"; Condition = $null }
+    @{ Name = "Spooler"; Desc = "Print Spooler"; Tier = "Advanced"; Condition = "NoPrinters" }
+    @{ Name = "WSearch"; Desc = "Windows Search"; Tier = "Advanced"; Condition = $null }
 )
 
 # Show what will happen based on machine profile

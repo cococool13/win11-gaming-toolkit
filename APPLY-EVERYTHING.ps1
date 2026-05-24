@@ -455,7 +455,7 @@ Run-Step "Nagle's Algorithm disabled on active adapters" {
     }
 }
 Run-Step "DNS set to Cloudflare on active adapters" {
-    Set-ToolkitDnsServers -ServerAddresses @("1.1.1.1","1.0.0.1","2606:4700:4700::1111","2606:4700:4700::1001") -Tier "Advanced" -Step "network"
+    Set-ToolkitDnsServers -ServerAddresses @("1.1.1.1", "1.0.0.1", "2606:4700:4700::1111", "2606:4700:4700::1001") -Tier "Advanced" -Step "network"
     Clear-DnsClientCache -ErrorAction SilentlyContinue
 }
 
@@ -657,7 +657,7 @@ Run-Step "Removing leftover folders" {
         # contains the IIS metabase indicators, treat as installed.
         $iisMarkers = @("history", "logs", "temp", "wwwroot", "config")
         $iisInstalled = (Test-Path "$env:SystemDrive\inetpub") -and
-            ((Get-ChildItem "$env:SystemDrive\inetpub" -Force -ErrorAction SilentlyContinue |
+        ((Get-ChildItem "$env:SystemDrive\inetpub" -Force -ErrorAction SilentlyContinue |
                 Where-Object { $iisMarkers -contains $_.Name }).Count -ge 2)
     }
     if ($iisInstalled) {

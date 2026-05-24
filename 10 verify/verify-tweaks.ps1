@@ -147,16 +147,16 @@ Check "Edge background mode disabled" {
 UI-Section -Title "Phase 3: Services"
 
 foreach ($svc in @(
-    @("DiagTrack", "DiagTrack"),
-    @("PhoneSvc", "Phone Service"),
-    @("lfsvc", "Geolocation Service"),
-    @("RetailDemo", "Retail Demo"),
-    @("MapsBroker", "Downloaded Maps Manager"),
-    @("Fax", "Fax"),
-    @("Spooler", "Print Spooler"),
-    @("WSearch", "Windows Search"),
-    @("CscService", "Offline Files")
-)) {
+        @("DiagTrack", "DiagTrack"),
+        @("PhoneSvc", "Phone Service"),
+        @("lfsvc", "Geolocation Service"),
+        @("RetailDemo", "Retail Demo"),
+        @("MapsBroker", "Downloaded Maps Manager"),
+        @("Fax", "Fax"),
+        @("Spooler", "Print Spooler"),
+        @("WSearch", "Windows Search"),
+        @("CscService", "Offline Files")
+    )) {
     Check "$($svc[1]) disabled" {
         $service = Get-Service -Name $svc[0] -ErrorAction SilentlyContinue
         if (-not $service) { return "SKIP" }
@@ -285,7 +285,7 @@ Check "HVCI disabled" {
 Check "Spectre / Meltdown mitigations override applied" {
     $mmPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"
     $override = (Get-ItemProperty $mmPath -Name "FeatureSettingsOverride" -ErrorAction SilentlyContinue).FeatureSettingsOverride
-    $mask     = (Get-ItemProperty $mmPath -Name "FeatureSettingsOverrideMask" -ErrorAction SilentlyContinue).FeatureSettingsOverrideMask
+    $mask = (Get-ItemProperty $mmPath -Name "FeatureSettingsOverrideMask" -ErrorAction SilentlyContinue).FeatureSettingsOverrideMask
     ($override -eq 3) -and ($mask -eq 3)
 } "reg:FeatureSettingsOverride"
 

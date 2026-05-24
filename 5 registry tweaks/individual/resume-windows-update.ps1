@@ -43,10 +43,10 @@ if ($state -and $state.PSObject.Properties["registry"] -and $state.registry) {
 $uxPath = "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings"
 if (Test-Path $uxPath) {
     foreach ($name in @(
-        "PauseUpdatesExpiryTime",
-        "PauseFeatureUpdatesEndTime","PauseFeatureUpdatesStartTime",
-        "PauseQualityUpdatesEndTime","PauseQualityUpdatesStartTime"
-    )) {
+            "PauseUpdatesExpiryTime",
+            "PauseFeatureUpdatesEndTime", "PauseFeatureUpdatesStartTime",
+            "PauseQualityUpdatesEndTime", "PauseQualityUpdatesStartTime"
+        )) {
         Remove-ItemProperty -Path $uxPath -Name $name -ErrorAction SilentlyContinue
     }
 }

@@ -55,12 +55,12 @@ $settingsPath = Join-Path $repoRoot '.psscriptanalyzer.psd1'
 
 $exitCode = 0
 $summary = [ordered]@{
-    AnalyzerErrors   = 0
+    AnalyzerErrors = 0
     AnalyzerWarnings = 0
-    AnalyzerInfo     = 0
-    PesterFailed     = 0
-    PesterPassed     = 0
-    PesterSkipped    = 0
+    AnalyzerInfo = 0
+    PesterFailed = 0
+    PesterPassed = 0
+    PesterSkipped = 0
 }
 
 if (-not $SkipAnalyzer) {
@@ -73,16 +73,16 @@ if (-not $SkipAnalyzer) {
     Import-Module PSScriptAnalyzer -ErrorAction Stop
 
     $analyzerArgs = @{
-        Path        = $Path
-        Recurse     = $true
-        Settings    = $settingsPath
+        Path = $Path
+        Recurse = $true
+        Settings = $settingsPath
         ErrorAction = 'SilentlyContinue'
     }
     $results = Invoke-ScriptAnalyzer @analyzerArgs
 
-    $summary.AnalyzerErrors   = @($results | Where-Object Severity -EQ 'Error').Count
+    $summary.AnalyzerErrors = @($results | Where-Object Severity -EQ 'Error').Count
     $summary.AnalyzerWarnings = @($results | Where-Object Severity -EQ 'Warning').Count
-    $summary.AnalyzerInfo     = @($results | Where-Object Severity -EQ 'Information').Count
+    $summary.AnalyzerInfo = @($results | Where-Object Severity -EQ 'Information').Count
 
     if ($results) {
         $results | Group-Object Severity |
@@ -119,8 +119,8 @@ if (-not $SkipTests) {
             $config.Filter.ExcludeTag = @('WindowsOnly')
         }
         $pesterResult = Invoke-Pester -Configuration $config
-        $summary.PesterFailed  = $pesterResult.FailedCount
-        $summary.PesterPassed  = $pesterResult.PassedCount
+        $summary.PesterFailed = $pesterResult.FailedCount
+        $summary.PesterPassed = $pesterResult.PassedCount
         $summary.PesterSkipped = $pesterResult.SkippedCount
         if ($pesterResult.FailedCount -gt 0) { $exitCode = 1 }
     }

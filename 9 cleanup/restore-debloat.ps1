@@ -65,7 +65,7 @@ if ($state.PSObject.Properties["packages"] -and $state.packages) {
 # Merge — provisioned removals that aren't also in the user-removed list
 # still need reinstall surface; treat the union as the work queue.
 $work = @()
-foreach ($name in $removed)     { if ($work -notcontains $name) { $work += $name } }
+foreach ($name in $removed) { if ($work -notcontains $name) { $work += $name } }
 foreach ($name in $provisioned) { if ($work -notcontains $name) { $work += $name } }
 
 if ($work.Count -eq 0) {

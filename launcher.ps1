@@ -35,24 +35,24 @@ function Initialize-LauncherEnvironment {
 # ----- Static menu definition ----------------------------------------------
 
 $script:LauncherCategories = @(
-    [PSCustomObject]@{ Key = "0";  Title = "Prerequisites";           Tier = "Safe";                Folder = "0 prerequisites";        StepPrefixes = @("prerequisites","prereq:") }
-    [PSCustomObject]@{ Key = "1";  Title = "Backup";                  Tier = "Safe";                Folder = "1 backup";               StepPrefixes = @("backup","restore-point") }
-    [PSCustomObject]@{ Key = "2";  Title = "Power plan";              Tier = "Advanced";            Folder = "2 power plan";           StepPrefixes = @("power-plan","ultimate-perf","power") }
-    [PSCustomObject]@{ Key = "4";  Title = "Services";                Tier = "Advanced";            Folder = "4 services";             StepPrefixes = @("services-","service:","service-") }
-    [PSCustomObject]@{ Key = "5";  Title = "Registry tweaks";         Tier = "Advanced";            Folder = "5 registry tweaks";      StepPrefixes = @("reg:","registry","mmagent","mpo","ntfs-","edge-bg","spectre-meltdown","writecache-flush") }
-    [PSCustomObject]@{ Key = "6";  Title = "GPU";                     Tier = "Advanced";            Folder = "6 gpu";                  StepPrefixes = @("gpu-","gpu:") }
-    [PSCustomObject]@{ Key = "7";  Title = "Network";                 Tier = "Safe";                Folder = "7 network";              StepPrefixes = @("network-","dns-","dns:","nic-","ipv6-") }
-    [PSCustomObject]@{ Key = "8";  Title = "Security vs performance"; Tier = "Security Trade-off";  Folder = "8 security vs performance"; StepPrefixes = @("vbs-","vbs:","spectre-meltdown","bcd:nx","dep-","hvci","lsa-") }
-    [PSCustomObject]@{ Key = "9";  Title = "Cleanup";                 Tier = "Advanced";            Folder = "9 cleanup";              StepPrefixes = @("cleanup","debloat") }
-    [PSCustomObject]@{ Key = "10"; Title = "Verify";                  Tier = "Safe";                Folder = "10 verify";              StepPrefixes = @() }
-    [PSCustomObject]@{ Key = "11"; Title = "Hardware checks";         Tier = "Safe";                Folder = "11 hardware checks";     StepPrefixes = @() }
-    [PSCustomObject]@{ Key = "12"; Title = "Hardware";                Tier = "Safe";                Folder = "12 hardware";            StepPrefixes = @() }
+    [PSCustomObject]@{ Key = "0"; Title = "Prerequisites"; Tier = "Safe"; Folder = "0 prerequisites"; StepPrefixes = @("prerequisites", "prereq:") }
+    [PSCustomObject]@{ Key = "1"; Title = "Backup"; Tier = "Safe"; Folder = "1 backup"; StepPrefixes = @("backup", "restore-point") }
+    [PSCustomObject]@{ Key = "2"; Title = "Power plan"; Tier = "Advanced"; Folder = "2 power plan"; StepPrefixes = @("power-plan", "ultimate-perf", "power") }
+    [PSCustomObject]@{ Key = "4"; Title = "Services"; Tier = "Advanced"; Folder = "4 services"; StepPrefixes = @("services-", "service:", "service-") }
+    [PSCustomObject]@{ Key = "5"; Title = "Registry tweaks"; Tier = "Advanced"; Folder = "5 registry tweaks"; StepPrefixes = @("reg:", "registry", "mmagent", "mpo", "ntfs-", "edge-bg", "spectre-meltdown", "writecache-flush") }
+    [PSCustomObject]@{ Key = "6"; Title = "GPU"; Tier = "Advanced"; Folder = "6 gpu"; StepPrefixes = @("gpu-", "gpu:") }
+    [PSCustomObject]@{ Key = "7"; Title = "Network"; Tier = "Safe"; Folder = "7 network"; StepPrefixes = @("network-", "dns-", "dns:", "nic-", "ipv6-") }
+    [PSCustomObject]@{ Key = "8"; Title = "Security vs performance"; Tier = "Security Trade-off"; Folder = "8 security vs performance"; StepPrefixes = @("vbs-", "vbs:", "spectre-meltdown", "bcd:nx", "dep-", "hvci", "lsa-") }
+    [PSCustomObject]@{ Key = "9"; Title = "Cleanup"; Tier = "Advanced"; Folder = "9 cleanup"; StepPrefixes = @("cleanup", "debloat") }
+    [PSCustomObject]@{ Key = "10"; Title = "Verify"; Tier = "Safe"; Folder = "10 verify"; StepPrefixes = @() }
+    [PSCustomObject]@{ Key = "11"; Title = "Hardware checks"; Tier = "Safe"; Folder = "11 hardware checks"; StepPrefixes = @() }
+    [PSCustomObject]@{ Key = "12"; Title = "Hardware"; Tier = "Safe"; Folder = "12 hardware"; StepPrefixes = @() }
 )
 
 $script:LauncherQuickActions = @(
-    [PSCustomObject]@{ Key = "A"; Label = "Apply All";       Description = "All tweaks";      Path = "APPLY-EVERYTHING.ps1" }
-    [PSCustomObject]@{ Key = "V"; Label = "Verify status";   Description = "";                 Path = "10 verify\verify-tweaks.ps1" }
-    [PSCustomObject]@{ Key = "R"; Label = "Revert All";      Description = "rollback to manifest"; Path = "REVERT-EVERYTHING.ps1" }
+    [PSCustomObject]@{ Key = "A"; Label = "Apply All"; Description = "All tweaks"; Path = "APPLY-EVERYTHING.ps1" }
+    [PSCustomObject]@{ Key = "V"; Label = "Verify status"; Description = ""; Path = "10 verify\verify-tweaks.ps1" }
+    [PSCustomObject]@{ Key = "R"; Label = "Revert All"; Description = "rollback to manifest"; Path = "REVERT-EVERYTHING.ps1" }
 )
 
 # ----- Manifest snapshot helpers -------------------------------------------
@@ -167,10 +167,10 @@ function Get-CategoryStatus {
 function Get-LauncherTierColor {
     param([string]$Tier)
     switch ($Tier) {
-        "Safe"                 { return $script:UI_Success }
-        "Advanced"             { return $script:UI_Warning }
-        "Security Trade-off"   { return $script:UI_Error }
-        default                { return $script:UI_Info }
+        "Safe" { return $script:UI_Success }
+        "Advanced" { return $script:UI_Warning }
+        "Security Trade-off" { return $script:UI_Error }
+        default { return $script:UI_Info }
     }
 }
 
@@ -273,10 +273,10 @@ function Write-LauncherHeader {
     $cornerTR = if ($script:LauncherUseAscii) { "+" } else { [char]0x2510 }
     $cornerBL = if ($script:LauncherUseAscii) { "+" } else { [char]0x2514 }
     $cornerBR = if ($script:LauncherUseAscii) { "+" } else { [char]0x2518 }
-    $vert     = if ($script:LauncherUseAscii) { "|" } else { [char]0x2502 }
+    $vert = if ($script:LauncherUseAscii) { "|" } else { [char]0x2502 }
 
     $borderLine = ($borderChar.ToString() * ($width + 2))
-    $top    = "$cornerTL$borderLine$cornerTR"
+    $top = "$cornerTL$borderLine$cornerTR"
     $bottom = "$cornerBL$borderLine$cornerBR"
 
     $titleLine = "$vert$title$vert"
@@ -333,7 +333,7 @@ function Get-CategoryFiles {
     $root = Join-Path $PSScriptRoot $Folder
     if (-not (Test-Path -LiteralPath $root)) { return @() }
 
-    $files = Get-ChildItem -LiteralPath $root -Recurse -File -Include "*.ps1","*.bat","*.reg" -ErrorAction SilentlyContinue
+    $files = Get-ChildItem -LiteralPath $root -Recurse -File -Include "*.ps1", "*.bat", "*.reg" -ErrorAction SilentlyContinue
     return @($files | Sort-Object FullName)
 }
 
@@ -361,7 +361,7 @@ function Show-CategoryMenu {
         $index = 1
         $entries = @()
         foreach ($file in $files) {
-            $rel = $file.FullName.Substring($PSScriptRoot.Length).TrimStart("\","/")
+            $rel = $file.FullName.Substring($PSScriptRoot.Length).TrimStart("\", "/")
             Write-Host "    [" -NoNewline -ForegroundColor $script:UI_Soft
             Write-Host ("{0,2}" -f $index) -NoNewline -ForegroundColor $script:UI_Header
             Write-Host "]  " -NoNewline -ForegroundColor $script:UI_Soft
@@ -581,7 +581,7 @@ function Start-Launcher {
         exit 1
     }
 
-    $validKeys = @("A","V","R","M","L","B","?","Q")
+    $validKeys = @("A", "V", "R", "M", "L", "B", "?", "Q")
     foreach ($category in $script:LauncherCategories) { $validKeys += $category.Key }
 
     while ($true) {
@@ -592,14 +592,14 @@ function Start-Launcher {
         if (-not $choice) { continue }
 
         switch ($choice) {
-            "Q"  { return }
-            "A"  { Invoke-QuickAction -Key "A" }
-            "V"  { Invoke-QuickAction -Key "V" }
-            "R"  { Invoke-QuickAction -Key "R" }
-            "M"  { Invoke-ViewManifest }
-            "L"  { Invoke-ViewRecentLog }
-            "B"  { Invoke-RegenerateBaseline }
-            "?"  { Show-Help }
+            "Q" { return }
+            "A" { Invoke-QuickAction -Key "A" }
+            "V" { Invoke-QuickAction -Key "V" }
+            "R" { Invoke-QuickAction -Key "R" }
+            "M" { Invoke-ViewManifest }
+            "L" { Invoke-ViewRecentLog }
+            "B" { Invoke-RegenerateBaseline }
+            "?" { Show-Help }
             default {
                 $category = $script:LauncherCategories | Where-Object { $_.Key -eq $choice } | Select-Object -First 1
                 if ($category) {

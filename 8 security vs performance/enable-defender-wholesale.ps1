@@ -47,16 +47,16 @@ try {
 if ($restored -eq 0) {
     UI-Note -Message "No Defender entries in manifest. Removing policy keys blindly as a fallback." -Color $script:UI_Warning
     foreach ($path in @(
-        "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection",
-        "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Spynet",
-        "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender"
-    )) {
+            "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection",
+            "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Spynet",
+            "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender"
+        )) {
         if (Test-Path $path) {
             foreach ($name in @(
-                "DisableAntiSpyware","DisableAntiVirus",
-                "DisableRealtimeMonitoring","DisableBehaviorMonitoring","DisableOnAccessProtection",
-                "SpynetReporting","SubmitSamplesConsent"
-            )) {
+                    "DisableAntiSpyware", "DisableAntiVirus",
+                    "DisableRealtimeMonitoring", "DisableBehaviorMonitoring", "DisableOnAccessProtection",
+                    "SpynetReporting", "SubmitSamplesConsent"
+                )) {
                 Remove-ItemProperty -Path $path -Name $name -ErrorAction SilentlyContinue
             }
         }

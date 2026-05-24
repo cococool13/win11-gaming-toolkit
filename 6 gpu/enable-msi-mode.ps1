@@ -67,7 +67,7 @@ foreach ($gpu in $gpuDevices) {
 if ($IncludeStorage) {
     UI-Section -Title "Storage MSI extension (-IncludeStorage)"
     $nvmeDevices = @(Get-PnpDevice -Class SCSIAdapter -ErrorAction SilentlyContinue |
-        Where-Object { $_.InstanceId -match "PCI\\VEN_" -and $_.FriendlyName -match "NVMe" -and $_.Status -eq "OK" })
+            Where-Object { $_.InstanceId -match "PCI\\VEN_" -and $_.FriendlyName -match "NVMe" -and $_.Status -eq "OK" })
     if ($nvmeDevices.Count -eq 0) {
         UI-Skip -Label "NVMe MSI" -Reason "No NVMe controller detected"
     } else {

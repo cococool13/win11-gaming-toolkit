@@ -37,7 +37,7 @@ UI-RequireAdmin -ScriptName "Force ReBAR"
 Initialize-ToolkitState | Out-Null
 UI-ResetCounters
 
-$gpus = @(Get-GpuVendor | Where-Object { $_.Vendor -in @("nvidia","amd","intel") })
+$gpus = @(Get-GpuVendor | Where-Object { $_.Vendor -in @("nvidia", "amd", "intel") })
 if ($gpus.Count -eq 0) {
     UI-Note -Message "[SKIP] No supported discrete GPU detected." -Color $script:UI_Warning
     Add-ToolkitStepResult -Key "gpu-rebar" -Tier "Advanced" -Status "skipped" -Reason "No supported GPU"

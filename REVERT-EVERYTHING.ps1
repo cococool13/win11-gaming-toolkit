@@ -298,7 +298,7 @@ Run-Step "Removing Nagle overrides" {
     }
     $interfaces = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces"
     Get-ChildItem $interfaces -ErrorAction SilentlyContinue | ForEach-Object {
-        foreach ($name in @("TcpAckFrequency","TCPNoDelay")) {
+        foreach ($name in @("TcpAckFrequency", "TCPNoDelay")) {
             $key = "$($_.PSPath)|$name"
             if (-not $handled.ContainsKey($key)) {
                 Remove-ItemProperty $_.PSPath -Name $name -ErrorAction SilentlyContinue

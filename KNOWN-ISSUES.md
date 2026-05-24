@@ -271,19 +271,31 @@ keys were migrated to `Set-ToolkitRegistryValue` in commit `40630c3`; the
 HKCU writes remain because they're user-toggleable via Windows Settings
 without manifest restore. v1.1 migration target.
 
-#### Per-script Pester suites
+#### Per-script Pester suites  *(largely RESOLVED in 2026-05-24 resumed loop)*
 
-Only `lib/toolkit-state.ps1` has a Pester test file (`tests/lib/
-toolkit-state.Tests.ps1`). The pattern is established and ready to
-replicate. Priority order: top-3 most-called helpers next
-(`lib/ui-helpers.ps1`, `lib/gpu-detection.ps1`, `lib/download-helpers.ps1`),
-then mutating entry points (`APPLY-EVERYTHING.ps1`, `REVERT-EVERYTHING.ps1`).
+Coverage now spans the 4 top-priority lib helpers
+(`lib/toolkit-state.ps1`, `lib/ui-helpers.ps1`, `lib/gpu-detection.ps1`,
+`lib/download-helpers.ps1`), the 3 entry points (`APPLY-EVERYTHING.ps1`,
+`REVERT-EVERYTHING.ps1`, `9 cleanup/debloat.ps1`), the launcher
+(`launcher.ps1`), plus per-feature suites for `check-storage.ps1`,
+`check-uwp-apps.ps1`, the DoH pair, the RSS pair, and the MMCSS pair.
 
-#### Windows Sandbox configs for system-mutating scripts
+243 total Pester tests passing (from 0 at original session baseline).
 
-`tests/sandbox/<script>.wsb` files not yet generated. CLAUDE.md quality
-bar requires these for any mutator. Lift is ~15 lines XML per script,
-mostly mechanical.
+Still uncovered: the 30+ individual `5 registry tweaks/individual/*.ps1`
+tweak scripts. Most are short and follow the same shape — a future
+loop can sweep them with a templated test suite. Lower priority than
+the entry points + libs, which were the original concern.
+
+#### Windows Sandbox configs for system-mutating scripts  *(RESOLVED in 2026-05-24 resumed loop, commit `8ddff76`)*
+
+6 `.wsb` configs under `tests/sandbox/`:
+`apply-everything-{default,tradeoffs,whatif}.wsb`, `debloat.wsb`,
+`revert-everything.wsb`, `check-storage.wsb`. Authored on macOS
+(can't execute), so paired with `tools/Start-SandboxSession.ps1`
+wrapper that substitutes the host repo path into a temp .wsb and
+launches Sandbox on Windows (or inspect-only on macOS). Full layout +
+limitations in `tests/sandbox/README.md`.
 
 ### From v1.0.0 production-readiness audit
 

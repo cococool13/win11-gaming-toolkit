@@ -48,6 +48,45 @@ Started 2026-05-24. Quality-gate-driven pass focused on making the analyzer-clea
 
 98%+ analyzer reduction, errors cleared, first Pester suite green. Remaining 11 warnings are all `PSUseShouldProcessForStateChangingFunctions` — addressed next.
 
+---
+
+### 2026-05-24 resumed loop (commits `128a6e2` → `c2795e7`)
+
+Floor moved from 0/0 PSSA + 77 tests to **0/0 PSSA + 243 tests**. Every commit kept the gate green; no reverts fired.
+
+**Added — entry-point Pester suites.** `tests/APPLY-EVERYTHING.Tests.ps1` (15 tests covering the `-IncludeSecurityTradeoffs` gate, BattlEye/EAC text, phase headings, Skip-Step plumbing). `tests/REVERT-EVERYTHING.Tests.ps1` (14 tests; Nagle manifest-first/blind-fallback, DNS / service restore presence, init-before-restore ordering). `tests/9-cleanup/debloat.Tests.ps1` (regression test for f71d130 — `$neverRemove` enforcement). Each script gets a `tests/manual/<name>.md` Windows-runner checklist for what AST can't prove. (`128a6e2`)
+
+**Added — structured logging wiring.** `Write-ToolkitScriptStart` / `Write-ToolkitScriptComplete` in `lib/toolkit-state.ps1` with idempotency via `$script:ToolkitScriptStartLogged`. Auto-invoked by `Initialize-ToolkitState` (SkipFrames=2) so the ~35 mutators that already initialize the manifest get the audit-trail log line for free. The 13 hold-outs got an explicit `Write-ToolkitScriptStart` call (after the admin gate, after lib dot-source). New `tests/invariants/script-start-logging.Tests.ps1` enforces the invariant across the tree — 50 dynamic test cases, one per mutator. (`ecacca7`)
+
+**Added — Windows Sandbox configs.** `tests/sandbox/*.wsb` × 6 (apply default / tradeoffs / WhatIf, debloat, revert-everything, check-storage) + `tools/Start-SandboxSession.ps1` wrapper that substitutes `%REPO%` placeholder into a temp .wsb and launches Sandbox (Windows) or prints inspect-only path (macOS dev). `tests/sandbox/README.md` documents what Sandbox proves and what it doesn't (no reboot persistence, no anti-cheat, no real driver state). (`8ddff76`)
+
+**Added — Phase C user features.**
+- `7 network/enable-doh.ps1` + `disable-doh.ps1` — Cloudflare/Quad9/Google DoH templates via `Set-DnsClientDohServerAddress`. Before/after `Resolve-DnsName` metric logged. Sources cited (Microsoft Learn DnsClient, RFC 8484). 14 Pester tests including a "list parity" assertion that disable cleans up every IP enable might register. (`bd7942a`)
+- `7 network/enable-rss-tuning.ps1` + `disable-rss-tuning.ps1` — RSS toggle + per-adapter queue count tuned to `min(LogicalCpu, NIC.MaxQueues, 8)`. Sidecar-JSON revert pattern (matches `enable-write-cache-flush.ps1`). 9 tests. (`c7f4710`)
+- `5 registry tweaks/individual/tune-mmcss-audio.ps1` + `restore-mmcss-audio.ps1` — Pro Audio scheduling profile (Priority/Category/SFIO/BackgroundOnly) for low-latency audio threads. 14 tests including manifest-Id parity between tune/restore. (`c7f4710`)
+- `11 hardware checks/check-uwp-apps.ps1` — FR33THY-style audit-then-decide pattern. Read-only inventory of installed Appx packages cross-referenced with `debloat.ps1`'s `$appsToRemove` + `$neverRemove` via AST walk (no duplicate list maintenance). Supports `-Sort`, `-OnlyDebloatCandidates`, `-AsObject` for pipeline use. 7 tests including a "stays read-only" guard. (`c2795e7`)
+
+**Added — `tests/lib/download-helpers.Tests.ps1`.** Behavioral tests for `Test-FileSha256` (deterministic hash of `"hello world"`) + idempotency of `Ensure-Directory`. Surfaced + fixed a real cross-platform bug: `$env:ProgramData` is null on macOS so dot-sourcing the lib threw. Applied the same `$XDG_DATA_HOME` / `~/.local/share` fallback already in `toolkit-state.ps1` so dev-on-macOS works consistently. 15 tests. (`4910240`)
+
+**Fixed — GPU dot-source path bug.** All 6 scripts in `6 gpu/{nvidia,amd,intel}/` used `$PSScriptRoot\..\lib\*` which resolves to `6 gpu/lib/*` (does not exist) instead of repo root. Worked in practice because the only caller (`install-gpu-driver.ps1`) had already loaded lib helpers into scope, but standalone invocation was silently broken. Corrected to `..\..\lib\*`. `KNOWN-ISSUES.md` entry marked RESOLVED. (`f2a332a`)
+
+**Fixed — invariant-helper alignment.** `Test-ToolkitInvariants` was reading 80 head lines while `Test-ToolkitAdminCheck` was reading 60 (and now 120). Phase C scripts have ~75-line comment-help blocks that pushed the admin check past 80 → false-positive "missing admin guard." Both helpers now use 120 with rationale comment. (`c6498e9`)
+
+### Quality-gate progression (resumed loop)
+
+| Gate snapshot | Errors | Warnings | Pester passing |
+|---|---|---|---|
+| Resume start (prior session end) | 0 | 0 | 77 |
+| After entry-point Pester         | 0 | 0 | 130 |
+| After script-start auto-wire     | 0 | 0 | 180 |
+| After sandbox additions          | 0 | 0 | 180 |
+| After GPU dot-source fix         | 0 | 0 | 180 |
+| After DoH                        | 0 | 0 | 194 |
+| After RSS + MMCSS                | 0 | 0 | 220 |
+| After invariant-helper alignment | 0 | 0 | 220 |
+| After download-helpers tests     | 0 | 0 | 235 |
+| After check-uwp-apps             | 0 | 0 | 243 |
+
 ## [1.0.0] — 2026-05-07
 
 First public release. The toolkit went through three predecessor passes (FR33THY integration + bug audit, codex verification + discovery, cleanup + launcher redesign) and a final production-readiness audit before this tag.

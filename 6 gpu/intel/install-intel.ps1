@@ -14,6 +14,17 @@ param(
     [switch]$DriverOnlyInf
 )
 
+# CLAUDE.md invariant #6 — every mutating script self-checks admin.
+# Surfaced by Test-ToolkitInvariants (profile/parts/toolkit-aware.ps1).
+# Inline pattern matches the sibling configure-intel.ps1 fix.
+if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Host ''
+    Write-Host '  [ERROR] install-intel.ps1 must be run as Administrator.' -ForegroundColor Red
+    Write-Host '  Re-launch PowerShell as Admin or invoke via 6 gpu\install-gpu-driver.ps1.' -ForegroundColor Red
+    Write-Host ''
+    exit 1
+}
+
 . "$PSScriptRoot\..\lib\download-helpers.ps1"
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"
 

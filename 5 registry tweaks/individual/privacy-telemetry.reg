@@ -44,8 +44,14 @@ Windows Registry Editor Version 5.00
 "PublishUserActivities"=dword:00000000
 
 ; --- Disable delivery optimization (P2P updates) ---
-[HKEY_USERS\S-1-5-20\Software\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Settings]
-"DownloadMode"=dword:00000000
+; CURSOR-AUDIT #10: switched from HKEY_USERS\S-1-5-20\... (NETWORK SERVICE
+; profile, which DO does NOT read for policy) to the documented machine-
+; wide Group Policy path under HKLM\SOFTWARE\Policies — value name is
+; DODownloadMode (not DownloadMode). 0 = HTTP only, no peering.
+; Reference: gpedit.msc → Computer Configuration → Administrative Templates
+;            → Windows Components → Delivery Optimization → Download Mode
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization]
+"DODownloadMode"=dword:00000000
 
 ; --- Disable location ---
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location]

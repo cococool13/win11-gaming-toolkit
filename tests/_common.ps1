@@ -82,13 +82,22 @@ function Test-ToolkitAdminCheck {
         Assert the script self-checks admin before any mutation.
     .DESCRIPTION
         Looks for either UI-RequireAdmin call OR the inline
-        IsInRole(Administrator) pattern within the first 60 lines.
+        IsInRole(Administrator) pattern within the first $HeadLines.
         Per CLAUDE.md invariant #6.
+
+        Default window of 120 lines fits well-documented scripts whose
+        comment-based help block pushes the admin check past ~80 lines
+        (Phase C scripts like enable-doh.ps1 have ~75-line help blocks).
+        Pass -HeadLines to widen for hand-rolled scripts with very
+        long .DESCRIPTION sections.
     #>
     [CmdletBinding()]
-    param([Parameter(Mandatory)][string]$Path)
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [int]$HeadLines = 120
+    )
     $content = Get-Content -LiteralPath $Path -Raw
-    $head = ($content -split "`n" | Select-Object -First 60) -join "`n"
+    $head = ($content -split "`n" | Select-Object -First $HeadLines) -join "`n"
     $hasUI = $head -match 'UI-RequireAdmin'
     $hasInline = $head -match 'IsInRole.*Administrator'
     [PSCustomObject]@{

@@ -1,78 +1,205 @@
-# Known Issues and Intentional Omissions
+# Known Issues and Tracking
 
-This file documents items that were considered but not shipped, with reasoning. It is the place to look when you ask "why doesn't the toolkit do X" — especially for X drawn from FR33THY/Ultimate or other Windows tweak guides.
+This file is now a tracking document, not a "won't ship" list. Per the toolkit's
+design philosophy (see [CLAUDE.md](CLAUDE.md) → `## Scope`), nothing is
+permanently out of scope. The only hard constraints are: **(a) the PC still
+boots after Apply + reboot** and **(b) games still run**. Everything else can
+ship as an opt-in script under the right tier.
 
-## Items declined from FR33THY/Ultimate
+Sections:
+
+1. [FR33THY/Ultimate — items not currently shipped (port on request)](#fr33thyultimate--items-not-currently-shipped-port-on-request)
+2. [From updated FR33THY/Ultimate (HEAD ~2026-04-22) — items to evaluate](#from-updated-fr33thyultimate-head-2026-04-22--items-to-evaluate)
+3. [Items shipped as opt-in only (NOT in `APPLY-EVERYTHING.ps1`)](#items-shipped-as-opt-in-only-not-in-apply-everythingps1)
+4. [Existing toolkit limitations carried forward](#existing-toolkit-limitations-carried-forward)
+5. [Logged for next release](#logged-for-next-release)
+
+---
+
+## FR33THY/Ultimate — items not currently shipped (port on request)
+
+These items were considered during the original FR33THY port pass and not yet
+shipped. They are **available to port on request** — each just needs the
+standard treatment: pick a tier, route writes through `Set-TrackedRegistry` /
+`Set-TrackedService`, ship a paired `enable-*` / `revert-*` script, document
+risk in the header, and add to the right numbered folder. Not added to
+`APPLY-EVERYTHING.ps1` unless the user explicitly asks.
 
 ### `2 Refresh/*` — bare-metal install flow
 
-FR33THY ships factory-reset, `autounattend.xml`, and reinstall scripts for clean Windows installs. This toolkit operates on existing systems. Out of scope.
+FR33THY ships factory-reset and reinstall scripts. Out of typical scope (this
+toolkit operates on existing systems), but `2 Refresh/4 Autounattend.ps1`
+(generates a custom `autounattend.xml` with TPM/RAM/SecureBoot bypass + OOBE
+skip) is a small lift and genuinely useful for clean installs. Worth porting
+as a standalone helper under `0 prerequisites/` if requested.
 
 ### `3 Setup/1 BitLocker.ps1` — BitLocker disable
 
-Disabling BitLocker requires re-encryption decisions and TPM behavior that should be a manual user decision, not a scripted toggle. Skip.
+Requires re-encryption decisions and TPM behavior that should be a manual user
+choice. Tier: `Security Trade-off`. Port on request with a hard `UI-Confirm`
+gate explaining the recovery-key implication.
 
-### `3 Setup/3-12` (most of Setup folder)
+### `3 Setup/3` (Convert Home→Pro), `6` (locale), `10` (Edge), `11` (Store)
 
-First-boot configuration (Convert Home→Pro, language/region, Edge settings, Store settings) is one-time install plumbing. Out of scope. `12 Updates Pause` overlaps `5 registry tweaks/individual/disable-windows-update.ps1` already in this repo.
+Low-risk QoL settings. Tier: `Safe` to `Advanced`. Cheap to port; each is one
+to three lines of `Set-TrackedRegistry` plus a header comment.
 
-### `4 Installers/*` — third-party tool bundles
+### `4 Installers/*` — third-party tool installers
 
-MSI Afterburner, NVIDIA Profile Inspector, MoreClockTool, CRU. We do not bundle binaries (constraint #4 in the toolkit charter). Users should install these tools themselves from upstream sources.
+MSI Afterburner, NVIDIA Profile Inspector, MoreClockTool, CRU. The "no bundled
+binaries" rule (charter constraint #4) still holds — but **download-and-verify**
+with SHA-256 against `versions.json` is consistent with how we already handle
+DDU and WinUtil. Ship as `0 prerequisites/install-<tool>.ps1`, one script per
+tool, with hash enforcement (FR33THY's upstream scripts skip the verify step;
+we add it).
 
-### `5 Graphics/3 Driver Install Debloat & Settings.ps1` (33 KB)
+### `5 Graphics/3 Driver Install Debloat & Settings.ps1`
 
-Overlaps `DduManual.ps1` + `DduAuto.ps1` + `6 gpu/install-gpu-driver.ps1` flow we already maintain. Re-implementing FR33THY's flow on top would be redundant and add a second installer code path.
+Overlaps `DduManual.ps1` + `6 gpu/install-gpu-driver.ps1`, but the **debloat
+phase** strips telemetry components that DDU leaves alone. Worth porting just
+that phase as `6 gpu/debloat-driver-telemetry.ps1`. Tier: `Advanced`.
 
 ### `5 Graphics/7 Hdcp.ps1` — HDCP disable
 
-HDCP affects DRM-protected content (Netflix, etc.) more than gaming performance. Niche.
+Matters for capture-card workflows. Small toggle. Tier: `Advanced`. Ship on
+request.
 
 ### `5 Graphics/12 Resolution Refresh Rate.ps1` & `13 Hags Windowed.ps1`
 
-Both walk the user through clicking the Settings UI. No registry equivalent. Documented in `BIOS-CHECKLIST.md` instead.
+`12` walks through Settings UI clicks — no scriptable equivalent, leave in
+`BIOS-CHECKLIST.md`. `13 HAGS Windowed` is registry-driven and shippable;
+tier: `Advanced`.
 
 ### `6 Windows/22 Control Panel Settings.ps1` (108 KB)
 
-A 108 KB registry blob touching hundreds of keys. Many overlap our existing changes; many are preference-driven (icon spacing, taskbar appearance) rather than performance. Porting wholesale would require auditing every key for tier classification — too broad for the safety/correctness budget. Cherry-picking the genuinely additive performance keys (write cache, MMAgent, MPO) was done; the rest is left.
+108 KB registry blob touching hundreds of keys, many preference-driven. Do
+**not** port wholesale — too broad for one tier classification. Cherry-pick
+the 10–20 genuinely additive performance keys on request, each as its own
+named `.reg` under `5 registry tweaks/individual/` so the user can opt into
+specific ones.
 
 ### `6 Windows/31 UAC.ps1` — UAC lowering
 
-Lowering UAC has clear security implications and no measurable gaming-performance benefit. Skip.
-
-### `6 Windows/33 Defender Optimize.ps1` (24 KB) & `8 Advanced/1 Defender.ps1` (30 KB)
-
-Wholesale Defender disable. Crosses the line from "performance trade-off" to "broken Windows install" — per the brief, items that disable Defender wholesale are explicitly out of scope. We already provide `Defender exclusions` for game library paths under `Security Trade-off`, which is the supportable middle ground.
+Tier: `Security Trade-off`. Ship on request with a `UI-Confirm` block that
+says "this lowers the elevation prompt; malware that gets user-level execution
+will be able to elevate without prompting."
 
 ### `8 Advanced/2 Firewall.ps1` — firewall disable
 
-Same logic as Defender. We don't ship a script that disables Windows Firewall. Users who want firewall changes should make them manually with full awareness.
+Tier: `Security Trade-off`. Ship on request with a "do not run this if you
+ever use public Wi-Fi" warning in the header.
 
-### `8 Advanced/5 File Download Security Warning.ps1`
+### `8 Advanced/5 File Download Security Warning.ps1` — SmartScreen / MOTW
 
-Disables Mark-of-the-Web SmartScreen warnings on downloaded files. Real malware-mitigation feature. Skip.
+Tier: `Security Trade-off`. Ship on request. Annoyance reducer; well-understood
+trade-off.
 
-### `8 Advanced/8 Smt Ht.ps1` — Disable SMT / HT
+### `8 Advanced/15 Driver WHQL Secure Boot Bypass.ps1`
 
-Disabling Hyper-Threading / SMT helps a narrow class of CPU-bound games and *hurts* every productivity workload. Workload-specific. Skip — users who need this know exactly when they need it and can do it from BIOS.
+Required for some unsigned-driver workflows — including any future expansion
+of our own timer-resolution service if signing breaks. Tier: `Security
+Trade-off`. Ship on request, with `bcdedit /set testsigning on` + reboot
+documented.
 
-### `8 Advanced/9 Core 1 Thread 1.ps1` — single-core affinity for `explorer.exe`
+### `8 Advanced/19 NVME Faster Driver.ps1` — force inbox `stornvme.sys`
 
-Pins Explorer to logical core 1. Breaks every multithreaded application that inherits affinity. Workload-specific. Skip.
+Vendor drivers carry firmware-specific quirks. FR33THY's own script warns
+"breaks Microsoft DirectStorage." Tier: `Advanced`. Ship with that warning
+verbatim in the header if requested.
 
-### `8 Advanced/15 Driver Whql Secure Boot Bypass.ps1`
+### Items skipped on technical grounds (still shippable, but warn loudly)
 
-Disables Windows driver-signing enforcement. Real attack surface increase, niche benefit (lets unsigned drivers load). Skip.
+These three are not banned — per the new scope philosophy, the user can opt
+into them — but if you port them, the header **must** carry a strong
+"cargo-cult" warning explaining why most users should not enable them. The PC
+still boots and games still run, so they pass the hard-constraint test.
 
-### `8 Advanced/19 NVME Faster Driver.ps1`
+- **`6 Windows/33 Defender Optimize.ps1` + `8 Advanced/1 Defender.ps1` (wholesale Defender disable)** —
+  on Win11 24H2, Tamper Protection makes most of these registry writes no-ops
+  or unstable. Ship as `8 security vs performance/disable-defender-wholesale.ps1`
+  with `UI-Confirm` text noting: "Tamper Protection may revert these writes;
+  expected behavior. Defender exclusions for game library paths (already
+  shipped) are usually the better choice."
+- **`8 Advanced/8 SMT/HT disable`** — measurably **hurts** multi-thread
+  performance on modern Ryzen/Intel CPUs in nearly all 2025-era games.
+  Workload-specific; users who genuinely need this know exactly when (and can
+  do it from BIOS faster than from a script). Ship as
+  `8 security vs performance/disable-smt-ht.ps1` with header text noting the
+  empirical regression.
+- **`8 Advanced/9 Core 1 Thread 1` (explorer.exe → single-core affinity)** —
+  pure cargo-cult; zero measurable benefit and can cause Explorer UI hitches
+  under multitasking. Ship as `5 registry tweaks/individual/explorer-affinity-core1.ps1`
+  with header text noting "no measurable benefit; documented for completeness."
 
-Force-installs Microsoft's inbox `stornvme.sys` over vendor NVMe drivers. Vendor drivers carry firmware-specific quirks (queue depth, command coalescing, telemetry); switching to inbox often costs more than the marginal performance gain. Skip — users who want this should install via Device Manager themselves.
+---
+
+## From updated FR33THY/Ultimate (HEAD ~2026-04-22) — items to evaluate
+
+The upstream repo is active (~weekly commits; latest Apr 22 2026) and has
+grown since our original port pass. Research summary follows; the
+recommendation column is for triage, not a binding queue.
+
+### Automation patterns worth borrowing (not whole scripts)
+
+| Pattern | Where it lives upstream | Why we'd want it | Effort |
+|---|---|---|---|
+| Per-category interactive numbered menus (e.g. `4 Installers/1 Installers.ps1`, `6 Windows/13 Bloatware.ps1`) | Most category scripts | Lighter than one mega-launcher; each folder gets its own opt-in submenu | Low — already partly modeled by our `launcher.ps1` per-folder submenus |
+| `autounattend.xml` generator with TPM/RAM/SecureBoot bypass + OOBE skip | `2 Refresh/4 Autounattend.ps1` | Useful clean-install helper; pair with USB-staging script | Medium |
+| "Audit/check" scripts that enumerate state before suggesting removal (legacy apps, legacy features, UWP, Task Manager startup) | `6 Windows/14–18` | "Report then decide" UX is healthier than blanket apply | Low–Medium |
+
+### Categories we do NOT have at all
+
+| Upstream folder | Content | Tier when ported | Notes |
+|---|---|---|---|
+| `1 Check/` | Hardware/BIOS validation, Space/RAM/GPU check, CPU/RAM/GPU stress tests, HWiNFO launcher, BIOS guide | `Safe` (all read-only or external-tool wrappers) | Would fit as a new top-level `11 hardware checks/` folder. Stress tests should download external tools (Prime95, MemTest) with SHA-256 verify, not bundle. |
+| `7 Hardware/` | Mouse polling test, controller overclock + polling, monitor optimization, bufferbloat test, PC build guide | `Safe` for tests, `Advanced` for polling overclock | Polling-rate testers are genuinely useful. Bufferbloat test is a web-launch wrapper. |
+
+### Specific new tweaks in existing folders
+
+| Upstream script | Our folder when ported | Tier | One-line rationale |
+|---|---|---|---|
+| `6 Windows/8 Widgets`, `9 Copilot` (already partly handled), `19 Gamebar`, `20 Edge & WebView` | `5 registry tweaks/individual/` | `Advanced` | Modern Win11 debloat targets; mostly registry one-liners |
+| `6 Windows/23 Sound`, `24 Loudness EQ` | `5 registry tweaks/individual/` | `Advanced` | Audio path tuning; mostly preference |
+| `6 Windows/28 Write Cache Buffer Flushing` | We already ship `disable-write-cache-flush.ps1` | — | Duplicate; no action |
+| `6 Windows/32 Core Isolation` | `8 security vs performance/` | `Security Trade-off` | Memory Integrity / HVCI overlap — verify against our existing VBS scripts before porting |
+| `8 Advanced/7 ReBar Force` | `6 gpu/` | `Advanced` | Force-enable Resizable BAR on unsupported configs; real perf win when it works |
+| `8 Advanced/10 Priority` | `5 registry tweaks/individual/` | `Advanced` | Process priority class tweaks |
+| `8 Advanced/12 Hardware Legacy Flip`, `13 Hardware Composed Independent Flip` | `5 registry tweaks/individual/` | `Advanced` | DWM/flip-model tweaks; complementary to our MPO disable |
+| `8 Advanced/18 Start Search Shell Mobsync` | We already ship `mobsync-disable.ps1` | — | Partial overlap; check for new shell-component disables in upstream version |
+| `5 Graphics/9 MSI Mode` (folder version vs our `6 gpu/enable-msi-mode.ps1`) | — | — | Compare detection logic; upstream may have improved device enumeration |
+| `5 Graphics/13 HAGS Windowed` | `5 registry tweaks/individual/` | `Advanced` | HAGS-in-windowed-mode toggle |
+| `3 Setup/12 Updates Pause` (programmatic pause, not full disable) | `5 registry tweaks/individual/` | `Advanced` | Softer alternative to our `disable-windows-update.ps1`; ship alongside |
+
+### What upstream does worse than us (don't borrow)
+
+- **No state-tracking / no transactional revert.** Each script offers a "Default"
+  option but it's fire-and-forget. Our manifest at
+  `%ProgramData%\Win11GamingToolkit\state\manifest.json` is the correct design;
+  keep it.
+- **No SHA-256 verification of downloaded installers.** `4 Installers/1 Installers.ps1`
+  trusts vendor URLs without hash check, even though the README lists SHAs. Any
+  port must add the verification step we already apply to DDU and WinUtil.
+- **`IWR.ps1` sets `ExecutionPolicy = Unrestricted` machine-wide and unblocks
+  all downloaded files.** Do not replicate. If we ship an `iwr | iex`
+  bootstrapper, scope to `-Scope Process`.
+- **Commit hygiene.** Upstream commit messages are literally "Upload." No
+  CHANGELOG, no semantic versioning. We have both; keep them.
+
+### Licensing / attribution
+
+MIT licensed. Porting any script requires preserving a "Copyright FR33THY"
+notice in the per-file header (we already use the `# Source: FR33THYFR33THY/Ultimate — <path>`
+convention; add `# Copyright FR33THY (MIT)` alongside it for any new ports).
+
+---
 
 ## Items shipped as opt-in only (NOT in `APPLY-EVERYTHING.ps1`)
 
 ### `5 registry tweaks/individual/disable-write-cache-flush.ps1`
 
 Per-disk write cache buffer flushing disabled. Material data-loss risk on power loss. Provided as a standalone script for users on UPS-backed desktops who explicitly want the small write-throughput gain. Reverted via paired `enable-write-cache-flush.ps1`.
+
+---
 
 ## Existing toolkit limitations carried forward
 
@@ -96,26 +223,95 @@ Driver-related items (MSI mode for GPU on Snapdragon X) are not separately teste
 
 `install-timer-resolution-service.ps1` requires `csc.exe` from .NET Framework 4.0. Missing on stripped images. The script fails with a clear error and exits cleanly. Use `Add-WindowsCapability -Online -Name 'NetFx3~~~~'` to recover, then re-run.
 
+---
+
 ## Logged for next release
 
-Surfaced by the v1.0.0 production-readiness audit. None block v1.0.0 because the affected behaviors are either intentional defaults applies, recoverable manually, or covered by the per-folder script (which routes through the toolkit-state helpers correctly). Logged here so they aren't forgotten.
+Items below are tracked work — known issues, audit findings, and untracked
+writes that have been catalogued for a future release. None block the current
+shipping version; each is logged so it isn't forgotten.
 
-### `APPLY-EVERYTHING.ps1` Nagle write bypasses toolkit-state
+### From v1.0.0 production-readiness audit
+
+#### `APPLY-EVERYTHING.ps1` Nagle write bypasses toolkit-state
 
 Lines 399–400 set `TcpAckFrequency` and `TCPNoDelay` on every interface via raw `Set-ItemProperty` instead of `Set-ToolkitRegistryValue`. Consequence: `REVERT-EVERYTHING.ps1` will not undo Nagle changes that came from APPLY's path. The standalone `7 network/optimize-network.ps1` already uses `Set-ToolkitRegistryValue` for the same writes — running that script gives revertable Nagle. Default (unset) Nagle behavior is harmless; this is a revert-completeness gap, not a stability risk. Convert APPLY's Nagle block to `Set-TrackedRegistry` in v1.1.
 
-### `APPLY-EVERYTHING.ps1` startup-cleanup `reg delete` calls are not tracked
+#### `APPLY-EVERYTHING.ps1` startup-cleanup `reg delete` calls are not tracked
 
 Phase 6 (Startup Cleanup) deletes `HKCU\...\Run` autostart entries for OneDrive, Teams, etc. via raw `reg delete`. These are deletions of vendor-installed values — there is nothing for the manifest to capture as `before` state in a useful way, and revert relies on the user re-launching OneDrive / Teams to re-register their autostart hooks. Acceptable as an intentional defaults-style policy apply. Document the revert expectation in `GUIDE.md` if user reports surface in the field.
 
-### `APPLY-EVERYTHING.ps1` Power-Plan attribute unhide is not tier-tagged
+#### `APPLY-EVERYTHING.ps1` Power-Plan attribute unhide is not tier-tagged
 
 Line 163 (`reg add ... PowerSettings\54533251.../Attributes /d 0`) is a metadata write that unhides a hidden power setting so the next `Set-PowerIdx` call can reach it. The Phase block is tier-tagged `Advanced`, but the individual `reg add` is not routed through `Set-TrackedRegistry` because there is no functional change to revert — the Attributes flag only controls visibility, not behavior. Acceptable; no action needed.
 
-### Notice.txt scope
+#### Notice.txt scope
 
 `Notice.txt` credits Khorvie Tech only — the original toolkit lineage. FR33THY, Chris Titus Tech, and Wagnardsoft are credited in `GUIDE.md` Credits and per-file headers. Owner-decision item from `CHANGES.md` Q2: expand `Notice.txt` to consolidate all upstream credits, or keep it focused on lineage. No technical impact either way.
 
-### `README.md` launcher screenshot
+#### `README.md` launcher screenshot
 
 `README.md` describes the launcher header, three-section layout, and color-coded tier indicators in prose, but does not embed a screenshot. The production-readiness pass ran on macOS (no Windows host), so a real-host screenshot couldn't be captured. After the owner runs `MANUAL-TEST-CHECKLIST.md` section 1 on a Win11 VM, capture the launcher main menu (PNG) and place it at `docs/img/launcher.png`, then add `![](docs/img/launcher.png)` under the Quick start section of `README.md`. v1.1 follow-up.
+
+### From Cursor audit pass (full report in `CURSOR-AUDIT.md`)
+
+Findings below are grouped by severity. The audit was run read-only — no
+files were modified. File:line references are exact.
+
+#### Critical
+
+1. **`APPLY-EVERYTHING.ps1:412-454` — Security trade-offs bundled in Apply All without separate gate**
+   - VBS / HVCI / LSA-PPL / Spectre / WU suppression all run inside `[A] Apply All` after a single global confirm.
+   - Fix: add `-IncludeSecurityTradeoffs` switch defaulting to `$false`; require an explicit second confirm (or separate launcher action) to opt in.
+2. **`APPLY-EVERYTHING.ps1:437-454` — No anti-cheat warning on HVCI/VBS bulk disable**
+   - `.cursorrules` requires flagging BattlEye-relevant changes. No file currently mentions BattlEye or EAC.
+   - Fix: header comment block in `APPLY-EVERYTHING.ps1` Phase 10 + `configure-vbs.ps1` + `disable-vbs.bat`: "HVCI/VBS changes may affect BattlEye/EAC on Win11 24H2+. Test R6 Siege and similar titles after reboot."
+
+#### High
+
+3. **`5 registry tweaks/individual/install-timer-resolution-service.ps1` — no paired uninstall script**
+   - Uninstall steps documented only in comments. Add `uninstall-timer-resolution-service.ps1` that stops the service, deletes it, and removes the `GlobalTimerResolutionRequests` registry value.
+4. **`9 cleanup/debloat.ps1` — no revert script**
+   - Package removals are logged in the manifest (`state.packages.removed`) but there's no `restore-debloat.ps1`. Either build one that reinstalls from `Microsoft.Store` / `winget`, or document the limitation explicitly in the script header.
+5. **`APPLY-EVERYTHING.ps1:394-401` — Nagle untracked** (also in v1.0.0 audit above; consolidate fix).
+6. **`6 gpu/{nvidia,amd,intel}/configure-*.ps1` — no standalone admin check**
+   - Safe when called from `install-gpu-driver.ps1:39-50` (which checks), but breaks the "every script self-checks admin" invariant in [CLAUDE.md](CLAUDE.md). Add `UI-RequireAdmin` to the top of all three.
+7. **`8 security vs performance/configure-vbs.ps1:90` — default path disables security**
+   - Running the script with no flags currently disables VBS/HVCI. The "opt-in" is running the script at all, which is the wrong shape.
+   - Fix: require `-Disable` / `-ConfirmDisable`; default to report-only.
+8. **`4 services/revert-all.bat` ignores manifest**
+   - Resets services to fixed defaults rather than to `state.services` captured values. Inconsistent with `disable-services.ps1`.
+   - Fix: rewrite as PS that calls `Restore-ToolkitServiceStartMode`, or deprecate the `.bat` and document `REVERT-EVERYTHING.ps1` as the only supported revert path.
+
+#### Medium
+
+9. **`5 registry tweaks/individual/disable-windows-update.ps1:35-76`** — raw `Stop-Service` / `sc.exe config` / `Set-ItemProperty -Force` without toolkit-state. Migrate to `Set-ToolkitServiceStartMode` + `Set-ToolkitRegistryValue`.
+10. **`5 registry tweaks/individual/privacy-telemetry.reg:47-48`** — Delivery Optimization writes under `HKEY_USERS\S-1-5-20\...`. Verify Win11 DO policy hive; likely move to `HKLM\SOFTWARE\Policies\...`.
+11. **`5 registry tweaks/individual/install-timer-resolution-service.ps1` — cargo-cult on Win11 24H2+** — kernel timer behavior changed; benefit is unclear. Add "unlikely benefit; documented for completeness" header text, keep opt-in.
+12. **`5 registry tweaks/individual/game-priority.reg:14` — `NetworkThrottlingIndex=0xffffffff` legacy myth.** Keep opt-in; document negligible benefit on Win11.
+13. **`APPLY-EVERYTHING.ps1:228-316` Phase 5 `Reg-Add` mass** — weak idempotency and manifest coverage. Migrate high-risk keys to `Set-TrackedRegistry`.
+14. **GPU scripts without colocated revert** (`force-p0-state`, `enable-msi-mode`, `configure-amd-ulps`, `configure-{nvidia,amd,intel}.ps1`) — manifest-only revert. Add paired `revert-*` siblings per the new "apply / revert pairing" convention in [CLAUDE.md](CLAUDE.md).
+15. **`5 registry tweaks/individual/enable-write-cache-flush.ps1`** — captures `writecache-before.json` sidecar on apply but never reads it on revert. Fall back to sidecar when manifest empty.
+16. **Anti-cheat warnings missing** on VBS / HVCI / timer-resolution / WU disable scripts. Add per-file header notes consistent with the new convention in [CLAUDE.md](CLAUDE.md).
+17. **`5 registry tweaks/individual/configure-mmagent.ps1:52-66`** — `Disable-MMAgent` may fail on re-run if already disabled. Pre-check `Get-MMAgent` flags.
+
+#### Low
+
+18. **`2 power plan/configure-power-plan.ps1`** — legacy duplicate of `configure-power.ps1`. Delete or alias.
+19. **`lib/toolkit-state.ps1:290-295`** — `Set-ToolkitRegistryValue` always uses `New-ItemProperty -Force`. Optional: compare current value before write for true idempotency.
+20. **Individual `.reg` files without 1:1 sibling reverts**: `disable-power-throttling.reg`, `disable-game-bar-dvr.reg`, `explorer-tweaks.reg`, `game-priority.reg`, `visual-effects-performance.reg`, `disable-fullscreen-optimizations.reg`, `mouse-hover-time.reg`, `disable-startup-delay.reg`, `privacy-telemetry.reg`, `disable-fast-startup.reg`, `disable-driver-searching.reg`, `sound-scheme-none.reg`, `menu-show-delay.reg`. Generate paired `revert-*.reg` files (mechanical work).
+21. **Legacy `4 services/individual/*.bat`** — bypass `toolkit-state.ps1`. Either deprecate in favor of `disable-services.ps1` or add manifest tracking.
+22. **`5 registry tweaks/individual/enable-spectre-meltdown.ps1`** — no `Initialize-ToolkitState` call (works via remove fallback only). Add for consistency.
+23. **`5 registry tweaks/individual/disable-startup-delay.reg:6-7`** — `Explorer\Serialize\StartupDelayInMSec` often ignored on Win11 (StartupApproved model). Verify on 24H2; remove from `apply-all.reg` if confirmed no-op (keep individual script).
+24. **`7 network/disable-adapter-power-savings.ps1:64-73`** — re-applies even if already disabled. Compare `Get-NetAdapterPowerManagement` before set.
+25. **`6 gpu/configure-amd-ulps.ps1` and `6 gpu/amd/configure-amd.ps1:22-29`** — ULPS disabled in two places (overlapping FR33THY ports). Consolidate to single code path.
+
+### Suggested triage order
+
+(From `CURSOR-AUDIT.md` summary — preserved here for v1.1 planning.)
+
+1. Apply All security gating (`-IncludeSecurityTradeoffs:$false`) + anti-cheat comments on VBS/HVCI paths.
+2. Nagle tracking in `APPLY-EVERYTHING.ps1`.
+3. Admin checks on GPU configure scripts.
+4. Orphans: `uninstall-timer-resolution-service.ps1`, debloat revert story, `revert-all.bat` vs manifest.
+5. Cargo-cult review pass: timer service, `NetworkThrottlingIndex`, Nagle defaults.

@@ -9,10 +9,26 @@ $script:ToolkitVersion = if (Test-Path -LiteralPath $script:ToolkitVersionFile) 
 } else {
     "0.0.0"
 }
-$script:ToolkitStateRoot = Join-Path $env:ProgramData "Win11GamingToolkit\state"
-$script:ToolkitStateFile = Join-Path $script:ToolkitStateRoot "manifest.json"
-$script:ToolkitLogRoot = Join-Path $env:ProgramData "Win11GamingToolkit\logs"
+# Cross-platform state root. $env:ProgramData is null on macOS / Linux,
+# so dev / test runs there land under ~/.local/share. Production
+# (Windows) keeps the historical %ProgramData% location.
+$script:ToolkitDataHome = if ($env:ProgramData) {
+    $env:ProgramData
+} elseif ($env:XDG_DATA_HOME) {
+    $env:XDG_DATA_HOME
+} else {
+    Join-Path $HOME '.local/share'
+}
+$script:ToolkitStateRoot = Join-Path $script:ToolkitDataHome 'Win11GamingToolkit/state'
+$script:ToolkitStateFile = Join-Path $script:ToolkitStateRoot 'manifest.json'
+$script:ToolkitLogRoot = Join-Path $script:ToolkitDataHome 'Win11GamingToolkit/logs'
 $script:ToolkitState = $null
+
+# Per-process log file path. Set lazily by the first Write-ToolkitLog call
+# so scripts that never log don't create empty files. Format:
+#   <log-root>/<script-stem>-<yyyyMMdd-HHmmss>-<pid>.log
+# Each line is JSON: { "ts":"...", "level":"info|warn|error", "msg":"...", "data":{...} }
+$script:ToolkitLogFile = $null
 
 function Get-ToolkitManifestPath {
     return $script:ToolkitStateFile
@@ -20,6 +36,95 @@ function Get-ToolkitManifestPath {
 
 function Get-ToolkitLogRoot {
     return $script:ToolkitLogRoot
+}
+
+function Get-ToolkitLogFile {
+    <#
+    .SYNOPSIS
+        Return (and lazily create) the per-process log file path.
+    .DESCRIPTION
+        Computes a stable per-script, per-process log path on first call
+        and reuses it for the lifetime of the process. Layout:
+            <ProgramData>\Win11GamingToolkit\logs\<script-stem>-<ts>-<pid>.log
+        - $script:MyInvocation.MyCommand isn't reliable from a dot-sourced
+          helper; we read the calling script's $PSCommandPath via
+          (Get-PSCallStack)[1] which is the immediate caller.
+        - When called outside any script (e.g. interactive shell), we
+          fall back to "interactive".
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param()
+    if ($script:ToolkitLogFile) {
+        return $script:ToolkitLogFile
+    }
+    if (-not (Test-Path -LiteralPath $script:ToolkitLogRoot)) {
+        New-Item -ItemType Directory -Path $script:ToolkitLogRoot -Force -ErrorAction SilentlyContinue | Out-Null
+    }
+    $stem = 'interactive'
+    try {
+        $caller = (Get-PSCallStack | Select-Object -Skip 1 -First 1).ScriptName
+        if ($caller) {
+            $stem = [System.IO.Path]::GetFileNameWithoutExtension($caller)
+        }
+    } catch {
+        $stem = 'unknown'
+    }
+    $stamp = (Get-Date).ToString('yyyyMMdd-HHmmss')
+    $script:ToolkitLogFile = Join-Path $script:ToolkitLogRoot ("$stem-$stamp-$PID.log")
+    return $script:ToolkitLogFile
+}
+
+function Write-ToolkitLog {
+    <#
+    .SYNOPSIS
+        Append a structured log line (JSON) to the per-process toolkit log.
+    .DESCRIPTION
+        CLAUDE.md quality bar: "every action + every skip to
+        <ProgramData>\<toolkit>\logs\<script>-<timestamp>.log, JSON-lines".
+        Helpers in this file (Set-ToolkitRegistryValue,
+        Set-ToolkitServiceStartMode, etc.) call this so callers don't
+        have to remember.
+    .PARAMETER Message
+        Human-readable summary. Logged as the 'msg' field.
+    .PARAMETER Level
+        info | warn | error. Default 'info'.
+    .PARAMETER Data
+        Optional hashtable of structured fields. Serialized as the
+        'data' object on the JSON line. Use for path/name/value triples.
+    .EXAMPLE
+        Write-ToolkitLog 'reg-set' -Data @{ path='HKLM:\...'; name='Foo'; value=1 }
+    .NOTES
+        Best-effort: writes are wrapped in try/catch so logging failures
+        never break the calling script. Disk full / permission denied /
+        log-root creation race all degrade silently.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0)][string]$Message,
+        [ValidateSet('info', 'warn', 'error')][string]$Level = 'info',
+        [hashtable]$Data
+    )
+    try {
+        $path = Get-ToolkitLogFile
+        $record = [ordered]@{
+            ts = (Get-Date).ToString('o')
+            level = $Level
+            msg = $Message
+        }
+        if ($Data -and $Data.Count -gt 0) {
+            $record['data'] = $Data
+        }
+        $line = $record | ConvertTo-Json -Compress -Depth 5
+        Add-Content -LiteralPath $path -Value $line -Encoding utf8 -ErrorAction SilentlyContinue
+    } catch {
+        # Best-effort logging. Caller continues regardless of disk full,
+        # permission denied, log-root creation race, etc. Logging that
+        # itself throws would defeat the purpose. We assign the error
+        # record to $null so the PSAvoidUsingEmptyCatchBlock rule sees
+        # an intentional statement.
+        $null = $_
+    }
 }
 
 function Test-ToolkitMapHasKey {
@@ -332,11 +437,17 @@ function Set-ToolkitRegistryValue {
         }
     }
     if ($skipWrite) {
+        Write-ToolkitLog 'reg-skip-idempotent' -Data @{
+            id = $Id; path = $Path; name = $Name; value = $Value; reason = 'current value matches target'
+        }
         return
     }
 
     $target = if ($Name -eq "") { "$Path\(default)" } else { "$Path\$Name" }
     if (-not $PSCmdlet.ShouldProcess($target, "Set value '$Value' (type $propertyType)")) {
+        Write-ToolkitLog 'reg-skip-whatif' -Level warn -Data @{
+            id = $Id; path = $Path; name = $Name; value = $Value
+        }
         return
     }
 
@@ -345,6 +456,9 @@ function Set-ToolkitRegistryValue {
         $item.SetValue("", $Value)
     } else {
         New-ItemProperty -Path $Path -Name $Name -Value $Value -PropertyType $propertyType -Force | Out-Null
+    }
+    Write-ToolkitLog 'reg-set' -Data @{
+        id = $Id; path = $Path; name = $Name; value = $Value; type = $propertyType; tier = $Tier; step = $Step
     }
 }
 
@@ -405,13 +519,18 @@ function Set-ToolkitServiceStartMode {
     }
 
     if (-not $PSCmdlet.ShouldProcess("service:$Name", "Set start mode to '$Mode'")) {
+        Write-ToolkitLog 'svc-skip-whatif' -Level warn -Data @{ name = $Name; mode = $Mode }
         return
     }
 
     $output = sc.exe config $Name start= $Mode 2>&1
     if ($LASTEXITCODE -ne 0) {
+        Write-ToolkitLog 'svc-set-failed' -Level error -Data @{
+            name = $Name; mode = $Mode; exit = $LASTEXITCODE; output = "$output"
+        }
         throw "sc.exe config failed: $output"
     }
+    Write-ToolkitLog 'svc-set' -Data @{ name = $Name; mode = $Mode; tier = $Tier; step = $Step }
 }
 
 function Convert-ToolkitServiceModeToScMode {

@@ -33,6 +33,8 @@ BeforeDiscovery {
     $script:ExpectedPublic = @(
         @{ Name = 'Get-ToolkitManifestPath' }
         @{ Name = 'Get-ToolkitLogRoot' }
+        @{ Name = 'Get-ToolkitLogFile' }
+        @{ Name = 'Write-ToolkitLog' }
         @{ Name = 'Initialize-ToolkitState' }
         @{ Name = 'Get-ToolkitState' }
         @{ Name = 'Save-ToolkitState' }
@@ -109,6 +111,53 @@ Describe 'lib/toolkit-state.ps1 — surface contract' {
     Context 'Public surface' {
         It 'exports <Name>' -ForEach $script:ExpectedPublic {
             $script:FunctionNames | Should -Contain $Name
+        }
+    }
+
+    Context 'Write-ToolkitLog produces JSONL with required fields' {
+        BeforeAll {
+            . $script:Target
+            # Force a fresh per-test log path via reflection of script-scope var.
+            $tempLog = Join-Path ([System.IO.Path]::GetTempPath()) ("toolkit-test-{0}.log" -f [Guid]::NewGuid())
+            Set-Variable -Scope script -Name 'ToolkitLogFile' -Value $tempLog
+            $script:TempLog = $tempLog
+        }
+
+        AfterAll {
+            if (Test-Path -LiteralPath $script:TempLog) {
+                Remove-Item -LiteralPath $script:TempLog -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        It 'appends a JSON line with ts/level/msg' {
+            Write-ToolkitLog 'pester-test-1'
+            Test-Path -LiteralPath $script:TempLog | Should -BeTrue
+            $lines = @(Get-Content -LiteralPath $script:TempLog | Where-Object { $_.Trim() })
+            $lines.Count | Should -BeGreaterOrEqual 1
+            $obj = $lines[-1] | ConvertFrom-Json
+            $obj.ts | Should -Not -BeNullOrEmpty
+            $obj.level | Should -Be 'info'
+            $obj.msg | Should -Be 'pester-test-1'
+        }
+
+        It 'includes optional Data as a nested object' {
+            Write-ToolkitLog 'pester-test-2' -Data @{ key = 'value'; n = 42 }
+            $lines = @(Get-Content -LiteralPath $script:TempLog | Where-Object { $_.Trim() })
+            $obj = $lines[-1] | ConvertFrom-Json
+            $obj.data.key | Should -Be 'value'
+            $obj.data.n | Should -Be 42
+        }
+
+        It "honors -Level 'warn' / 'error'" {
+            Write-ToolkitLog 'warn-line' -Level 'warn'
+            Write-ToolkitLog 'error-line' -Level 'error'
+            $lines = @(Get-Content -LiteralPath $script:TempLog | Where-Object { $_.Trim() })
+            ($lines[-2] | ConvertFrom-Json).level | Should -Be 'warn'
+            ($lines[-1] | ConvertFrom-Json).level | Should -Be 'error'
+        }
+
+        It 'rejects invalid -Level values at param-bind time' {
+            { Write-ToolkitLog 'x' -Level 'fatal' } | Should -Throw
         }
     }
 }

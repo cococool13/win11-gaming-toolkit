@@ -170,12 +170,15 @@ function Initialize-ToolkitState {
         return $script:ToolkitState
     }
 
-    $profile = Get-ToolkitMachineProfile
+    # PSAvoidAssignmentToAutomaticVariable: $profile is PowerShell's
+    # built-in profile-path variable; using $machineProfile so reads of
+    # $profile elsewhere in scope return the user's actual profile path.
+    $machineProfile = Get-ToolkitMachineProfile
     $script:ToolkitState = [ordered]@{
         version = $script:ToolkitVersion
         createdAt = (Get-Date).ToString("o")
         lastUpdated = (Get-Date).ToString("o")
-        context = $profile
+        context = $machineProfile
         notes = @()
         registry = @{}
         services = @{}
@@ -241,7 +244,9 @@ function Get-ToolkitRegistryState {
 
     $item = Get-Item -Path $Path -ErrorAction Stop
     $valueNames = @($item.GetValueNames())
-    $defaultExists = $item.GetValue("", $null) -ne $null
+    # PSPossibleIncorrectComparisonWithNull — $null on left side so the
+    # collection-vs-scalar coercion behaves predictably.
+    $defaultExists = $null -ne $item.GetValue("", $null)
     $valueExists = if ($valueName -eq "") { $defaultExists } else { $valueNames -contains $valueName }
     if (-not $valueExists) {
         return [ordered]@{

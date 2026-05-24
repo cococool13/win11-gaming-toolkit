@@ -33,7 +33,7 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 }
 
 $state = Initialize-ToolkitState
-$profile = $state.context
+$machineProfile = $state.context
 $stepName = "power-plan"
 
 # ---- Detect current power plan ----
@@ -51,7 +51,7 @@ Write-Host "  Current plan: $activePlanName" -ForegroundColor $(if ($activePlanN
 Write-Host ""
 
 # ---- Laptop awareness ----
-if ($profile.isLaptop) {
+if ($machineProfile.isLaptop) {
     Write-Host "  LAPTOP DETECTED" -ForegroundColor Yellow
     Write-Host "  This plan keeps CPU at max frequency and disables sleep." -ForegroundColor Yellow
     Write-Host "  Battery life will be significantly reduced." -ForegroundColor Yellow
@@ -62,7 +62,7 @@ if ($profile.isLaptop) {
     Write-Host "      powercfg /setactive SCHEME_BALANCED" -ForegroundColor Gray
     Write-Host ""
 
-    if ($profile.powerState -eq "On battery") {
+    if ($machineProfile.powerState -eq "On battery") {
         Write-Host "  WARNING: You are currently on battery power!" -ForegroundColor Red
         Write-Host "  Applying these settings on battery will drain quickly." -ForegroundColor Red
         Write-Host ""
@@ -268,7 +268,7 @@ Write-Host "    - PCI-E / USB power management: off" -ForegroundColor Gray
 Write-Host "    - Sleep / Hibernate / Fast Startup: disabled" -ForegroundColor Gray
 Write-Host "    - Power throttling: disabled" -ForegroundColor Gray
 Write-Host ""
-if ($profile.isLaptop) {
+if ($machineProfile.isLaptop) {
     Write-Host "  LAPTOP REMINDER: Switch to Balanced on battery:" -ForegroundColor Yellow
     Write-Host "    powercfg /setactive SCHEME_BALANCED" -ForegroundColor Gray
     Write-Host ""

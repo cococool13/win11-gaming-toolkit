@@ -51,9 +51,9 @@ UI-RequireAdmin -ScriptName "Apply Everything"
 # Set-ToolkitRegistryValue / Set-ToolkitServiceStartMode each guard against
 # overwriting an existing entry's `before` block, so re-apply is idempotent.
 $state = Initialize-ToolkitState
-$profile = $state.context
+$machineProfile = $state.context
 
-UI-ShowProfile -Profile $profile
+UI-ShowProfile -Profile $machineProfile
 UI-Confirm -Message "This path applies every automatable tweak (Safe + Advanced)." -Warnings @(
     "Rollback is strongest where the manifest captured prior state.",
     "Use the launcher or GUIDE.md if you want a narrower path.",

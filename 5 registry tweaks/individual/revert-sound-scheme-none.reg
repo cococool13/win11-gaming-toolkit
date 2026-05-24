@@ -1,0 +1,61 @@
+Windows Registry Editor Version 5.00
+
+; Revert: restore Windows-default sound scheme
+; Pair with: sound-scheme-none.reg
+; CURSOR-AUDIT #20: restores the ".Default" scheme name; the per-event
+; .Current values are removed so Windows reapplies its bundled scheme
+; defaults on next login.
+
+[HKEY_CURRENT_USER\AppEvents\Schemes]
+@=".Default"
+
+[HKEY_CURRENT_USER\AppEvents\Schemes\Apps\.Default\.Default\.Current]
+@=-
+
+[HKEY_CURRENT_USER\AppEvents\Schemes\Apps\.Default\DeviceConnect\.Current]
+@=-
+
+[HKEY_CURRENT_USER\AppEvents\Schemes\Apps\.Default\DeviceDisconnect\.Current]
+@=-
+
+[HKEY_CURRENT_USER\AppEvents\Schemes\Apps\.Default\DeviceFail\.Current]
+@=-
+
+[HKEY_CURRENT_USER\AppEvents\Schemes\Apps\.Default\MailBeep\.Current]
+@=-
+
+[HKEY_CURRENT_USER\AppEvents\Schemes\Apps\.Default\Notification.Default\.Current]
+@=-
+
+[HKEY_CURRENT_USER\AppEvents\Schemes\Apps\.Default\Notification.IM\.Current]
+@=-
+
+[HKEY_CURRENT_USER\AppEvents\Schemes\Apps\.Default\Notification.Mail\.Current]
+@=-
+
+[HKEY_CURRENT_USER\AppEvents\Schemes\Apps\.Default\Notification.Reminder\.Current]
+@=-
+
+[HKEY_CURRENT_USER\AppEvents\Schemes\Apps\.Default\SystemAsterisk\.Current]
+@=-
+
+[HKEY_CURRENT_USER\AppEvents\Schemes\Apps\.Default\SystemExclamation\.Current]
+@=-
+
+[HKEY_CURRENT_USER\AppEvents\Schemes\Apps\.Default\SystemHand\.Current]
+@=-
+
+[HKEY_CURRENT_USER\AppEvents\Schemes\Apps\.Default\SystemNotification\.Current]
+@=-
+
+[HKEY_CURRENT_USER\AppEvents\Schemes\Apps\.Default\WindowsUAC\.Current]
+@=-
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Authentication\LogonUI\BootAnimation]
+"DisableStartupSound"=-
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\EditionOverrides]
+"UserSetting_DisableStartupSound"=-
+
+[HKEY_CURRENT_USER\Software\Microsoft\Multimedia\Audio]
+"UserDuckingPreference"=-

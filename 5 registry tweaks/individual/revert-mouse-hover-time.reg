@@ -1,0 +1,8 @@
+Windows Registry Editor Version 5.00
+
+; Revert: restore default mouse hover time (400ms)
+; Pair with: mouse-hover-time.reg
+; CURSOR-AUDIT #20
+
+[HKEY_CURRENT_USER\Control Panel\Mouse]
+"MouseHoverTime"="400"

@@ -140,7 +140,10 @@ function Test-ToolkitInvariants {
 
     foreach ($f in $ps1Files) {
         $content = Get-Content -Raw -LiteralPath $f.FullName
-        $head = ($content -split "`n" | Select-Object -First 80) -join "`n"
+        # 120 lines fits well-documented scripts whose comment-based help
+        # pushes the admin check past line 80 (Phase C scripts especially).
+        # Matches Test-ToolkitAdminCheck's default; keep these in sync.
+        $head = ($content -split "`n" | Select-Object -First 120) -join "`n"
         $isMutator = $content -match '(Set-Toolkit|Set-Tracked|Set-ItemProperty|sc\.exe config|Remove-Item|New-ItemProperty|Stop-Service|Disable-)'
         [PSCustomObject]@{
             Path = $f.FullName.Substring($RepoRoot.Length + 1)

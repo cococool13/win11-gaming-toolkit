@@ -1,0 +1,93 @@
+# ============================================================
+# Uninstall Timer Resolution Service (STR)
+# Windows 11 Gaming Optimization Guide
+# ============================================================
+# Tier: Advanced (reverts an Advanced-tier install)
+#
+# Removes the STR service installed by install-timer-resolution-service.ps1:
+#   1. Stops the STR service (if running)
+#   2. Deletes the service entry
+#   3. Removes the GlobalTimerResolutionRequests kernel registry value
+#   4. Removes %ProgramFiles%\SetTimerResolution and its contents
+#
+# Idempotent — safe to re-run; missing pieces are skipped without error.
+# Pair with: install-timer-resolution-service.ps1
+# Must be run as Administrator.
+# ============================================================
+
+. "$PSScriptRoot\..\..\lib\ui-helpers.ps1"
+
+Write-Host ""
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host "  Uninstall Timer Resolution Service (STR)" -ForegroundColor Cyan
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host ""
+
+UI-RequireAdmin -ScriptName "Uninstall Timer Resolution Service"
+
+$serviceName = "STR"
+$installDir = Join-Path $env:ProgramFiles "SetTimerResolution"
+$kernelPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel"
+$kernelValueName = "GlobalTimerResolutionRequests"
+
+# [1/4] Stop the service if running
+$existingService = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+if ($existingService) {
+    if ($existingService.Status -eq "Running") {
+        Write-Host "[1/4] Stopping $serviceName service..." -ForegroundColor Yellow
+        Stop-Service -Name $serviceName -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 1
+        Write-Host "      Stopped." -ForegroundColor Green
+    } else {
+        Write-Host "[1/4] $serviceName service present but not running — skipping stop." -ForegroundColor Gray
+    }
+} else {
+    Write-Host "[1/4] $serviceName service not installed — skipping stop." -ForegroundColor Gray
+}
+
+# [2/4] Delete the service entry
+if ($existingService) {
+    Write-Host "[2/4] Deleting $serviceName service..." -ForegroundColor Yellow
+    $deleteOutput = & sc.exe delete $serviceName 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "      Deleted." -ForegroundColor Green
+    } else {
+        Write-Host "      sc.exe delete returned $LASTEXITCODE — manual check may be needed." -ForegroundColor Yellow
+        Write-Host "      $deleteOutput" -ForegroundColor DarkGray
+    }
+    Start-Sleep -Seconds 1
+} else {
+    Write-Host "[2/4] No service to delete — skipping." -ForegroundColor Gray
+}
+
+# [3/4] Remove the GlobalTimerResolutionRequests kernel registry value
+$existingValue = Get-ItemProperty -Path $kernelPath -Name $kernelValueName -ErrorAction SilentlyContinue
+if ($null -ne $existingValue) {
+    Write-Host "[3/4] Removing $kernelValueName registry value..." -ForegroundColor Yellow
+    Remove-ItemProperty -Path $kernelPath -Name $kernelValueName -Force -ErrorAction SilentlyContinue
+    Write-Host "      Removed." -ForegroundColor Green
+} else {
+    Write-Host "[3/4] $kernelValueName not set — skipping registry cleanup." -ForegroundColor Gray
+}
+
+# [4/4] Remove install directory
+if (Test-Path -LiteralPath $installDir) {
+    Write-Host "[4/4] Removing $installDir..." -ForegroundColor Yellow
+    Remove-Item -LiteralPath $installDir -Recurse -Force -ErrorAction SilentlyContinue
+    if (Test-Path -LiteralPath $installDir) {
+        Write-Host "      Directory still present — files may be in use. Reboot and re-run." -ForegroundColor Yellow
+    } else {
+        Write-Host "      Removed." -ForegroundColor Green
+    }
+} else {
+    Write-Host "[4/4] $installDir not present — skipping directory cleanup." -ForegroundColor Gray
+}
+
+Write-Host ""
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host "  [DONE] Timer Resolution Service uninstalled." -ForegroundColor Green
+Write-Host ""
+Write-Host "  Reboot recommended so any pending timer requests release." -ForegroundColor Gray
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host ""
+Read-Host "Press Enter to exit"

@@ -25,7 +25,7 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     exit 1
 }
 
-$state = Initialize-ToolkitState
+Initialize-ToolkitState | Out-Null
 $succeeded = 0
 $failed = 0
 

@@ -51,7 +51,7 @@ if (-not $reachable) {
     exit 1
 }
 
-$state = Initialize-ToolkitState
+Initialize-ToolkitState | Out-Null
 $ProgressPreference = 'SilentlyContinue'
 $tempDir = "$env:SystemRoot\Temp\GamingPrereqs"
 New-Item -ItemType Directory -Path $tempDir -Force | Out-Null

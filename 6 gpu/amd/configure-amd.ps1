@@ -91,8 +91,7 @@ function Apply-AmdSystemSettings {
 
 # --- Execute ---
 try {
-    $state = Initialize-ToolkitState
-
+    Initialize-ToolkitState | Out-Null
     $gpu = Get-GpuVendor | Where-Object { $_.Vendor -eq "amd" } | Select-Object -First 1
     if (-not $gpu) {
         throw "No AMD GPU detected"

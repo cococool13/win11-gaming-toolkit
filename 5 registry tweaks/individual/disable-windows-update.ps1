@@ -34,7 +34,7 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 
 # CURSOR-AUDIT #9 fix: ensure the manifest exists so Set-ToolkitServiceStartMode
 # and Set-ToolkitRegistryValue can capture before-state for revert.
-$state = Initialize-ToolkitState
+Initialize-ToolkitState | Out-Null
 $stepName = "windows-update"
 
 Write-Host ""

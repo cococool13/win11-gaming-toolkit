@@ -19,6 +19,7 @@ $beforePath = Join-Path $env:ProgramData "Win11GamingToolkit\state\writecache-be
 
 # Pull every manifest entry with step "writecache-flush" and restore it.
 $state = Get-ToolkitState
+$count = 0
 if ($state -and $state.registry) {
     $regKeys = $state.registry
     $properties = if ($regKeys -is [hashtable]) {
@@ -26,7 +27,6 @@ if ($state -and $state.registry) {
     } else {
         $regKeys.PSObject.Properties
     }
-    $count = 0
     foreach ($prop in $properties) {
         if ($prop.Value.step -eq "writecache-flush") {
             UI-Step -Label "Restoring $($prop.Name)" -Action {
@@ -35,9 +35,42 @@ if ($state -and $state.registry) {
             $count++
         }
     }
-    if ($count -eq 0) {
-        UI-Note -Message "No tracked writecache-flush entries in manifest. Nothing to restore." -Color $script:UI_Info
+}
+
+# CURSOR-AUDIT #15: fall back to the sidecar writecache-before.json when the
+# manifest has no writecache-flush entries. This covers the legacy case
+# where a user ran disable-write-cache-flush.ps1 before the manifest tracking
+# was added (or with the manifest wiped), but the sidecar still exists.
+if ($count -eq 0 -and (Test-Path $beforePath)) {
+    UI-Note -Message "Manifest empty; falling back to sidecar at $beforePath" -Color $script:UI_Warning
+    try {
+        $sidecar = Get-Content -Raw -Path $beforePath | ConvertFrom-Json
+    } catch {
+        $sidecar = $null
+        UI-Note -Message "[WARN] Sidecar JSON could not be parsed: $($_.Exception.Message)" -Color $script:UI_Warning
     }
+    if ($sidecar) {
+        foreach ($d in @($sidecar)) {
+            $regPath = "HKLM:\SYSTEM\CurrentControlSet\Enum\$($d.PnpId)\Device Parameters\Disk"
+            if (-not (Test-Path $regPath)) {
+                UI-Skip -Label "Disk $($d.Index) ($($d.Model))" -Reason "Device key no longer present"
+                continue
+            }
+            UI-Step -Label "Sidecar restore — Disk $($d.Index) ($($d.Model))" -Action {
+                if ($null -eq $d.UserWriteCacheSetting) {
+                    # Pre-toolkit state: value not set. Remove the override.
+                    Remove-ItemProperty -Path $regPath -Name "UserWriteCacheSetting" -ErrorAction SilentlyContinue
+                } else {
+                    Set-ItemProperty -Path $regPath -Name "UserWriteCacheSetting" -Value $d.UserWriteCacheSetting -Type DWord -Force
+                }
+            }
+            $count++
+        }
+    }
+}
+
+if ($count -eq 0) {
+    UI-Note -Message "No tracked writecache-flush entries in manifest or sidecar. Nothing to restore." -Color $script:UI_Info
 }
 
 if (Test-Path $beforePath) { Remove-Item $beforePath -Force -ErrorAction SilentlyContinue }

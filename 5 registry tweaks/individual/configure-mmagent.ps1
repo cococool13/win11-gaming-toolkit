@@ -49,21 +49,49 @@ if (-not (Test-Path $beforePath)) {
     UI-Note -Message "MMAgent baseline already captured (re-run idempotent)" -Color $script:UI_Info
 }
 
-UI-Step -Label "Disable PageCombining" -Action {
-    Disable-MMAgent -PageCombining -ErrorAction Stop
-    Add-ToolkitStepResult -Key "mmagent:PageCombining" -Tier "Advanced" -Status "applied" -Reason "PageCombining disabled"
+# CURSOR-AUDIT #17: pre-check Get-MMAgent flags so re-running this script
+# after a successful apply skips features that are already disabled instead
+# of letting Disable-MMAgent throw on re-disable.
+$mmCurrent = Get-MMAgent
+
+if ($mmCurrent.PageCombining) {
+    UI-Step -Label "Disable PageCombining" -Action {
+        Disable-MMAgent -PageCombining -ErrorAction Stop
+        Add-ToolkitStepResult -Key "mmagent:PageCombining" -Tier "Advanced" -Status "applied" -Reason "PageCombining disabled"
+    }
+} else {
+    UI-Skip -Label "Disable PageCombining" -Reason "Already disabled"
+    Add-ToolkitStepResult -Key "mmagent:PageCombining" -Tier "Advanced" -Status "preexisting" -Reason "Already disabled"
 }
-UI-Step -Label "Disable OperationAPI" -Action {
-    Disable-MMAgent -OperationAPI -ErrorAction Stop
-    Add-ToolkitStepResult -Key "mmagent:OperationAPI" -Tier "Advanced" -Status "applied" -Reason "OperationAPI disabled"
+
+if ($mmCurrent.OperationAPI) {
+    UI-Step -Label "Disable OperationAPI" -Action {
+        Disable-MMAgent -OperationAPI -ErrorAction Stop
+        Add-ToolkitStepResult -Key "mmagent:OperationAPI" -Tier "Advanced" -Status "applied" -Reason "OperationAPI disabled"
+    }
+} else {
+    UI-Skip -Label "Disable OperationAPI" -Reason "Already disabled"
+    Add-ToolkitStepResult -Key "mmagent:OperationAPI" -Tier "Advanced" -Status "preexisting" -Reason "Already disabled"
 }
-UI-Step -Label "Disable ApplicationPreLaunch" -Action {
-    Disable-MMAgent -ApplicationPreLaunch -ErrorAction Stop
-    Add-ToolkitStepResult -Key "mmagent:ApplicationPreLaunch" -Tier "Advanced" -Status "applied" -Reason "ApplicationPreLaunch disabled"
+
+if ($mmCurrent.ApplicationPreLaunch) {
+    UI-Step -Label "Disable ApplicationPreLaunch" -Action {
+        Disable-MMAgent -ApplicationPreLaunch -ErrorAction Stop
+        Add-ToolkitStepResult -Key "mmagent:ApplicationPreLaunch" -Tier "Advanced" -Status "applied" -Reason "ApplicationPreLaunch disabled"
+    }
+} else {
+    UI-Skip -Label "Disable ApplicationPreLaunch" -Reason "Already disabled"
+    Add-ToolkitStepResult -Key "mmagent:ApplicationPreLaunch" -Tier "Advanced" -Status "preexisting" -Reason "Already disabled"
 }
-UI-Step -Label "Disable MemoryCompression" -Action {
-    Disable-MMAgent -MemoryCompression -ErrorAction Stop
-    Add-ToolkitStepResult -Key "mmagent:MemoryCompression" -Tier "Advanced" -Status "applied" -Reason "MemoryCompression disabled"
+
+if ($mmCurrent.MemoryCompression) {
+    UI-Step -Label "Disable MemoryCompression" -Action {
+        Disable-MMAgent -MemoryCompression -ErrorAction Stop
+        Add-ToolkitStepResult -Key "mmagent:MemoryCompression" -Tier "Advanced" -Status "applied" -Reason "MemoryCompression disabled"
+    }
+} else {
+    UI-Skip -Label "Disable MemoryCompression" -Reason "Already disabled"
+    Add-ToolkitStepResult -Key "mmagent:MemoryCompression" -Tier "Advanced" -Status "preexisting" -Reason "Already disabled"
 }
 
 UI-Summary -DoneMessage "MMAgent configured for gaming" -Details @(

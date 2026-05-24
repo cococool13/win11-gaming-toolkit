@@ -45,6 +45,8 @@ $script:LauncherCategories = @(
     [PSCustomObject]@{ Key = "8";  Title = "Security vs performance"; Tier = "Security Trade-off";  Folder = "8 security vs performance"; StepPrefixes = @("vbs-","vbs:","spectre-meltdown","bcd:nx","dep-","hvci","lsa-") }
     [PSCustomObject]@{ Key = "9";  Title = "Cleanup";                 Tier = "Advanced";            Folder = "9 cleanup";              StepPrefixes = @("cleanup","debloat") }
     [PSCustomObject]@{ Key = "10"; Title = "Verify";                  Tier = "Safe";                Folder = "10 verify";              StepPrefixes = @() }
+    [PSCustomObject]@{ Key = "11"; Title = "Hardware checks";         Tier = "Safe";                Folder = "11 hardware checks";     StepPrefixes = @() }
+    [PSCustomObject]@{ Key = "12"; Title = "Hardware";                Tier = "Safe";                Folder = "12 hardware";            StepPrefixes = @() }
 )
 
 $script:LauncherQuickActions = @(

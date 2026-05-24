@@ -1,0 +1,27 @@
+<Configuration>
+    <!--
+        APPLY-EVERYTHING.ps1 with -IncludeSecurityTradeoffs.
+
+        Exercises the full opt-in path: VBS/HVCI/LSA/Spectre disable +
+        Windows Update suppression. The script's second UI-Confirm
+        should fire (verify by interacting with the Sandbox console).
+        The anti-cheat warning text must mention BattlEye AND EAC
+        before any Phase 10 Run-Step runs.
+
+        Sandbox state is destroyed on close, so reboot-dependent
+        effects (HVCI actually disabling) won't be observable. This
+        config proves the apply path RUNS, not that it persists.
+    -->
+    <VGpu>Disable</VGpu>
+    <Networking>Default</Networking>
+    <MappedFolders>
+        <MappedFolder>
+            <HostFolder>%REPO%</HostFolder>
+            <SandboxFolder>C:\repo</SandboxFolder>
+            <ReadOnly>true</ReadOnly>
+        </MappedFolder>
+    </MappedFolders>
+    <LogonCommand>
+        <Command>powershell.exe -NoExit -ExecutionPolicy Bypass -Command "Set-Location C:\repo; Write-Host 'Sandbox ready — launching APPLY-EVERYTHING.ps1 -IncludeSecurityTradeoffs' -ForegroundColor Red; .\APPLY-EVERYTHING.ps1 -IncludeSecurityTradeoffs"</Command>
+    </LogonCommand>
+</Configuration>

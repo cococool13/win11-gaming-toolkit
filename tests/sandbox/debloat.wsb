@@ -1,0 +1,28 @@
+<Configuration>
+    <!--
+        9 cleanup/debloat.ps1 happy-path.
+
+        Confirms the f71d130 safety regression test passes at runtime:
+        none of $neverRemove apps (Store, AppInstaller, Photos,
+        Calculator, Terminal) end up missing post-run. UWP packages
+        in $appsToRemove (Clipchamp, BingNews, etc.) should be gone.
+
+        Quick post-run check inside Sandbox:
+            Get-AppxPackage Microsoft.WindowsStore        # should still exist
+            Get-AppxPackage Microsoft.BingNews            # should be empty
+            Get-Content C:\ProgramData\Win11GamingToolkit\state\manifest.json |
+                ConvertFrom-Json | Select -ExpandProperty packages
+    -->
+    <VGpu>Disable</VGpu>
+    <Networking>Default</Networking>
+    <MappedFolders>
+        <MappedFolder>
+            <HostFolder>%REPO%</HostFolder>
+            <SandboxFolder>C:\repo</SandboxFolder>
+            <ReadOnly>true</ReadOnly>
+        </MappedFolder>
+    </MappedFolders>
+    <LogonCommand>
+        <Command>powershell.exe -NoExit -ExecutionPolicy Bypass -Command "Set-Location 'C:\repo\9 cleanup'; Write-Host 'Sandbox ready — launching debloat.ps1' -ForegroundColor Cyan; .\debloat.ps1"</Command>
+    </LogonCommand>
+</Configuration>

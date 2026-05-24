@@ -1,0 +1,26 @@
+<Configuration>
+    <!--
+        APPLY-EVERYTHING.ps1 default run.
+
+        Asserts the CURSOR-AUDIT #1 gate holds: Phase 9 (WU suppression)
+        and Phase 10 (VBS/HVCI/LSA/Spectre) are SKIPPED because
+        -IncludeSecurityTradeoffs is not passed. The console output
+        should show "Skipped — pass -IncludeSecurityTradeoffs to include"
+        for both phases.
+
+        Use Start-SandboxSession.ps1 to launch (substitutes %REPO%):
+            tools\Start-SandboxSession.ps1 apply-everything-default
+    -->
+    <VGpu>Disable</VGpu>
+    <Networking>Default</Networking>
+    <MappedFolders>
+        <MappedFolder>
+            <HostFolder>%REPO%</HostFolder>
+            <SandboxFolder>C:\repo</SandboxFolder>
+            <ReadOnly>true</ReadOnly>
+        </MappedFolder>
+    </MappedFolders>
+    <LogonCommand>
+        <Command>powershell.exe -NoExit -ExecutionPolicy Bypass -Command "Set-Location C:\repo; Write-Host 'Sandbox ready — launching APPLY-EVERYTHING.ps1 default run' -ForegroundColor Cyan; .\APPLY-EVERYTHING.ps1"</Command>
+    </LogonCommand>
+</Configuration>

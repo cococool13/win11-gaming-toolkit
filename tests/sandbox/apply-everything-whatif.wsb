@@ -1,0 +1,27 @@
+<Configuration>
+    <!--
+        APPLY-EVERYTHING.ps1 -WhatIf — dry run.
+
+        Verifies the ShouldProcess propagation chain (eacd601 + f8b1fc3):
+        every Set-TrackedRegistry / Set-TrackedService call prints a
+        "What if: Performing the operation..." line and NO actual
+        registry/service writes happen.
+
+        After the run, the manifest at
+        C:\ProgramData\Win11GamingToolkit\state\manifest.json should
+        be empty (or only contain the auto-init scaffolding), proving
+        -WhatIf truly short-circuited the writes.
+    -->
+    <VGpu>Disable</VGpu>
+    <Networking>Default</Networking>
+    <MappedFolders>
+        <MappedFolder>
+            <HostFolder>%REPO%</HostFolder>
+            <SandboxFolder>C:\repo</SandboxFolder>
+            <ReadOnly>true</ReadOnly>
+        </MappedFolder>
+    </MappedFolders>
+    <LogonCommand>
+        <Command>powershell.exe -NoExit -ExecutionPolicy Bypass -Command "Set-Location C:\repo; Write-Host 'Sandbox ready — APPLY-EVERYTHING.ps1 -WhatIf (dry run)' -ForegroundColor Yellow; .\APPLY-EVERYTHING.ps1 -WhatIf"</Command>
+    </LogonCommand>
+</Configuration>

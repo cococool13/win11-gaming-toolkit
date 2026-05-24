@@ -23,7 +23,6 @@ Initialize-ToolkitState | Out-Null
 $state = Get-ToolkitState
 
 $restored = 0
-$missing = 0
 if ($state -and $state.PSObject.Properties["registry"] -and $state.registry) {
     $regKeys = @()
     if ($state.registry -is [hashtable]) {

@@ -270,7 +270,6 @@ if (-not $dxInstalled) {
 # Cleanup temp files
 Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
 
-$totalInstalled = $alreadyInstalled.Count + $installSuccess
 Add-ToolkitStepResult -Key "prerequisites" -Tier "Safe" -Status "applied" `
     -Reason "Installed $installSuccess new, $($alreadyInstalled.Count) already present, $installFailed failed"
 

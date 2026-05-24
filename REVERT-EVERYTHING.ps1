@@ -251,7 +251,6 @@ foreach ($gpuStep in $gpuSteps) {
 
 # Restore GPU-related services disabled during driver install
 foreach ($svc in @("NvTelemetryContainer", "amdfendr", "amdfendrmgr", "Intel(R) Computing Improvement Program")) {
-    $svcEntry = $null
     if (Test-ToolkitMapHasKey -Map $state.services -Key $svc) {
         Run-Step "Restoring $svc" {
             Restore-ToolkitServiceStartMode -Name $svc | Out-Null

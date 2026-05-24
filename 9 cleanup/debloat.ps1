@@ -85,6 +85,15 @@ $toRemove = @()
 $alreadyGone = @()
 
 foreach ($app in $appsToRemove) {
+    # Defense in depth: enforce the safety list at scan time. Curated
+    # $appsToRemove should never include $neverRemove entries, but if it
+    # does (typo, future PR mistake), skip rather than remove a protected
+    # app. Clears PSUseDeclaredVarsMoreThanAssignments by actually using
+    # the list it advertises.
+    if ($neverRemove -contains $app.Name) {
+        Write-Host "  [SAFETY] Skipping $($app.Name) (in NEVER-REMOVE list)" -ForegroundColor Red
+        continue
+    }
     $package = Get-AppxPackage -Name $app.Name -ErrorAction SilentlyContinue
     if ($package) {
         $toRemove += $app

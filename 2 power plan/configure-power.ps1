@@ -41,9 +41,10 @@ Write-Host "  Checking current power plan..." -ForegroundColor Gray
 
 $activePlanOutput = powercfg /getactivescheme 2>&1
 $activePlanName = ""
-$activePlanGuid = ""
+# Note: GUID is also captured by the regex (group 1) but currently unused.
+# If a future tweak needs to switch active plans without re-detecting,
+# add a $activePlanGuid local and pull $Matches[1].
 if ($activePlanOutput -match "([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s+\((.+)\)") {
-    $activePlanGuid = $Matches[1]
     $activePlanName = $Matches[2]
 }
 

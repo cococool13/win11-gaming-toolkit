@@ -20,7 +20,10 @@ $dduRoot = Join-Path $stageRoot "DDU"
 $resumeScriptPath = Join-Path $stageRoot "DDU-Resume.ps1"
 $leaveSafeMode = Join-Path $stageRoot "Leave-Safe-Mode.cmd"
 $launchLog = Join-Path $stageRoot "DDU-Auto.log"
-$sevenZipInstaller = Join-Path $env:TEMP "7zip-installer.exe"
+# Note: $sevenZipInstaller used to live here; the 7zip auto-bootstrap path
+# was removed when Ensure-7Zip switched to winget. Path kept commented for
+# historical reference if the manual installer fallback is revived.
+# $sevenZipInstaller = Join-Path $env:TEMP "7zip-installer.exe"
 $dduInstaller = Join-Path $env:TEMP "DDU-setup.exe"
 $runOnceName = "*!GamingOpt-DDU"
 

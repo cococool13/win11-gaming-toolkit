@@ -103,7 +103,8 @@ $current = 0
 foreach ($entry in $registryPaths) {
     $current++
     $outputFile = Join-Path $backupDir "$($entry.Name).reg"
-    $result = reg export $entry.Key $outputFile /y 2>&1
+    # Discard reg.exe stdout/stderr; success decided by $LASTEXITCODE.
+    reg export $entry.Key $outputFile /y 2>&1 | Out-Null
     if ($LASTEXITCODE -eq 0) {
         Write-Host "  [$current/$total] $($entry.Name)" -ForegroundColor Green
         $succeeded++

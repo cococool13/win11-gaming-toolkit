@@ -256,8 +256,18 @@ UI-Section -Title "Phase 5: Registry Pack" -Context "Apply low-level latency, UI
 Run-Step "MenuShowDelay = 0" { Reg-Add "HKCU\Control Panel\Desktop" /v "MenuShowDelay" /t REG_SZ /d "0" /f }
 Run-Step "MouseHoverTime = 10" { Reg-Add "HKCU\Control Panel\Mouse" /v "MouseHoverTime" /t REG_SZ /d "10" /f }
 Run-Step "Startup delay disabled" { Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize" /v "StartupDelayInMSec" /t REG_DWORD /d 0 /f }
-Run-Step "Auto driver searching disabled" { Reg-Add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching" /v "SearchOrderConfig" /t REG_DWORD /d 0 /f }
-Run-Step "Fast Startup disabled" { Reg-Add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v "HiberbootEnabled" /t REG_DWORD /d 0 /f }
+Run-Step "Auto driver searching disabled" {
+    # CURSOR-AUDIT #13: high-impact HKLM key — track for revert
+    Set-ToolkitRegistryValue -Id "reg:DriverSearchOrderConfig" `
+        -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching" -Name "SearchOrderConfig" `
+        -Value 0 -Type "DWord" -Tier "Advanced" -Step "registry"
+}
+Run-Step "Fast Startup disabled" {
+    # CURSOR-AUDIT #13: high-impact HKLM key — track for revert
+    Set-ToolkitRegistryValue -Id "reg:HiberbootEnabled" `
+        -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power" -Name "HiberbootEnabled" `
+        -Value 0 -Type "DWord" -Tier "Advanced" -Step "registry"
+}
 Run-Step "Fullscreen optimizations disabled" {
     Reg-Add "HKCU\System\GameConfigStore" /v "GameDVR_FSEBehaviorMode" /t REG_DWORD /d 2 /f
     Reg-Add "HKCU\System\GameConfigStore" /v "GameDVR_HonorUserFSEBehaviorMode" /t REG_DWORD /d 1 /f
@@ -275,7 +285,10 @@ Run-Step "Network throttling disabled" {
     Reg-Add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v "NetworkThrottlingIndex" /t REG_DWORD /d 0xFFFFFFFF /f
 }
 Run-Step "Power throttling disabled" {
-    Reg-Add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" /v "PowerThrottlingOff" /t REG_DWORD /d 1 /f
+    # CURSOR-AUDIT #13: high-impact HKLM key — track for revert
+    Set-ToolkitRegistryValue -Id "reg:PowerThrottlingOff" `
+        -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" -Name "PowerThrottlingOff" `
+        -Value 1 -Type "DWord" -Tier "Advanced" -Step "registry"
 }
 Run-Step "Game Bar / DVR disabled" {
     Reg-Add "HKCU\System\GameConfigStore" /v "GameDVR_Enabled" /t REG_DWORD /d 0 /f
@@ -294,7 +307,10 @@ Run-Step "Visual effects optimized for performance" {
     Reg-Add "HKCU\Control Panel\Desktop" /v "FontSmoothing" /t REG_SZ /d "2" /f
     Reg-Add "HKCU\Control Panel\Desktop\WindowMetrics" /v "MinAnimate" /t REG_SZ /d "0" /f
     Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarAnimations" /t REG_DWORD /d 0 /f
-    Reg-Add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 0x26 /f
+    # CURSOR-AUDIT #13: high-impact HKLM key — track for revert
+    Set-ToolkitRegistryValue -Id "reg:Win32PrioritySeparation" `
+        -Path "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" -Name "Win32PrioritySeparation" `
+        -Value 0x26 -Type "DWord" -Tier "Advanced" -Step "registry"
 }
 Run-Step "Explorer tweaks" {
     Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "LaunchTo" /t REG_DWORD /d 1 /f
@@ -315,7 +331,11 @@ Run-Step "Privacy / telemetry disabled" {
     Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Privacy" /v "TailoredExperiencesWithDiagnosticDataEnabled" /t REG_DWORD /d 0 /f
     Reg-Add "HKCU\Software\Microsoft\InputPersonalization" /v "RestrictImplicitInkCollection" /t REG_DWORD /d 1 /f
     Reg-Add "HKCU\Software\Microsoft\InputPersonalization" /v "RestrictImplicitTextCollection" /t REG_DWORD /d 1 /f
-    Reg-Add "HKLM\Software\Policies\Microsoft\Windows\DataCollection" /v "AllowTelemetry" /t REG_DWORD /d 0 /f
+    # CURSOR-AUDIT #13: HKLM policy — track for revert (high-impact, users
+    # may want to re-enable to receive Edge / Defender update signals).
+    Set-ToolkitRegistryValue -Id "reg:AllowTelemetry" `
+        -Path "HKLM:\Software\Policies\Microsoft\Windows\DataCollection" -Name "AllowTelemetry" `
+        -Value 0 -Type "DWord" -Tier "Advanced" -Step "registry"
     Reg-Add "HKCU\SOFTWARE\Microsoft\Siuf\Rules" /v "NumberOfSIUFInPeriod" /t REG_DWORD /d 0 /f
     Reg-Add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v "PublishUserActivities" /t REG_DWORD /d 0 /f
     Reg-Add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location" /v "Value" /t REG_SZ /d "Deny" /f

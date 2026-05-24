@@ -416,12 +416,21 @@ Run-Step "Large Send Offload disabled where supported" {
     }
 }
 Run-Step "Nagle's Algorithm disabled on active adapters" {
+    # CURSOR-AUDIT #5 fix: route per-interface writes through Set-ToolkitRegistryValue
+    # so REVERT-EVERYTHING.ps1 can roll them back via the manifest. Id format matches
+    # 7 network/optimize-network.ps1 — both paths produce the same manifest keys.
     $interfaces = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces"
     Get-ChildItem $interfaces | ForEach-Object {
         $ip = (Get-ItemProperty $_.PSPath -Name "DhcpIPAddress" -ErrorAction SilentlyContinue).DhcpIPAddress
         if ($ip -and $ip -ne "0.0.0.0") {
-            Set-ItemProperty $_.PSPath -Name "TcpAckFrequency" -Value 1 -Type DWord -Force
-            Set-ItemProperty $_.PSPath -Name "TCPNoDelay" -Value 1 -Type DWord -Force
+            $iface = $_.PSChildName
+            Set-ToolkitRegistryValue -Id "net:TcpAckFrequency:$iface" `
+                -Path $_.PSPath -Name "TcpAckFrequency" `
+                -Value 1 -Type "DWord" -Tier "Advanced" -Step "network"
+            Set-ToolkitRegistryValue -Id "net:TCPNoDelay:$iface" `
+                -Path $_.PSPath -Name "TCPNoDelay" `
+                -Value 1 -Type "DWord" -Tier "Advanced" -Step "network"
+            Add-ToolkitStepResult -Key "net:Nagle:$iface" -Tier "Advanced" -Status "applied" -Reason "Nagle disabled (TcpAckFrequency + TCPNoDelay = 1)"
         }
     }
 }

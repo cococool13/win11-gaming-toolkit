@@ -15,6 +15,7 @@
 # Must be run as Administrator.
 # ============================================================
 
+. "$PSScriptRoot\..\..\lib\toolkit-state.ps1"
 . "$PSScriptRoot\..\..\lib\ui-helpers.ps1"
 
 Write-Host ""
@@ -24,6 +25,11 @@ Write-Host "============================================================" -Foreg
 Write-Host ""
 
 UI-RequireAdmin -ScriptName "Uninstall Timer Resolution Service"
+
+# Audit-trail: log this script invocation to
+# %ProgramData%\Win11GamingToolkit\logs\<stem>-<ts>-<pid>.log
+# (or $XDG_DATA_HOME on dev macOS). Idempotent per process.
+Write-ToolkitScriptStart
 
 $serviceName = "STR"
 $installDir = Join-Path $env:ProgramFiles "SetTimerResolution"

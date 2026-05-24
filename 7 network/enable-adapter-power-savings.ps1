@@ -15,6 +15,11 @@ $Host.UI.RawUI.WindowTitle = "Restore NIC Power Savings"
 UI-Header -Title "Restore NIC Power Savings & Wake" -Subtitle "Per-adapter restore from sidecar"
 UI-RequireAdmin -ScriptName "Restore NIC Power Savings"
 
+# Audit-trail: log this script invocation to
+# %ProgramData%\Win11GamingToolkit\logs\<stem>-<ts>-<pid>.log
+# (or $XDG_DATA_HOME on dev macOS). Idempotent per process.
+Write-ToolkitScriptStart
+
 if (-not (Get-Command Set-NetAdapterPowerManagement -ErrorAction SilentlyContinue)) {
     UI-Note -Message "[ERROR] NetAdapter cmdlets unavailable." -Color $script:UI_Error
     UI-Exit

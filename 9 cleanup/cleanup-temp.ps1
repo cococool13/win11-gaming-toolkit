@@ -26,6 +26,11 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     exit 1
 }
 
+# Audit-trail: log this script invocation to
+# %ProgramData%\Win11GamingToolkit\logs\<stem>-<ts>-<pid>.log
+# (or $XDG_DATA_HOME on dev macOS). Idempotent per process.
+Write-ToolkitScriptStart
+
 $totalFreed = 0
 
 function Get-FolderSizeMB {

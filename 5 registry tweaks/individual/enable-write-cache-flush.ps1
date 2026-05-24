@@ -14,6 +14,11 @@ $Host.UI.RawUI.WindowTitle = "Re-enable Write Cache Flushing"
 UI-Header -Title "Re-enable Write Cache Buffer Flushing" -Subtitle "Restore safe storage default"
 UI-RequireAdmin -ScriptName "Re-enable Write Cache Flushing"
 
+# Audit-trail: log this script invocation to
+# %ProgramData%\Win11GamingToolkit\logs\<stem>-<ts>-<pid>.log
+# (or $XDG_DATA_HOME on dev macOS). Idempotent per process.
+Write-ToolkitScriptStart
+
 UI-ResetCounters
 $beforePath = Join-Path $env:ProgramData "Win11GamingToolkit\state\writecache-before.json"
 

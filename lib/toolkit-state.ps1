@@ -75,6 +75,107 @@ function Get-ToolkitLogFile {
     return $script:ToolkitLogFile
 }
 
+$script:ToolkitScriptStartLogged = $false
+
+function Write-ToolkitScriptStart {
+    <#
+    .SYNOPSIS
+        Emit a 'script-start' log line for the calling script (once per process).
+    .DESCRIPTION
+        Auto-discovers the caller's script name + invocation arguments
+        from Get-PSCallStack. Single-line wire-up for any mutating
+        script that wants the standard "did this run today" audit
+        trail without rewriting per-script log calls.
+
+        Idempotent: only the first call per process actually writes —
+        subsequent calls (e.g. when Initialize-ToolkitState re-runs)
+        are no-ops, so re-init doesn't double-log.
+
+        Usage (after admin check, before any work):
+            Write-ToolkitScriptStart
+
+        Auto-called by Initialize-ToolkitState (with SkipFrames=2) so
+        most scripts get this for free without an explicit call.
+        Pass -SkipFrames > 1 when wrapped through another helper.
+
+    .PARAMETER SkipFrames
+        How many call-stack frames to skip when resolving "the caller's
+        script." 1 = direct caller (default). 2 = caller's caller, used
+        when invoked through a helper like Initialize-ToolkitState.
+
+    .NOTES
+        Pairs with Write-ToolkitScriptComplete to bracket execution.
+        Best-effort: silent if no caller can be resolved (e.g. dot-
+        sourced from interactive shell).
+    #>
+    [CmdletBinding()]
+    param(
+        [int]$SkipFrames = 1
+    )
+    if ($script:ToolkitScriptStartLogged) { return }
+    try {
+        # Frame 0 = Write-ToolkitScriptStart itself; Skip $SkipFrames more.
+        $caller = (Get-PSCallStack | Select-Object -Skip $SkipFrames -First 1)
+        if (-not $caller -or -not $caller.ScriptName) { return }
+        $stem = [System.IO.Path]::GetFileNameWithoutExtension($caller.ScriptName)
+        $argsMap = @{}
+        if ($caller.InvocationInfo -and $caller.InvocationInfo.BoundParameters) {
+            foreach ($k in $caller.InvocationInfo.BoundParameters.Keys) {
+                $v = $caller.InvocationInfo.BoundParameters[$k]
+                # SwitchParameter -> bool for cleaner JSON
+                if ($v -is [System.Management.Automation.SwitchParameter]) {
+                    $argsMap[$k] = [bool]$v
+                } else {
+                    $argsMap[$k] = $v
+                }
+            }
+        }
+        Write-ToolkitLog 'script-start' -Data @{
+            script = $stem
+            path = $caller.ScriptName
+            args = $argsMap
+        }
+        $script:ToolkitScriptStartLogged = $true
+    } catch {
+        $null = $_
+    }
+}
+
+function Write-ToolkitScriptComplete {
+    <#
+    .SYNOPSIS
+        Emit a 'script-complete' log line for the calling script.
+    .DESCRIPTION
+        Pairs with Write-ToolkitScriptStart. Single-line wire-up at
+        the bottom of a mutating script (after the last Read-Host /
+        before exit). Records the user-perceived outcome so log
+        scraping can answer "did the user actually finish run X."
+    .PARAMETER Status
+        Free-form outcome label. Convention: 'ok' | 'cancelled' |
+        'failed' | 'skipped'. Defaults to 'ok'.
+    .PARAMETER Data
+        Optional extra fields (counts, durations, etc.).
+    #>
+    [CmdletBinding()]
+    param(
+        [string]$Status = 'ok',
+        [hashtable]$Data
+    )
+    try {
+        $caller = (Get-PSCallStack | Select-Object -Skip 1 -First 1)
+        $stem = if ($caller -and $caller.ScriptName) {
+            [System.IO.Path]::GetFileNameWithoutExtension($caller.ScriptName)
+        } else { 'interactive' }
+        $payload = @{ script = $stem; status = $Status }
+        if ($Data) {
+            foreach ($k in $Data.Keys) { $payload[$k] = $Data[$k] }
+        }
+        Write-ToolkitLog 'script-complete' -Data $payload
+    } catch {
+        $null = $_
+    }
+}
+
 function Write-ToolkitLog {
     <#
     .SYNOPSIS
@@ -267,6 +368,13 @@ function Get-ToolkitState {
 
 function Initialize-ToolkitState {
     param([switch]$ForceNew)
+
+    # Auto-log script start for any caller. SkipFrames=2: frame 0 is
+    # Write-ToolkitScriptStart, frame 1 is Initialize-ToolkitState
+    # (this fn), frame 2 is the actual mutating script. Idempotent;
+    # safe even if the caller also calls Write-ToolkitScriptStart
+    # explicitly (the second call is a no-op).
+    Write-ToolkitScriptStart -SkipFrames 2
 
     # Preserve captured before-state once a manifest exists. Older callers used
     # -ForceNew during apply, which could destroy the only reliable revert data.

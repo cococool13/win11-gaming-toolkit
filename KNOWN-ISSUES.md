@@ -231,11 +231,60 @@ Items below are tracked work — known issues, audit findings, and untracked
 writes that have been catalogued for a future release. None block the current
 shipping version; each is logged so it isn't forgotten.
 
+### From the 2026-05-24 continuous-improvement loop (in progress)
+
+**Status: PSScriptAnalyzer gate fully green (0 Error, 0 Warning) on the
+default ruleset.** 16/16 Pester tests passing. Full progression table in
+`CHANGELOG.md` → `[Unreleased]`.
+
+#### Function-naming refactor (PSUseApprovedVerbs / PSUseSingularNouns)
+
+22 internal helpers use a non-standard verb namespace: `UI-*`, `Reg-Add`,
+`Run-Step`, vendor-`Apply-*`, lib-`Ensure-*` / `Capture-*` / `Record-*` /
+`Normalize-*` / `Stage-*` / `Fetch-*`. The two analyzer rules are currently
+excluded with rationale (see `.psscriptanalyzer.psd1`); a wholesale rename
+to PowerShell-approved verbs + nouns is queued as a v2 refactor. Estimated
+~150 call sites to update. Must come with comprehensive Pester coverage to
+catch any regressions, since the codebase still lacks runtime tests for
+most paths.
+
+#### GPU configure scripts dot-source path bug
+
+`6 gpu/{nvidia,amd,intel}/configure-*.ps1` dot-source `..\lib\*` which
+resolves to `6 gpu\lib\*` (does not exist) instead of repo root. The
+scripts only work because their `&`-invocation parent
+(`install-gpu-driver.ps1`) has already loaded the helpers into scope.
+Workaround applied in CURSOR-AUDIT #6 was an inline admin check.
+Real fix: change paths to `..\..\lib\*`. Deferred to keep this loop
+focused on quality gates.
+
+#### Phase 5 / Phase 11 Reg-Add cosmetic writes (CURSOR-AUDIT #13 remainder)
+
+~45 `Reg-Add` calls in `APPLY-EVERYTHING.ps1` Phases 5 and 11 are HKCU
+cosmetic settings (dark mode, taskbar, explorer flags). High-impact HKLM
+keys were migrated to `Set-ToolkitRegistryValue` in commit `40630c3`; the
+HKCU writes remain because they're user-toggleable via Windows Settings
+without manifest restore. v1.1 migration target.
+
+#### Per-script Pester suites
+
+Only `lib/toolkit-state.ps1` has a Pester test file (`tests/lib/
+toolkit-state.Tests.ps1`). The pattern is established and ready to
+replicate. Priority order: top-3 most-called helpers next
+(`lib/ui-helpers.ps1`, `lib/gpu-detection.ps1`, `lib/download-helpers.ps1`),
+then mutating entry points (`APPLY-EVERYTHING.ps1`, `REVERT-EVERYTHING.ps1`).
+
+#### Windows Sandbox configs for system-mutating scripts
+
+`tests/sandbox/<script>.wsb` files not yet generated. CLAUDE.md quality
+bar requires these for any mutator. Lift is ~15 lines XML per script,
+mostly mechanical.
+
 ### From v1.0.0 production-readiness audit
 
-#### `APPLY-EVERYTHING.ps1` Nagle write bypasses toolkit-state
+#### `APPLY-EVERYTHING.ps1` Nagle write bypasses toolkit-state  *(RESOLVED in CURSOR-AUDIT #5, commit `dd5dc3e`)*
 
-Lines 399–400 set `TcpAckFrequency` and `TCPNoDelay` on every interface via raw `Set-ItemProperty` instead of `Set-ToolkitRegistryValue`. Consequence: `REVERT-EVERYTHING.ps1` will not undo Nagle changes that came from APPLY's path. The standalone `7 network/optimize-network.ps1` already uses `Set-ToolkitRegistryValue` for the same writes — running that script gives revertable Nagle. Default (unset) Nagle behavior is harmless; this is a revert-completeness gap, not a stability risk. Convert APPLY's Nagle block to `Set-TrackedRegistry` in v1.1.
+Original gap: lines 399–400 set `TcpAckFrequency` and `TCPNoDelay` on every interface via raw `Set-ItemProperty` instead of `Set-ToolkitRegistryValue`. Resolved by routing both writes through `Set-ToolkitRegistryValue` with per-interface Ids matching `7 network/optimize-network.ps1`'s pattern. `REVERT-EVERYTHING.ps1` now prefers manifest restore with a blind-remove fallback for legacy interfaces.
 
 #### `APPLY-EVERYTHING.ps1` startup-cleanup `reg delete` calls are not tracked
 

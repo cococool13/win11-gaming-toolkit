@@ -2,9 +2,17 @@
 # Windows 11 Debloat Script (Smart)
 # Windows 11 Gaming Optimization Guide
 # ============================================================
+# Tier: Safe (for the default app set) / Advanced (Xbox App)
+#
 # Removes pre-installed bloatware apps that waste resources.
 # Shows what will be removed with confirmation before acting.
-# Records all removals in manifest for audit trail.
+# Records all removals in state.packages.removed and
+# state.packages.provisionedRemoved for audit trail and revert.
+#
+# Pair: restore-debloat.ps1 reads the manifest and reinstalls
+# recorded packages via winget. Provisioned (per-image) reinstall
+# typically needs the original Windows install media; winget covers
+# the per-user reinstall path.
 #
 # Replaces: debloat.ps1 (dumb version)
 # Must be run as Administrator.
@@ -211,6 +219,7 @@ if ($skipped -gt 0) {
 Write-Host "  Already gone: $($alreadyGone.Count) apps" -ForegroundColor Gray
 Write-Host ""
 Write-Host "  Removals recorded in manifest for audit trail." -ForegroundColor Gray
-Write-Host "  Note: Removed apps can be reinstalled from Microsoft Store." -ForegroundColor Gray
+Write-Host "  To reinstall: run restore-debloat.ps1 (winget-driven, reads manifest)." -ForegroundColor Gray
+Write-Host "  Or open Microsoft Store and search by name for any individual app." -ForegroundColor Gray
 Write-Host ""
 Read-Host "Press Enter to continue"

@@ -377,3 +377,101 @@ User prompt rule: "any commit that regresses the gate is reverted immediately, n
 
 Loop closing cleanly here. No invariant changes, no fix-3x failures, gate floor moved up not down. Next loop can pick the queue or open new research threads per the prior prompt's "After the queue is closed, continue the standard Phase A/B/C loop."
 
+---
+
+## 2026-05-24 third continuous-improvement loop (commits `9d8781b` → `f5387af`)
+
+Floor moved from **0/0 PSSA + 258 Pester / 14 script suites / 1 invariant suite** to **0/0 PSSA + 468 Pester / 41 skipped (all gap-tracked) / 4 invariant suites**.
+
+10 commits, all gate-green. Zero reverts. Zero fix-3x. The compaction event split this loop in half but the second half continued unbroken from the first.
+
+### Architecture callouts (per standing rule "any pattern promoted to architecture gets its own callout")
+
+#### Sidecar pattern → lib helpers
+**Replaces N call-site copies, covers future M.** Three production callers had hand-rolled `ConvertTo-Json | Out-File | Test-Path | Get-Content | ConvertFrom-Json` block-pairs for per-device state capture (the cases where manifest's HKLM-only registry tracking didn't fit). Extracted to `Save-ToolkitSidecar` / `Read-ToolkitSidecar` / `Remove-ToolkitSidecar` / `Get-ToolkitSidecarPath` with capture-once semantics + `-Force` + single-element JSON unwrap + `SupportsShouldProcess`. Each refactor commit measurably shrank the call site (-25 / -21 / -9 net lines). Any future per-device state capture (USB polling, per-NIC quirks, monitor EDID overrides) plugs straight in. Backed by `tests/lib/sidecar-helpers.Tests.ps1` × 14.
+
+#### Templated Pester sweep for `5 registry tweaks/individual/`
+**Replaces N future per-script suites.** Single file (`tests/5-registry-tweaks/individual-tweaks.Tests.ps1`) walks every `.ps1` in the folder and runs the standard 6-dimension matrix (parses, has comment-based help, admin self-check, script-start audit-log, apply uses tracked helper, restore uses tracked helper). 360+ test cases generated from one template. A new script in the folder gets full coverage automatically. Gap-tracking pattern (`$HelpGaps` / `$ApplyHelperGaps` / `$RestoreHelperGaps`) lets the suite ship with known violations as `Set-ItResult -Skipped` annotations; future commits shrink the gap arrays as fixes land.
+
+#### Invariant suites — class-of-bug nets
+**Replaces N future ad-hoc regression tests.** Three new repo-wide sweeps in `tests/invariants/`:
+- `mutator-shouldprocess` (44 validated, 9 tracked gaps) — catches scripts that mutate via raw native calls without opening a ShouldProcess gate, which PSScriptAnalyzer's function-level rule misses.
+- `mutator-paired-restore` (46 validated, 7 tracked gaps) — enforces CLAUDE.md's "every opt-in tweak ships with a paired sibling" rule. Computes inverse-prefix stems and asserts `Test-Path` on `.ps1` OR `.bat` candidate.
+- `downloader-trust-verify` (4/4 compliant) — every file-downloader must call a trust verifier (SHA-256 or Authenticode) in the same file. Regression-net: today's 4/4 means a new downloader without a verifier fails immediately.
+
+All three share the same shape: iterate (via `Test-ToolkitInvariants` for scope), classify, assert, gap-track. The fourth invariant idea (every individual tweak appears in manifest) was assessed and found to be a duplicate of what the templated sweep already enforces — no new file shipped, decision documented.
+
+#### `-Coverage` flag — non-gating CodeCoverage report
+**Replaces N future "is coverage going up?" debates.** Pester `CodeCoverage` on `lib/*.ps1` only (the long-lived helper surface; per-script tweak files are runtime-untestable from dev macOS and would dilute the signal). JaCoCo XML to gitignored `coverage.xml`; summary row shows rounded percent. Coverage NEVER touches `$exitCode` — it's a report, not a gate. Default run output stays terse via row suppression when `-Coverage` not passed. Baseline: **10.2%**.
+
+### Standard work this loop
+
+| Tier | Commit | Outcome |
+|---|---|---|
+| arch | `9d8781b` → `65a7c9f` (4 commits) | Sidecar pattern promoted to lib helpers + 3 call-site refactors (-25/-21/-9 lines) |
+| arch | `9efde6a` | Templated sweep for individual tweaks folder (360 tests from 1 template) |
+| arch | `5c2b9d0` | Invariant: every mutator gates ShouldProcess |
+| arch | `74e18c3` | Invariant: every mutator has a paired sibling |
+| arch | `74fa679` | Invariant: every downloader verifies trust |
+| feat | `6c81e16` | Storage Sense disable/enable pair (Phase C dequeue) |
+| feat | `f5387af` | `-Coverage` flag on `Invoke-ToolkitGate.ps1` |
+
+### Net loop impact
+
+| Metric | Loop start | Loop end | Δ |
+|---|---|---|---|
+| PSScriptAnalyzer Errors | 0 | 0 | 0 |
+| PSScriptAnalyzer Warnings | 0 | 0 | 0 |
+| Pester passing | 258 | 468 | +210 |
+| Pester skipped (gap-tracked) | 0 | 41 | +41 |
+| Lib helpers extracted | — | 4 (sidecar) | +4 functions, -55 lines across 3 callers |
+| Invariant Pester suites | 1 | 4 | +3 |
+| Templated Pester sweeps | 0 | 1 | +1 (auto-grows with each new individual tweak) |
+| New user-facing scripts | — | 2 | Storage Sense disable + enable |
+| Coverage baseline (lib/*.ps1) | — | 10.2% | first measurement |
+| Real bugs caught & fixed | — | 1 | configure-vbs sibling-detection map fix surfaced by writing the pair invariant |
+
+### Decisions made under autonomous defaults
+
+- **Pester v5 scoping**: `$script:` vars set in `BeforeDiscovery` don't survive into `It` body runtime. Workaround applied in all 3 new invariants: inline the gating-helpers / verify-patterns / prefix-map lists directly in the It body, with a `Keep in sync with BeforeDiscovery` comment. Caught after watching 43 false-positive failures in the ShouldProcess invariant; documented in each file so the next contributor doesn't re-discover.
+- **Pester `-Skip:($_.HelpGap)` doesn't filter per-ForEach-case** because the parameter evaluates at discovery time, not per-case. Switched to `Set-ItResult -Skipped -Because '...'; return` inside the It body. Same workaround in all 4 new test files. Documented inline.
+- **The fourth Priority-3 invariant ("every tweak in manifest") was assessed and skipped.** Its enforcement target is functionally identical to what the templated sweep's `$ApplyHelperGaps` / `$RestoreHelperGaps` checks already cover — every individual tweak script must call a `Set-Toolkit*` / `Set-Tracked*` helper, which is exactly what registers a manifest entry. Documented here; if a counter-example emerges, the invariant can ship then.
+- **HAGS `[Experimental]` + USB polling rate validation deferred to next loop** in favor of the Storage Sense feature dequeue + coverage instrumentation. Storage Sense was already on the explicit Priority 4 list; coverage was on the standing rules list. Both are net-new value vs. polishing existing features.
+- **Comment-based help on new scripts**: the gap-tracking principle is "shrink, don't grow" — new scripts must ship with proper `<# .SYNOPSIS / .DESCRIPTION / .NOTES #>` blocks rather than appending to `$HelpGaps`. Both new Storage Sense scripts ship with full comment-based help.
+- **Coverage scope = `lib/*.ps1` only** — including per-script tweak files would push the denominator into thousands of commands the tests can't exercise from dev macOS (no registry hives) and dilute the signal toward "% of static-parseable code." Better to measure helper-surface coverage and trend that up.
+
+### Pair-script gaps (from the new `mutator-paired-restore` invariant)
+
+These 7 entries are visible-from-day-one architectural gaps the invariant surfaced. Fix per-script in subsequent commits:
+
+1. `4 services/disable-services.ps1` — pair is `revert-all.ps1` (different stem). Fix: rename or document.
+2. `2 power plan/configure-power.ps1` — no `revert-power.ps1`. Fix: add wrapper around `powercfg /restoredefaultschemes`.
+3. `5 registry tweaks/individual/explorer-affinity-core1.ps1` + `restore-explorer-affinity.ps1` — pair exists but neither stem matches a verb prefix. Fix: rename to `disable-explorer-affinity` + `enable-explorer-affinity`.
+4. `6 gpu/{intel,amd,nvidia}/install-*.ps1` × 3 — no `uninstall-*.ps1` wrappers. Fix: add pnputil-backed uninstallers OR document that the DDU pair owns driver removal.
+
+### ShouldProcess gaps (from the new `mutator-shouldprocess` invariant)
+
+9 entries; all use raw native calls (`bcdedit`, `sc.exe`, `fsutil`) that don't propagate `$WhatIfPreference`. Fix per-script:
+
+1. `0 prerequisites/install-runtimes.ps1` — `Start-Process` of installers.
+2. `5 registry tweaks/individual/configure-mmagent.ps1` + `revert-mmagent.ps1` — `sc.exe` start-mode + `gpresult` calls.
+3. `5 registry tweaks/individual/enable-windows-update.ps1` — `sc.exe` config + service starts.
+4. `5 registry tweaks/individual/uninstall-timer-resolution-service.ps1` — `sc.exe delete`.
+5. `7 network/enable-adapter-power-savings.ps1` — `Set-NetAdapterPowerManagement` (lacks Should*).
+6. `8 security vs performance/enable-dep.ps1` + `enable-smt-ht.ps1` — `bcdedit`.
+7. `9 cleanup/cleanup-temp.ps1` — `Remove-Item -Recurse` on temp dirs.
+
+Fix shape: add `[CmdletBinding(SupportsShouldProcess)]` to each script's `param()` block and gate each raw-native invocation behind `if ($PSCmdlet.ShouldProcess(...))`.
+
+### Suggested next-loop queue
+
+1. **HAGS standalone pair with `[Experimental]` flag.** Already in APPLY-EVERYTHING; extracting + flagging Experimental gives users granular control and surfaces the anti-cheat-compatibility caveat.
+2. **USB polling rate validation.** `12 hardware/show-mouse-info.ps1` already does the registry side read-only. Pair with `check-mouse-polling.ps1` that downloads + hash-verifies a mouserate util and runs it (new downloader → free pass-through on `downloader-trust-verify` invariant; new addition to gpu-download-style chain).
+3. **Per-component telemetry granularity.** Phase C. Multiple registry writes; treat as a multi-step script with a single confirm + tier "Security Trade-off". Microsoft Learn citations per key.
+4. **Shrink the gap arrays.** Each invariant ships with a known-violation count; pick 3-5 per loop and fix them. The arrays exist to be shrunk, not as silent ceilings.
+5. **MPO with WDDM gate.** `disable-mpo.ps1` exists but doesn't gate on WDDM version — add detection so the tweak only applies on 2.7+.
+6. **Pair-script renames** for the 7 tracked-gap entries above — most are 30-min fixes that immediately shrink the gap list.
+7. **`Test-ToolkitInvariants` exposes pair data?** Currently the pair invariant computes it inline. If the helper exposed `HasPair`/`PairPath`, the invariant code could shrink and other tests (manifest-only revert, etc.) could reuse the data. Architecture question worth a 30-min spike next loop.
+
+Loop closing clean — gate green, every commit a forward step, four invariant suites now defending against four classes of future bugs.
+

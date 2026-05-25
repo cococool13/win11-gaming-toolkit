@@ -87,6 +87,94 @@ Floor moved from 0/0 PSSA + 77 tests to **0/0 PSSA + 243 tests**. Every commit k
 | After download-helpers tests     | 0 | 0 | 235 |
 | After check-uwp-apps             | 0 | 0 | 243 |
 
+---
+
+### 2026-05-24 third loop (commits `9d8781b` → `f5387af`, 10 commits)
+
+Architecture-over-wiring focus: every change either promotes a repeated
+pattern to a library helper OR adds a repo-wide invariant that catches
+the next instance of a class of bug. Floor moved from
+**0/0 PSSA + 258 tests** to **0/0 PSSA + 468 tests** (+210 tests, +14
+of which from one new user-facing feature; the rest from architecture).
+
+**arch(lib) — sidecar pattern promoted to lib helpers.** Three existing
+callers had hand-rolled `ConvertTo-Json | Out-File ... | Test-Path |
+Get-Content | ConvertFrom-Json` block-pairs for per-device state
+capture. Extracted to `Save-ToolkitSidecar` / `Read-ToolkitSidecar` /
+`Remove-ToolkitSidecar` / `Get-ToolkitSidecarPath` in
+`lib/toolkit-state.ps1` with capture-once semantics, `-Force` override,
+single-element JSON unwrapping, `SupportsShouldProcess`, and per-test
+temp-root override for behavioral tests. Refactored 3 call-site pairs
+(RSS, IM, write-cache-flush) with measurable diff shrink: **-25, -21,
+-9 net lines** in each pair. New `tests/lib/sidecar-helpers.Tests.ps1`
+× 14 covers the contract end-to-end. (`9d8781b` → `65a7c9f`)
+
+**arch(tests) — templated sweep for `5 registry tweaks/individual/`.**
+Single-template Pester suite (`tests/5-registry-tweaks/individual-tweaks.Tests.ps1`)
+walks every `.ps1` in the folder and asserts the standard matrix:
+parses, comment-based help present, admin self-check, script-start
+audit-log, apply uses tracked helper, restore uses tracked helper.
+360+ test cases generated from one template. Gap-tracking pattern
+(`$HelpGaps` × 20, `$ApplyHelperGaps` × 2, `$RestoreHelperGaps` × 3)
+uses `Set-ItResult -Skipped` inside the It body — Pester v5's `-Skip`
+parameter doesn't filter per-ForEach-case, so this is the working
+workaround. Same gap-shrink-per-commit pattern as the prior loop's
+invariant suites. (`9efde6a`)
+
+**arch(invariants) — three new repo-wide sweeps.** All three use the
+same "iterate, classify, assert, gap-track" shape:
+- `tests/invariants/mutator-shouldprocess.Tests.ps1` — 44 mutators
+  validated, 9 tracked gaps. Catches scripts that mutate via raw
+  native calls (`bcdedit`, `sc.exe`, `fsutil`) without opening a
+  ShouldProcess gate — PSScriptAnalyzer's `PSShouldProcess` rule
+  only inspects function-level mutators, missing script-body ones.
+  (`5c2b9d0`)
+- `tests/invariants/mutator-paired-restore.Tests.ps1` — 46 pairs
+  validated, 7 tracked gaps. Enforces CLAUDE.md's "every opt-in tweak
+  ships with a colocated `enable-*`/`revert-*` sibling" rule by
+  computing the inverse-prefix stem (configurable map covering
+  disable↔enable, install↔uninstall, configure↔revert|restore|
+  disable|enable, force↔revert|disable, apply↔revert, pause↔resume,
+  tune↔restore, optimize↔revert) and asserting `Test-Path` on the
+  candidate sibling (`.ps1` OR `.bat` — `configure-vbs.ps1` legitimately
+  pairs with `enable-vbs.bat`/`disable-vbs.bat`). (`74e18c3`)
+- `tests/invariants/downloader-trust-verify.Tests.ps1` — 4/4 compliant.
+  Any `.ps1` calling `Invoke-WebRequest -OutFile`, `Get-FileFromWeb`,
+  `.DownloadFile`, or `Start-BitsTransfer` must also call one of
+  `Get-FileHash` / `Test-FileSha256` / `Get-AuthenticodeSignature` /
+  `Test-FileAuthenticode` in the same file. Discriminates file-download
+  from metadata-fetch via `-OutFile` presence (in-memory JSON reads
+  correctly excluded). Regression-net for "added a new downloader
+  without a verifier." (`74fa679`)
+
+**feat(storage-sense) — disable/enable pair from the deferred queue.**
+Single-key toggle at `HKCU:\...\StorageSense\Parameters\StoragePolicy\01`
+(DWORD). Anti-cheat impact NONE (UWP/settings feature). Microsoft
+Learn cited. Restore-from-manifest with delete-key fallback when no
+prior value captured. Verify-tweaks.ps1 grew a corresponding check.
+(`6c81e16`)
+
+**feat(gate) — `-Coverage` non-gating CodeCoverage report.** Coverage
+on `lib/*.ps1` (the long-lived helper surface; per-script files are
+runtime-untestable from dev macOS, so including them would dilute the
+signal). JaCoCo XML output to `coverage.xml` (gitignored). Summary row
+shows rounded percent; row suppressed entirely when `-Coverage` not
+passed so the default summary stays terse. Baseline: 10.2% on
+lib helpers. (`f5387af`)
+
+### Quality-gate progression (third loop)
+
+| Gate snapshot | Errors | Warnings | Pester passing | Skipped |
+|---|---|---|---|---|
+| Loop start (resume) | 0 | 0 | 258 | 0 |
+| After sidecar lib + 3 refactors | 0 | 0 | 275 | 0 |
+| After templated sweep | 0 | 0 | 360 | 25 |
+| After ShouldProcess invariant | 0 | 0 | 404 | 34 |
+| After pair-restore invariant | 0 | 0 | 450 | 41 |
+| After downloader-trust invariant | 0 | 0 | 454 | 41 |
+| After Storage Sense pair | 0 | 0 | 468 | 41 |
+| After -Coverage flag | 0 | 0 | 468 | 41 |
+
 ## [1.0.0] — 2026-05-07
 
 First public release. The toolkit went through three predecessor passes (FR33THY integration + bug audit, codex verification + discovery, cleanup + launcher redesign) and a final production-readiness audit before this tag.

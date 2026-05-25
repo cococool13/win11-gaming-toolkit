@@ -749,3 +749,21 @@ Cluster B gate: **809 pass / 0 fail / 23 skip / 0+0 PSSA / lib 47.3% / scripts 0
 
 Cluster C gate: **950 pass / 0 fail / 23 skip / 0+0 PSSA / lib 48.4% / scripts 0%.** All 3 forced-conscious-decision invariants: 66/66 each.
 
+### Cluster D sub-merge 1 — Phase C features (8 commits, merged)
+
+3 read-only audits + 2 network pairs + 5 telemetry pairs = 17 new user-facing scripts. Pester crossed the 1000-test milestone (1153 at end of sub-merge).
+
+**`72686de` check-rebar.ps1** — 3-layer ReBAR audit (silicon / firmware / driver).
+
+**`637100e` check-directstorage.ps1** — 4-prereq DirectStorage audit (NVMe / Windows build / DX12 Ultimate / GPU). PASS/WARN/FAIL with remediation hints.
+
+**`a50b3e4` check-pagefile.ps1** — pagefile config + Microsoft-recommended sizing. NO_PAGEFILE / TOO_SMALL / OK verdicts.
+
+**`753c6e8` 3 hardware stress audits** — CPU + GPU + RAM. Reports current state + detects third-party stress tools without invoking them. -RunStress reserved for future SHA-256-verified fetch.
+
+**`8729f4e` RSC + NDIS coalescing pairs** — receive-path latency tuning that coordinates with RSS / interrupt-moderation. Sidecar per-adapter capture.
+
+**`60716ee` 5 telemetry-expansion pairs** — Cortana, Edge prefetch, Web search in Start, Activity history, Advertising ID. Per-component, not bundled. All 3 header invariants pass at ship.
+
+Cluster D sub-merge 1 gate: **1153 pass / 0 fail / 23 skip / 0+0 PSSA / lib 48.4% / scripts 0%.**
+

@@ -475,3 +475,25 @@ Fix shape: add `[CmdletBinding(SupportsShouldProcess)]` to each script's `param(
 
 Loop closing clean — gate green, every commit a forward step, four invariant suites now defending against four classes of future bugs.
 
+### Post-batch gap-shrink push (commits `ac3e5a4` → `023a6b0`, 4 commits)
+
+The user's standing rule "the arrays exist to be shrunk, not as silent ceilings" got applied immediately. Four commits, all gap-array shrinks on the `mutator-shouldprocess` invariant, each gate-green:
+
+| Commit | Script | Pattern | Gap |
+|---|---|---|---|
+| `ac3e5a4` | `uninstall-timer-resolution-service.ps1` | 4 destructive steps (Stop-Service, sc.exe delete, Remove-ItemProperty, Remove-Item -Recurse), each behind `$PSCmdlet.ShouldProcess` | 9 → 8 |
+| `d137e85` | `cleanup-temp.ps1` | `Clear-FolderSafe` function + 4 inline destructive blocks promoted to a CmdletBinding(SupportsShouldProcess) function, gates at every step | 8 → 7 |
+| `28644b4` | `enable-dep.ps1` + `enable-smt-ht.ps1` | bcdedit calls (set nx / deletevalue numproc) wrapped in ShouldProcess. ConfirmImpact=High since boot config changes | 7 → 5 |
+| `023a6b0` | `configure-mmagent.ps1` + `revert-mmagent.ps1` | 4 hand-copied if/else blocks each → single `foreach` loop driven by data array, hoisted ShouldProcess gate, `.GetNewClosure()` for loop-variable capture in UI-Step actions. -25 net lines per script. | 5 → 3 |
+
+Tests went 469 → 474 (+5 from invariants validating each fix). Skipped went 40 → 35 (-5 from shrinking the gap list).
+
+Original 9-entry ShouldProcess gap list now down to **3**:
+- `0 prerequisites/install-runtimes.ps1` — 2 `Start-Process` calls on downloaded installers; needs gate at each.
+- `5 registry tweaks/individual/enable-windows-update.ps1` — `sc.exe config` + `Start-Service` chain; needs ShouldProcess at each.
+- `7 network/enable-adapter-power-savings.ps1` — `Set-NetAdapterPowerManagement` per-adapter loop; needs gate at the loop level OR per-adapter inside.
+
+Architecture-over-wiring win in the mmagent fix: the original was 4 nearly-identical 9-line `if (current) { UI-Step ... } else { UI-Skip ... }` blocks per script. Refactor to a data-driven foreach not only added the ShouldProcess gate cleanly but cut the script size measurably and made adding a 5th MMAgent feature a 1-line array push. The diff is "-90 / +94" between two files because the new comment-based help adds 30+ lines back — pure logic shrunk significantly.
+
+Final loop state: **15 commits, 0 reverts, 474 Pester pass / 0 fail / 35 skip, 0/0 PSSA.** ShouldProcess invariant compliance went from 44/53 (83%) at the start of the loop to **50/53 (94%)** at the end.
+

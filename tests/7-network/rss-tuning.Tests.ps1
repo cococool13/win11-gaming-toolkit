@@ -43,16 +43,26 @@ Describe 'RSS tuning script pair' {
         }
     }
 
-    Context 'Sidecar discipline (matches disable-write-cache-flush.ps1 pattern)' {
-        It 'enable captures baseline once (preserves existing sidecar)' {
-            # Re-running enable shouldn't overwrite a sidecar that
-            # already captured pre-toolkit state — otherwise a second
-            # apply would record the toolkit-modified state as "before".
-            $script:EnableContent | Should -Match 'Test-Path -LiteralPath \$sidecarPath'
-            $script:EnableContent | Should -Match 'if \(-not \(Test-Path -LiteralPath \$sidecarPath\)\)'
+    Context 'Sidecar via lib helpers (post-9d8781b refactor)' {
+        It 'enable uses Save-ToolkitSidecar -Name rss' {
+            # The lib helper's default behavior IS capture-once-preserve;
+            # we don't need to re-assert the conditional locally.
+            $script:EnableContent | Should -Match "Save-ToolkitSidecar\s+-Name\s+'rss'"
         }
-        It 'disable removes the sidecar after successful restore' {
-            $script:DisableContent | Should -Match 'Remove-Item -LiteralPath \$sidecarPath'
+        It 'disable reads via Read-ToolkitSidecar -Name rss' {
+            $script:DisableContent | Should -Match "Read-ToolkitSidecar\s+-Name\s+'rss'"
+        }
+        It 'disable cleans up via Remove-ToolkitSidecar -Name rss' {
+            $script:DisableContent | Should -Match "Remove-ToolkitSidecar\s+-Name\s+'rss'"
+        }
+        It 'enable+disable agree on the sidecar stem' {
+            # Cross-script parity: a future rename on one side without
+            # the other would silently break revert.
+            $enableMatch = [regex]::Match($script:EnableContent, "Save-ToolkitSidecar\s+-Name\s+'([^']+)'")
+            $disableMatch = [regex]::Match($script:DisableContent, "Read-ToolkitSidecar\s+-Name\s+'([^']+)'")
+            $enableMatch.Success | Should -BeTrue
+            $disableMatch.Success | Should -BeTrue
+            $enableMatch.Groups[1].Value | Should -Be $disableMatch.Groups[1].Value
         }
     }
 

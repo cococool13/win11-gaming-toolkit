@@ -41,20 +41,9 @@ if (-not (Get-Command Set-NetAdapterRss -ErrorAction SilentlyContinue)) {
     exit 2
 }
 
-$sidecarPath = Join-Path (Split-Path -Parent (Get-ToolkitManifestPath)) 'rss-before.json'
-if (-not (Test-Path -LiteralPath $sidecarPath)) {
-    Write-Host "  [SKIP] No sidecar at $sidecarPath — enable-rss-tuning.ps1 never captured a baseline." -ForegroundColor Yellow
-    exit 1
-}
-
-$snapshot = @()
-try {
-    $raw = Get-Content -Raw -LiteralPath $sidecarPath
-    $snapshot = $raw | ConvertFrom-Json
-    # ConvertFrom-Json on a single-object JSON returns a scalar, not an array.
-    if ($snapshot -isnot [System.Array]) { $snapshot = @($snapshot) }
-} catch {
-    Write-Host "  [FAIL] Could not parse sidecar: $($_.Exception.Message)" -ForegroundColor Red
+$snapshot = Read-ToolkitSidecar -Name 'rss'
+if (-not $snapshot) {
+    Write-Host "  [SKIP] No 'rss' sidecar — enable-rss-tuning.ps1 never captured a baseline." -ForegroundColor Yellow
     exit 1
 }
 
@@ -89,8 +78,7 @@ foreach ($entry in $snapshot) {
     }
 }
 
-# Cleanup sidecar — matches write-cache-flush pattern.
-Remove-Item -LiteralPath $sidecarPath -Force -ErrorAction SilentlyContinue
+Remove-ToolkitSidecar -Name 'rss'
 Add-ToolkitStepResult -Key 'rss-tuning-revert' -Tier 'Safe' -Status 'applied' `
     -Reason "Restored $restored adapter(s), $missing missing"
 exit 0

@@ -17,3 +17,8 @@ Thumbs.db
 
 # Pester CodeCoverage output from `Invoke-ToolkitGate.ps1 -Coverage`
 coverage.xml
+
+# Claude Code per-machine settings + Cursor rules (dev-machine local
+# overrides; don't ship with the repo).
+.claude/
+.cursorrules

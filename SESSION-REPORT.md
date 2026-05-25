@@ -721,3 +721,17 @@ Researched against BattlEye changelogs, EAC docs, Vanguard public guidance, Ubis
 
 Cluster A gate: **744 pass / 0 fail / 23 skip / 0+0 PSSA / lib 28.3% / scripts 0%.** Anti-cheat invariant: 28/60 → **60/60 (100%)**.
 
+### Cluster B — Coverage push (5 commits, merged)
+
+Lib coverage 28.3% → **47.3%** (exceeded the 45% morning target). +97 Pester tests. Same architecture-discovers-bugs pattern as prior sessions — the cross-platform audit re-run with proper output capture surfaced ANOTHER Join-Path null bug (gpu-download.ps1) that my session 5 audit missed by using a grep filter that ignored multi-line PSSA errors.
+
+**`e08522f` test(gpu-download): 13 tests + cross-platform load fix** — lib 28.3 → 35.2. Fixed `$script:GpuDriverStageRoot` Join-Path-null on macOS (same XDG_DATA_HOME fallback chain as version-manifest). 13 tests cover: manifest load + throw-on-missing, all three vendor URL resolvers (including NVIDIA AutoDetect API mock + failure-fallback), full Get-GpuDriverInstaller download+verify chain (5 branches).
+
+**`b181e32` test(download-helpers): 10 behavioral tests** — lib 35.2 → 36.8. Extends the existing AST suite with execution coverage for Write-Info, Ensure-Internet (live 8.8.8.8 ping; skipped on CI), Get-FileFromWeb (3 size-guard branches), Test-FileAuthenticode (4 signer-CN-match branches). Caught: PSSA's PSAvoidOverwritingBuiltInCmdlets fires on `function Get-AuthenticodeSignature` stub but not on `Set-Item Function:` equivalent — using the latter.
+
+**`2aed893` test(toolkit-state): 30 behavioral tests** — lib 36.8 → 47.0. Biggest single lift this session. Covers path resolvers, map helpers (Test/Get/Set across hashtable AND PSCustomObject), Test-ToolkitCommand, all DNS pure-data helpers (Normalize/Get-Family/Group), state IO round-trip with Get-ToolkitMachineProfile mocked, Add-ToolkitNote / Add-ToolkitStepResult.
+
+**`6fe4b57` test(shape-variations): 12 data-driven tests** — lib 47.0 → 47.3. Priorities 5 + 6 of Cluster B. Sidecar round-trip per registry value type (DWord, QWord, String w/whitespace+non-ASCII, MultiString, ExpandString with %ENV% intact, Binary, null, mixed). Manifest shape variations (in-memory hashtable vs reloaded PSCustomObject, 100-entry steps stress, notes ordering).
+
+Cluster B gate: **809 pass / 0 fail / 23 skip / 0+0 PSSA / lib 47.3% / scripts 0%.** Coverage gate target (45%) exceeded.
+

@@ -76,11 +76,9 @@ BeforeDiscovery {
         '5 registry tweaks/individual/explorer-affinity-core1.ps1'
         '5 registry tweaks/individual/restore-explorer-affinity.ps1'
 
-        # Driver installers — uninstall is DDU territory + manual driver
-        # mgmt. Fix: add uninstall-<vendor>.ps1 wrappers around pnputil.
-        '6 gpu/intel/install-intel.ps1'
-        '6 gpu/amd/install-amd.ps1'
-        '6 gpu/nvidia/install-nvidia.ps1'
+        # Driver installer/uninstaller pairs landed (this commit):
+        #   lib/gpu-uninstall.ps1 helper + 3 vendor wrappers.
+        # Tests/lib/gpu-uninstall.Tests.ps1 covers the helper contract.
     )
 
     $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)

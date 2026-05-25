@@ -59,24 +59,14 @@ BeforeDiscovery {
     # Each entry is a genuine "missing apply/revert sibling" violation
     # of CLAUDE.md's pair-script invariant; fixes are tracked in
     # KNOWN-ISSUES.md under "Pair-script gaps".
-    $script:PairGaps = @(
-        # Pair exists as different stem: 4 services/revert-all.ps1.
-        # Fix: rename disable-services → apply-services + add explicit
-        # revert-services.ps1, OR document revert-all as the pair.
-        '4 services/disable-services.ps1'
-
-        # Pair is REVERT-EVERYTHING's power-plan reset only.
-        # Fix: add 2 power plan/revert-power.ps1.
-        '2 power plan/configure-power.ps1'
-
-        # explorer-affinity rename landed (worktree commit 127fda2):
-        #   explorer-affinity-core1.ps1 → disable-explorer-affinity.ps1
-        #   restore-explorer-affinity.ps1 → enable-explorer-affinity.ps1
-        # Both pass naturally via the verb-prefix map.
-        #
-        # GPU install/uninstall pairs landed (commit 127fda2):
-        #   lib/gpu-uninstall.ps1 helper + 3 vendor wrappers.
-    )
+    # All 7 original pair-script gaps closed:
+    #   - 3x GPU install/uninstall pairs   (commit 127fda2 — lib helper)
+    #   - 2x explorer-affinity rename pair (worktree rename, commit 127fda2)
+    #   - 4 services/disable-services      (revert-all.ps1 → enable-services.ps1)
+    #   - 2 power plan/configure-power     (added revert-power.ps1)
+    # Keep the (empty) array so the structure stays in place for any
+    # gap a future contributor surfaces with a new mismatched-prefix script.
+    $script:PairGaps = @()
 
     $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
     $all = Test-ToolkitInvariants -RepoRoot $repoRoot

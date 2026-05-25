@@ -35,6 +35,12 @@
 # Replaces: enable-ultimate-performance.bat, configure-power-plan.ps1
 # Pair: revert-power.ps1
 # Must be run as Administrator.
+#
+# Reboot required: NO — powercfg / setactive applies live; the
+# registry overrides (HiberbootEnabled / PowerThrottlingOff) take
+# effect on next sign-in but no reboot needed.
+# Disk impact: NONE — powercfg + per-plan index values + small
+# registry writes; no on-disk file creation.
 # ============================================================
 
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"

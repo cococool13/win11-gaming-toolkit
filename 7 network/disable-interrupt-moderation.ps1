@@ -29,6 +29,9 @@
 
     Anti-cheat impact: NONE. Below the IP stack; no game-process
     privilege change.
+    Reboot required: NO — Set-NetAdapterAdvancedProperty applies live.
+    Disk impact: LOW — small sidecar JSON (~1 KB) per adapter for
+        per-property baseline capture; no installer / file extraction.
 
 .PARAMETER WhatIf
     Standard ShouldProcess.

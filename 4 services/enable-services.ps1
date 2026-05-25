@@ -17,6 +17,8 @@
 # Must be run as Administrator.
 #
 # Anti-cheat impact: NONE — restorer for user-mode services;
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry / cmdlet only; no installer / file extraction.
 # pair-symmetric with disable-services.ps1. Services restored are
 # all user-mode telemetry/UX, no game-process surface.
 # ============================================================

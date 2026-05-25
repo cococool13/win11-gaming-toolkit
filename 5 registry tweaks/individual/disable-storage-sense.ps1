@@ -16,6 +16,8 @@
 .NOTES
     Tier: Safe — disabling auto-cleanup does not compromise the OS.
     Anti-cheat impact: NONE (UWP/settings feature; no kernel hooks).
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry-only write; no on-disk file creation.
     Microsoft Learn: https://learn.microsoft.com/en-us/windows/configuration/storage-sense
     Upstream: FR33THYFR33THY/Ultimate — 7 Performance/Storage Sense
 #>

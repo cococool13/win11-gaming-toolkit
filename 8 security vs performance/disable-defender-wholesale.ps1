@@ -39,6 +39,8 @@
 # can tamper with anti-cheat state, but that's a system-security
 # concern, not a vendor-policy concern. BattlEye / EAC / Vanguard do
 # not refuse to launch based on Defender state alone.
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry / cmdlet only; no installer / file extraction.
 # ============================================================
 
 param([switch]$Force)

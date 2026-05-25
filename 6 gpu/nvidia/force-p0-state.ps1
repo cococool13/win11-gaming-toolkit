@@ -22,6 +22,8 @@
 # NVIDIA driver registry hints at the adapter's Display Class GUID
 # subkey; equivalent to NVCP's "Prefer maximum performance" setting.
 # Not inspected by BattlEye / EAC / Vanguard.
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry / cmdlet only; no installer / file extraction.
 # ============================================================
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"

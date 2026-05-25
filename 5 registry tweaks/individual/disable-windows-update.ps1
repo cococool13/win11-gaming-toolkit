@@ -19,6 +19,8 @@
 # enable manually each month, install updates, then disable again.
 # Affected titles will fall behind their server-side anti-cheat
 # minimum-version policy and may refuse to launch until updated.
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry-only write; no on-disk file creation.
 #
 # Must be run as Administrator.
 # To revert: run enable-windows-update.ps1

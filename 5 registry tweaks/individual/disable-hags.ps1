@@ -19,6 +19,8 @@
     immediate and the user doesn't need to know about manifest state.
 
     Anti-cheat impact: NONE.
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry-only write; no on-disk file creation.
 
 .NOTES
     Tier: Safe (returns OS to scheduler-managed GPU work)

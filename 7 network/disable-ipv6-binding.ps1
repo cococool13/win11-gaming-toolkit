@@ -21,6 +21,10 @@
 # game-process layer; BattlEye / EAC don't inspect adapter binding
 # composition. (The Security Trade-off above is connectivity-related,
 # not anti-cheat-related.)
+# Reboot required: PARTIAL — per-adapter Disable-NetAdapterBinding
+# applies live, but DisabledComponents=0xFF takes effect on next
+# adapter reset / reboot.
+# Disk impact: LOW — small sidecar JSON for per-adapter binding state.
 # ============================================================
 
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"

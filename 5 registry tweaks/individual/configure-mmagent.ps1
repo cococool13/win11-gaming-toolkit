@@ -25,6 +25,8 @@
         BattlEye / EAC / Vanguard care about hooked APIs and DKOM,
         not about whether MemoryCompression is on. Researched: no
         regression reports through 2025 across vendor changelogs.
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry-only write; no on-disk file creation.
     Source: FR33THYFR33THY/Ultimate — 8 Advanced/6 MMAgent Features.ps1
             + 3 Setup/2 Memory Compression.ps1
 #>

@@ -19,6 +19,8 @@
     Replaces: cleanup-temp.bat
     Anti-cheat impact: NONE — file deletion under user-writable temp
         and shader-cache directories; no kernel or driver state.
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry / cmdlet only; no installer / file extraction.
     Must be run as Administrator.
 #>
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]

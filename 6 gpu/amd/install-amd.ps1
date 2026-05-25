@@ -9,6 +9,8 @@
 # package. Anti-cheat layers inspect game processes, not driver
 # install events; the resulting driver state is identical to a
 # manual install from amd.com.
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry / cmdlet only; no installer / file extraction.
 # ============================================================
 
 param(

@@ -7,6 +7,8 @@
 # uses its driver-default behavior).
 #
 # Anti-cheat impact: NONE — DWM diagnostic flag, no kernel hooks.
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry-only write; no on-disk file creation.
 # ============================================================
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"

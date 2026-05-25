@@ -11,6 +11,8 @@
 # Anti-cheat impact: NONE — restorer for Defender state; returns to
 # OS default. Re-enabling Defender carries no anti-cheat vendor
 # policy risk (vendors don't refuse to launch based on Defender on).
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry / cmdlet only; no installer / file extraction.
 #
 # Must be run as Administrator.
 # ============================================================

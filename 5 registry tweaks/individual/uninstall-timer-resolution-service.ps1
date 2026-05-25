@@ -21,6 +21,8 @@
         install side has MEDIUM risk on Vanguard / FACEIT; removing
         the service eliminates that risk. Reboot after uninstall to
         clear any residual timer-resolution state.
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry-only write; no on-disk file creation.
     Must be run as Administrator.
 #>
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]

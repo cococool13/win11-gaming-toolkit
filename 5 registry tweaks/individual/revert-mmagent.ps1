@@ -1,12 +1,21 @@
-# ============================================================
-# Revert MMAgent — companion to configure-mmagent.ps1
-# Windows 11 Gaming Optimization Guide
-# ============================================================
-# Reads the mmagent-before.json sidecar (captured by
-# configure-mmagent.ps1) and re-enables exactly the features
-# that were on at apply time. If the sidecar is missing,
-# falls back to Windows defaults (everything enabled).
-# ============================================================
+<#
+.SYNOPSIS
+    Revert MMAgent (Memory Manager Agent) to the pre-toolkit state
+    captured by configure-mmagent.ps1.
+
+.DESCRIPTION
+    Reads the mmagent-before.json sidecar and re-enables exactly the
+    features that were on at apply time. Falls back to Windows defaults
+    (all features enabled) when the sidecar is missing. Each
+    Enable/Disable-MMAgent call is gated by $PSCmdlet.ShouldProcess
+    so -WhatIf previews the operation without modifying MMAgent.
+
+.NOTES
+    Tier: Safe (restores prior state)
+    Pair: configure-mmagent.ps1
+#>
+[CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]
+param()
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"
 . "$PSScriptRoot\..\..\lib\ui-helpers.ps1"
@@ -43,30 +52,27 @@ if (Test-Path $beforePath) {
     }
 }
 
-function Apply-MMAgentFeature {
-    param([string]$Name, [bool]$Enable)
-    if ($Enable) {
-        Enable-MMAgent -$Name -ErrorAction SilentlyContinue
-    } else {
-        Disable-MMAgent -$Name -ErrorAction SilentlyContinue
+# Per-feature loop. ShouldProcess gate hoisted OUT of the UI-Step
+# action block (same reason as configure-mmagent.ps1 — $PSCmdlet
+# closure capture inside `& $Action` is fragile).
+$mmFeatures = @('PageCombining', 'OperationAPI', 'ApplicationPreLaunch', 'MemoryCompression')
+foreach ($name in $mmFeatures) {
+    $shouldEnable = [bool]$before.$name
+    $verb = if ($shouldEnable) { 'Enable' } else { 'Disable' }
+    if (-not $PSCmdlet.ShouldProcess("MMAgent.$name", "$verb-MMAgent")) {
+        UI-Skip -Label "$name = $shouldEnable" -Reason "-WhatIf preview"
+        continue
     }
-}
-
-UI-Step -Label "PageCombining = $($before.PageCombining)" -Action {
-    if ($before.PageCombining) { Enable-MMAgent -PageCombining -ErrorAction Stop }
-    else { Disable-MMAgent -PageCombining -ErrorAction Stop }
-}
-UI-Step -Label "OperationAPI = $($before.OperationAPI)" -Action {
-    if ($before.OperationAPI) { Enable-MMAgent -OperationAPI -ErrorAction Stop }
-    else { Disable-MMAgent -OperationAPI -ErrorAction Stop }
-}
-UI-Step -Label "ApplicationPreLaunch = $($before.ApplicationPreLaunch)" -Action {
-    if ($before.ApplicationPreLaunch) { Enable-MMAgent -ApplicationPreLaunch -ErrorAction Stop }
-    else { Disable-MMAgent -ApplicationPreLaunch -ErrorAction Stop }
-}
-UI-Step -Label "MemoryCompression = $($before.MemoryCompression)" -Action {
-    if ($before.MemoryCompression) { Enable-MMAgent -MemoryCompression -ErrorAction Stop }
-    else { Disable-MMAgent -MemoryCompression -ErrorAction Stop }
+    UI-Step -Label "$name = $shouldEnable" -Action {
+        # Splatting because PowerShell can't bind dynamic switch by name
+        # via -$name (parser interprets the dash as subtraction).
+        $cmdletArgs = @{ ErrorAction = 'Stop'; $name = $true }
+        if ($shouldEnable) {
+            Enable-MMAgent @cmdletArgs
+        } else {
+            Disable-MMAgent @cmdletArgs
+        }
+    }.GetNewClosure()
 }
 
 # Once restored, drop the sidecar so a future apply re-captures fresh state.

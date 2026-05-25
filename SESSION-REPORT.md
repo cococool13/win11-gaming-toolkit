@@ -699,3 +699,25 @@ Empty `$LogWiringGaps = @()` per `29fdb98`. Every mutator places the script-star
 
 Loop closed clean — gate green, two new invariants live, three Phase C features shipped, lib coverage almost tripled, and the discipline produced two real bugfixes (cross-platform load + never-matching regex) that the test-writing process surfaced organically.
 
+---
+
+## 2026-05-24 session 6 — overnight autonomous run
+
+Target: best-in-class production-ready toolkit by morning. 6 clusters of work, rolling-merge cadence (no end-of-run mega-merge), 80-160 commits across multiple merges.
+
+### Cluster A — Cleanup (3 commits, merged)
+
+**`db51ff5` raise lib coverage floor 11.0 → 25.0.** Aligns the gate default with the proposal accepted at end of session 5. 3.3pp safety margin under today's 28.3%.
+
+**`8381aed` anti-cheat-header drain 32 → 0.** Backfilled all remaining mutator headers with researched verdicts. Verdict distribution:
+  - 24 NONE (no anti-cheat surface; pair restorers; OS-default restore directions)
+  - 4 INDIRECT or LOW-system-security (disable-windows-update misses AC vendor updates; disable-defender weakens malware shield without AC vendor refusing to launch)
+  - 1 MEDIUM (install-timer-resolution-service flagged by Vanguard + FACEIT heuristics; EAC/BattlEye permit)
+  - 1 HIGH (configure-vbs -Disable breaks R6 Siege + Valorant on Win11 24H2+; researched + cited)
+  - 2 COMPOSITE (APPLY-/REVERT-EVERYTHING — depends on flags)
+Researched against BattlEye changelogs, EAC docs, Vanguard public guidance, Ubisoft Connect support threads through 2025.
+
+**Priority 1 (`install-runtimes` `continue`-outside-loop) verified already fixed** by prior spawned task; lines 266-279 show the correct if/elseif/else restructure. Priority 3 (cross-platform dot-source audit) verified clean — all 7 lib/*.ps1 dot-source without error on dev macOS.
+
+Cluster A gate: **744 pass / 0 fail / 23 skip / 0+0 PSSA / lib 28.3% / scripts 0%.** Anti-cheat invariant: 28/60 → **60/60 (100%)**.
+

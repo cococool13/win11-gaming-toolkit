@@ -1,0 +1,189 @@
+#Requires -Version 5.1
+#Requires -Modules @{ ModuleName='Pester'; ModuleVersion='5.0' }
+<#
+.SYNOPSIS
+    Repo-wide invariant: every mutating .ps1 ships with a paired
+    sibling that reverses (or matches) its action.
+
+.DESCRIPTION
+    CLAUDE.md invariant: "every new opt-in tweak ships with a
+    colocated enable-* (or revert-*) sibling script. Manifest-only
+    revert is not a substitute for a paired script — both are required."
+
+    For each mutator, derive the expected inverse-prefix stem and
+    confirm a sibling file (.ps1 OR .bat) exists in the SAME directory.
+
+    Pair prefix map (symmetric — checking either side finds the other):
+      disable   <-> enable
+      install   <-> uninstall
+      configure <-> revert  (also restore)
+      apply     <-> revert
+      force     <-> revert  (also disable)
+      pause     <-> resume
+      tune      <-> restore
+      optimize  <-> revert
+
+    Acceptable: sibling stem matches inverse-prefix on either .ps1
+    or .bat (8 security vs performance/configure-vbs.ps1 legitimately
+    pairs with enable-vbs.bat / disable-vbs.bat — the bcdedit toggle
+    is cleaner as a .bat).
+
+    Known exclusions ($KnownUnpairable) — append-only with justification:
+      - APPLY-EVERYTHING.ps1 / REVERT-EVERYTHING.ps1 mutually pair (handled
+        by the inverse-stem check — listed for documentation only).
+      - DduManual.ps1: standalone DDU stager; revert is "reinstall driver".
+      - 0 prerequisites/install-runtimes.ps1: runtimes are install-only;
+        uninstall isn't a goal of the toolkit.
+      - 9 cleanup/cleanup-temp.ps1: destructive temp cleanup; no revert is
+        possible by definition.
+
+.NOTES
+    # CROSS-PLATFORM-NOTE
+    # Pure file-existence checks; runs anywhere the repo is checked out.
+#>
+
+BeforeDiscovery {
+    . (Join-Path $PSScriptRoot '..' '_common.ps1')
+    . (Join-Path $PSScriptRoot '..' '..' 'profile/parts/toolkit-aware.ps1')
+
+    # Acknowledged unpairables — destructive-only or install-only scripts
+    # where a revert script would be meaningless. Keep tight and justified.
+    $script:KnownUnpairable = @(
+        'DduManual.ps1'
+        '0 prerequisites/install-runtimes.ps1'
+        '9 cleanup/cleanup-temp.ps1'
+    )
+
+    # Pair-stem gaps: scripts whose inverse-prefix sibling is missing.
+    # Shrink per-commit by adding the missing pair, NOT by silencing here.
+    # Each entry is a genuine "missing apply/revert sibling" violation
+    # of CLAUDE.md's pair-script invariant; fixes are tracked in
+    # KNOWN-ISSUES.md under "Pair-script gaps".
+    $script:PairGaps = @(
+        # Pair exists as different stem: 4 services/revert-all.ps1.
+        # Fix: rename disable-services → apply-services + add explicit
+        # revert-services.ps1, OR document revert-all as the pair.
+        '4 services/disable-services.ps1'
+
+        # Pair is REVERT-EVERYTHING's power-plan reset only.
+        # Fix: add 2 power plan/revert-power.ps1.
+        '2 power plan/configure-power.ps1'
+
+        # Stem lacks verb prefix; naturally pairs with
+        # restore-explorer-affinity.ps1 but parser can't see the link.
+        # Fix: rename explorer-affinity-core1 → disable-explorer-affinity
+        # AND restore-explorer-affinity → enable-explorer-affinity.
+        '5 registry tweaks/individual/explorer-affinity-core1.ps1'
+        '5 registry tweaks/individual/restore-explorer-affinity.ps1'
+
+        # Driver installers — uninstall is DDU territory + manual driver
+        # mgmt. Fix: add uninstall-<vendor>.ps1 wrappers around pnputil.
+        '6 gpu/intel/install-intel.ps1'
+        '6 gpu/amd/install-amd.ps1'
+        '6 gpu/nvidia/install-nvidia.ps1'
+    )
+
+    $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+    $all = Test-ToolkitInvariants -RepoRoot $repoRoot
+    $script:PairCases = @()
+    foreach ($row in $all) {
+        if (-not $row.IsMutator) { continue }
+        if ($script:KnownUnpairable -contains $row.Path) { continue }
+        $script:PairCases += @{
+            Path = $row.Path
+            FullPath = (Join-Path $repoRoot $row.Path)
+            PairGap = ($script:PairGaps -contains $row.Path)
+        }
+    }
+}
+
+Describe 'Invariant: every mutator has a paired sibling (apply/revert)' {
+
+    It '<Path> has a paired sibling in the same directory' -ForEach $script:PairCases {
+        if ($PairGap) {
+            Set-ItResult -Skipped -Because 'tracked in $PairGaps; shrink per-commit'
+            return
+        }
+
+        # Inline the prefix map: $script: vars set in BeforeDiscovery don't
+        # survive into It-body runtime scope. Symmetric — for each verb
+        # prefix, list every prefix that's a valid pair on the other side.
+        $pairPrefixMap = @{
+            'disable' = @('enable')
+            'enable' = @('disable')
+            'install' = @('uninstall')
+            'uninstall' = @('install')
+            # configure-* can be Apply/Revert via -Enable/-Disable
+            # switch param (configure-vbs.ps1 pattern with enable-vbs.bat
+            # / disable-vbs.bat wrappers), so include all 4 inverse verbs.
+            'configure' = @('revert', 'restore', 'disable', 'enable')
+            'revert' = @('configure', 'apply', 'force', 'optimize', 'install', 'tune')
+            'restore' = @('configure', 'tune', 'apply', 'disable')
+            'apply' = @('revert', 'restore')
+            'force' = @('revert', 'disable')
+            'pause' = @('resume')
+            'resume' = @('pause')
+            'tune' = @('restore', 'revert')
+            'optimize' = @('revert')
+        }
+
+        $dir = Split-Path -Parent $FullPath
+        $stem = [System.IO.Path]::GetFileNameWithoutExtension($FullPath)
+
+        # Normalize APPLY-EVERYTHING / REVERT-EVERYTHING (uppercase).
+        # Also handles mobsync-disable (suffix-style verb) by checking both.
+        $verbMatched = $false
+        $foundPair = $false
+        $tried = @()
+
+        foreach ($prefix in $pairPrefixMap.Keys) {
+            # Match prefix-style: 'disable-foo' / 'DISABLE-foo'.
+            if ($stem -match "^(?i)$prefix-(.+)$") {
+                $verbMatched = $true
+                $tail = $matches[1]
+                foreach ($inverse in $pairPrefixMap[$prefix]) {
+                    foreach ($ext in @('.ps1', '.bat')) {
+                        $candidate = Join-Path $dir "$inverse-$tail$ext"
+                        $tried += $candidate
+                        if (Test-Path -LiteralPath $candidate) {
+                            $foundPair = $true
+                            break
+                        }
+                    }
+                    if ($foundPair) { break }
+                }
+            }
+            # Match suffix-style: 'foo-disable' / 'foo-enable' (mobsync).
+            if (-not $foundPair -and $stem -match "^(.+)-(?i)$prefix$") {
+                $verbMatched = $true
+                $head = $matches[1]
+                foreach ($inverse in $pairPrefixMap[$prefix]) {
+                    foreach ($ext in @('.ps1', '.bat')) {
+                        $candidate = Join-Path $dir "$head-$inverse$ext"
+                        $tried += $candidate
+                        if (Test-Path -LiteralPath $candidate) {
+                            $foundPair = $true
+                            break
+                        }
+                    }
+                    if ($foundPair) { break }
+                }
+            }
+            if ($foundPair) { break }
+        }
+
+        # Verb didn't match any known prefix — e.g. 'explorer-affinity-core1'
+        # uses a noun stem with no verb. Treat as a separate failure mode
+        # so the gap-list message points the developer at the right fix:
+        # rename to a verb-prefixed form, OR add to $KnownUnpairable with
+        # justification.
+        if (-not $verbMatched) {
+            $false | Should -BeTrue `
+                -Because "stem '$stem' doesn't match any known verb prefix (disable/enable/configure/etc.); rename or add to `$KnownUnpairable"
+            return
+        }
+
+        $foundPair | Should -BeTrue `
+            -Because "expected an inverse-prefix sibling (.ps1 or .bat) in '$dir' — none of these existed: $($tried -join ', ')"
+    }
+}

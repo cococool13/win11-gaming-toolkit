@@ -258,25 +258,24 @@ if (-not $dxInstalled) {
     try {
         Invoke-WebRequest -Uri "https://download.microsoft.com/download/8/4/A/84A35BF1-DAFE-4AE8-82AF-AD2AE20B6B14/directx_Jun2010_redist.exe" -OutFile $dxFile -UseBasicParsing -ErrorAction Stop
 
-        # Verify Authenticode signature before running
+        # Verify Authenticode signature before running. Gate the install
+        # branches via if/elseif/else — this block is inside an
+        # `if (-not $dxInstalled)`, NOT a loop, so `continue` would
+        # produce "The Continue statement was not within a loop."
         $dxSig = Get-AuthenticodeSignature $dxFile
-        if ($dxSig.Status -ne 'Valid') {
+        if ($dxSig.Status -eq 'Valid') {
+            if ($PSCmdlet.ShouldProcess("DirectX June 2010 Legacy Runtime", "Extract + DXSETUP.exe /silent")) {
+                Start-Process -Wait $dxFile -ArgumentList "/Q /T:`"$dxDir`"" -ErrorAction Stop
+                Start-Process -Wait "$dxDir\DXSETUP.exe" -ArgumentList "/silent" -WindowStyle Hidden -ErrorAction Stop
+                Write-Host " Done" -ForegroundColor Green
+                $installSuccess++
+            } else {
+                Write-Host " Skipped (-WhatIf)" -ForegroundColor Gray
+            }
+        } else {
             Write-Host " Signature invalid, skipping" -ForegroundColor Yellow
             Remove-Item $dxFile -Force -ErrorAction SilentlyContinue
             $installFailed++
-            continue
-        }
-
-        # Gate via if/else (not `continue`) — this block is inside an
-        # `if (-not $dxInstalled)`, NOT a loop, so `continue` would
-        # produce "The Continue statement was not within a loop."
-        if ($PSCmdlet.ShouldProcess("DirectX June 2010 Legacy Runtime", "Extract + DXSETUP.exe /silent")) {
-            Start-Process -Wait $dxFile -ArgumentList "/Q /T:`"$dxDir`"" -ErrorAction Stop
-            Start-Process -Wait "$dxDir\DXSETUP.exe" -ArgumentList "/silent" -WindowStyle Hidden -ErrorAction Stop
-            Write-Host " Done" -ForegroundColor Green
-            $installSuccess++
-        } else {
-            Write-Host " Skipped (-WhatIf)" -ForegroundColor Gray
         }
     } catch {
         Write-Host " Failed" -ForegroundColor Yellow

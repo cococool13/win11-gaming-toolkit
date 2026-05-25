@@ -75,10 +75,13 @@ BeforeDiscovery {
         'enable-spectre-meltdown.ps1'
         'enable-windows-update.ps1'
         'enable-write-cache-flush.ps1'
-        'explorer-affinity-core1.ps1'
+        # Renamed in worktree commit 127fda2:
+        #   explorer-affinity-core1.ps1 → disable-explorer-affinity.ps1
+        #   restore-explorer-affinity.ps1 → enable-explorer-affinity.ps1
+        # Both renamed scripts now match the verb-prefix rule and pass
+        # the help check naturally; not listed here as gaps.
         'install-timer-resolution-service.ps1'
         'pause-windows-update.ps1'
-        'restore-explorer-affinity.ps1'
         'resume-windows-update.ps1'
         'revert-mmagent.ps1'
         'uninstall-timer-resolution-service.ps1'
@@ -114,7 +117,7 @@ BeforeDiscovery {
         @{ Apply = 'disable-spectre-meltdown.ps1'; Restore = 'enable-spectre-meltdown.ps1' }
         @{ Apply = 'disable-windows-update.ps1'; Restore = 'enable-windows-update.ps1' }
         @{ Apply = 'disable-write-cache-flush.ps1'; Restore = 'enable-write-cache-flush.ps1' }
-        @{ Apply = 'explorer-affinity-core1.ps1'; Restore = 'restore-explorer-affinity.ps1' }
+        @{ Apply = 'disable-explorer-affinity.ps1'; Restore = 'enable-explorer-affinity.ps1' }
         @{ Apply = 'pause-windows-update.ps1'; Restore = 'resume-windows-update.ps1' }
         @{ Apply = 'install-timer-resolution-service.ps1'; Restore = 'uninstall-timer-resolution-service.ps1' }
         @{ Apply = 'configure-mmagent.ps1'; Restore = 'revert-mmagent.ps1' }

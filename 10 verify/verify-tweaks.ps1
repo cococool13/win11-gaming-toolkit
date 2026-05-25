@@ -141,6 +141,11 @@ Check "Edge background mode disabled" {
     (Get-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft\Edge" -Name "BackgroundModeEnabled" -ErrorAction SilentlyContinue).BackgroundModeEnabled -eq 0
 } "reg:EdgeBackgroundModeEnabled"
 
+Check "Storage Sense disabled" {
+    # Per-user toggle; value name is the literal string "01" (DWORD).
+    (Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy" -Name "01" -ErrorAction SilentlyContinue)."01" -eq 0
+} "reg:StorageSenseMaster"
+
 # ============================================================
 # SERVICES
 # ============================================================

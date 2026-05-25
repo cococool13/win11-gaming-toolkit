@@ -43,10 +43,6 @@ UI-Confirm -Message "DATA LOSS WARNING — this is the riskiest tweak in the too
 Initialize-ToolkitState | Out-Null
 UI-ResetCounters
 
-$stateRoot = Join-Path $env:ProgramData "Win11GamingToolkit\state"
-if (-not (Test-Path $stateRoot)) { New-Item -ItemType Directory -Path $stateRoot -Force | Out-Null }
-$beforePath = Join-Path $stateRoot "writecache-before.json"
-
 # Each fixed disk's "Disk\UserWriteCacheSetting" lives under its enum entry.
 # We capture and write per-disk so the matching enable script can flip
 # things back exactly.
@@ -59,21 +55,23 @@ if ($disks.Count -eq 0) {
     exit 0
 }
 
-if (-not (Test-Path $beforePath)) {
-    $snapshot = foreach ($d in $disks) {
-        # Map PnP device ID to the registry path under \Enum\
-        $pnpId = $d.PNPDeviceID
-        $regPath = "HKLM:\SYSTEM\CurrentControlSet\Enum\$pnpId\Device Parameters\Disk"
-        $current = (Get-ItemProperty -Path $regPath -Name "UserWriteCacheSetting" -ErrorAction SilentlyContinue).UserWriteCacheSetting
-        [PSCustomObject]@{
-            Index = $d.Index
-            Model = $d.Model
-            PnpId = $pnpId
-            UserWriteCacheSetting = $current
-        }
+# Build the snapshot then hand to Save-ToolkitSidecar (lib helper).
+# Default capture-once preserves a prior true pre-toolkit baseline.
+$snapshot = foreach ($d in $disks) {
+    # Map PnP device ID to the registry path under \Enum\
+    $pnpId = $d.PNPDeviceID
+    $regPath = "HKLM:\SYSTEM\CurrentControlSet\Enum\$pnpId\Device Parameters\Disk"
+    $current = (Get-ItemProperty -Path $regPath -Name "UserWriteCacheSetting" -ErrorAction SilentlyContinue).UserWriteCacheSetting
+    [PSCustomObject]@{
+        Index = $d.Index
+        Model = $d.Model
+        PnpId = $pnpId
+        UserWriteCacheSetting = $current
     }
-    $snapshot | ConvertTo-Json | Set-Content -Path $beforePath -Force
-    UI-Note -Message "Captured $($disks.Count) disk baseline at $beforePath"
+}
+$saved = Save-ToolkitSidecar -Name 'writecache' -InputObject $snapshot
+if ($saved) {
+    UI-Note -Message "Captured $($disks.Count) disk baseline at $saved"
 }
 
 UI-Section -Title "Per-disk apply"

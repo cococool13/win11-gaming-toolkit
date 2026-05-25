@@ -1,12 +1,22 @@
-# ============================================================
-# Re-enable Data Execution Prevention (DEP) — revert path
-# Windows 11 Gaming Optimization Guide
-# ============================================================
-# Reads the dep-before.json sidecar (captured by disable-dep.ps1)
-# and restores the user's prior `nx` policy. Falls back to
-# nx=OptIn (the Windows default for client editions) if the
-# sidecar is missing.
-# ============================================================
+<#
+.SYNOPSIS
+    Re-enable Data Execution Prevention (DEP) by restoring the prior
+    BCD nx policy captured by disable-dep.ps1.
+
+.DESCRIPTION
+    Reads the dep-before.json sidecar (captured by disable-dep.ps1)
+    and restores the user's prior `nx` policy. Falls back to nx=OptIn
+    (the Windows default for client editions) if the sidecar is
+    missing. The bcdedit /set call is gated by $PSCmdlet.ShouldProcess
+    so -WhatIf previews the operation without modifying boot config.
+
+.NOTES
+    Tier: Safe (restores security default)
+    Pair: disable-dep.ps1
+    Reboot required for nx to take effect.
+#>
+[CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
+param()
 
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"
 . "$PSScriptRoot\..\lib\ui-helpers.ps1"
@@ -33,6 +43,9 @@ if (Test-Path $beforePath) {
 }
 
 UI-Step -Label "Setting nx=$nxValue" -Action {
+    if (-not $PSCmdlet.ShouldProcess("BCD {current} nx", "bcdedit /set nx $nxValue")) {
+        return
+    }
     $output = bcdedit /set "{current}" nx $nxValue 2>&1
     if ($LASTEXITCODE -ne 0) {
         throw "bcdedit failed: $output"

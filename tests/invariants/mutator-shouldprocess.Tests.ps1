@@ -79,9 +79,9 @@ BeforeDiscovery {
         '5 registry tweaks/individual/revert-mmagent.ps1'
         # uninstall-timer-resolution-service.ps1 fixed (ac3e5a4)
         '7 network/enable-adapter-power-savings.ps1'
-        '8 security vs performance/enable-dep.ps1'
-        '8 security vs performance/enable-smt-ht.ps1'
-        # cleanup-temp.ps1 fixed (this commit)
+        # enable-dep.ps1 fixed (this commit)
+        # enable-smt-ht.ps1 fixed (this commit)
+        # cleanup-temp.ps1 fixed (d137e85)
     )
 
     $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)

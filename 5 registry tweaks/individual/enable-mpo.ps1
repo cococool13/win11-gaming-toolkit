@@ -5,6 +5,8 @@
 # Restores prior MPO state from the manifest if it was captured.
 # Falls back to removing the OverlayTestMode value (Windows then
 # uses its driver-default behavior).
+#
+# Anti-cheat impact: NONE — DWM diagnostic flag, no kernel hooks.
 # ============================================================
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"

@@ -11,6 +11,8 @@
     Author:   Win11 Gaming Toolkit
     Version:  1.0
     Tier:     Safe (restores prior state)
+    Anti-cheat impact: NONE. Below the IP stack; no game-process
+        scheduling change.
 
     # CROSS-PLATFORM-NOTE
     # Windows-only (Set-NetAdapterAdvancedProperty).

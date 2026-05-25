@@ -6,6 +6,9 @@
 # disable-ntfs-last-access.ps1. If no manifest entry exists, falls
 # back to enabling Last Access updates with the Microsoft-documented
 # fsutil value 0.
+#
+# Anti-cheat impact: NONE — NTFS fsutil filesystem-behavior flag;
+# anti-cheats don't inspect timestamp-update policy.
 # ============================================================
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"

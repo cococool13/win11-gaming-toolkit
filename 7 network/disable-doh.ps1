@@ -23,6 +23,8 @@
     Author:   Win11 Gaming Toolkit
     Version:  1.0
     Tier:     Safe (restores default; encrypted DNS becomes plain UDP)
+    Anti-cheat impact: NONE. Below the game layer; DNS resolution is
+        opaque to BattlEye / EAC / similar.
 
     # CROSS-PLATFORM-NOTE
     # Windows-only (Remove-DnsClientDohServerAddress).

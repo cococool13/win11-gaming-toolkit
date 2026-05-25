@@ -16,6 +16,8 @@
     Author:   Win11 Gaming Toolkit
     Version:  1.0
     Tier:     Safe (restores prior state)
+    Anti-cheat impact: NONE. RSS is below the game layer; CPUs assigned
+        to receive queues are invisible to BattlEye / EAC.
 
     # CROSS-PLATFORM-NOTE
     # Windows-only (Set-NetAdapterRss).

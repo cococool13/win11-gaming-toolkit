@@ -22,6 +22,9 @@
 #
 # Pair: resume-windows-update.ps1
 # Must be run as Administrator.
+#
+# Anti-cheat impact: NONE — WindowsUpdate flight-settings registry
+# values; no kernel hooks, no scheduler change.
 # ============================================================
 
 param(

@@ -25,6 +25,9 @@
 #   available) and the per-device registry equivalent.
 #
 # State is captured per-disk to a sidecar JSON before apply.
+#
+# Anti-cheat impact: NONE — per-disk Enum\<id>\Device Parameters
+# registry value; no kernel hooks, no driver state.
 # ============================================================
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"

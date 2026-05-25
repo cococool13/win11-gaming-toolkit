@@ -17,6 +17,8 @@
     Tier: Safe (destructive but reversible only by re-downloading
     what was deleted — e.g. shader caches rebuild on next game launch).
     Replaces: cleanup-temp.bat
+    Anti-cheat impact: NONE — file deletion under user-writable temp
+        and shader-cache directories; no kernel or driver state.
     Must be run as Administrator.
 #>
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]

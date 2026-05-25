@@ -40,6 +40,19 @@ BeforeAll {
 
     # Source the lib so behavioral tests can call Test-FileSha256.
     . $script:Target
+
+    # Get-AuthenticodeSignature is Windows-only (Microsoft.PowerShell.
+    # Security module). On dev macOS / Linux it doesn't exist, and
+    # Pester's Mock can only intercept existing commands. Define via
+    # Set-Item Function: rather than `function …` syntax so PSSA's
+    # PSAvoidOverwritingBuiltInCmdlets rule (which only triggers on
+    # the declarative form) doesn't flag the necessary stub.
+    if (-not (Get-Command Get-AuthenticodeSignature -ErrorAction SilentlyContinue)) {
+        Set-Item Function:Get-AuthenticodeSignature {
+            param([string]$FilePath)
+            throw 'Get-AuthenticodeSignature stub: every behavioral test must Mock this'
+        }
+    }
 }
 
 Describe 'lib/download-helpers.ps1 — surface + behavior contract' {
@@ -112,6 +125,115 @@ Describe 'lib/download-helpers.ps1 — surface + behavior contract' {
         It 're-runs without error when the directory already exists' {
             { Ensure-Directory -Path $script:TempDir } | Should -Not -Throw
             { Ensure-Directory -Path $script:TempDir } | Should -Not -Throw
+        }
+    }
+
+    Context 'Write-Info (informational output wrapper)' {
+        It 'emits its message without throwing on a typical call' {
+            { Write-Info 'hello' 6>$null } | Should -Not -Throw
+        }
+        It 'tolerates empty + special-character strings' {
+            { Write-Info '' 6>$null } | Should -Not -Throw
+            { Write-Info "with `t tabs and `n newlines" 6>$null } | Should -Not -Throw
+        }
+    }
+
+    Context 'Ensure-Internet — .NET Ping based reachability' {
+        It 'returns silently when 8.8.8.8 ping succeeds (dev macOS expected reachable)' {
+            # On any dev box with working DNS / public-net access, this
+            # is the ground-truth path. Skip on isolated CI runners.
+            if ($env:CI -eq 'true') {
+                Set-ItResult -Skipped -Because 'CI runners may have egress restrictions'
+                return
+            }
+            { Ensure-Internet } | Should -Not -Throw
+        }
+    }
+
+    Context 'Get-FileFromWeb — Invoke-WebRequest wrapper with size guard' {
+        BeforeEach {
+            $script:DownloadTempDir = Join-Path ([System.IO.Path]::GetTempPath()) ("dlh-getfile-" + [guid]::NewGuid())
+            New-Item -ItemType Directory -Path $script:DownloadTempDir -Force | Out-Null
+        }
+        AfterEach {
+            Remove-Item -LiteralPath $script:DownloadTempDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+
+        It 'succeeds when the mocked download writes a sufficiently-large file' {
+            $target = Join-Path $script:DownloadTempDir 'big.bin'
+            Mock Invoke-WebRequest {
+                param($Uri, $OutFile, $UseBasicParsing)
+                # Write 2KB of payload to satisfy the >1000-byte guard.
+                'x' * 2000 | Set-Content -LiteralPath $OutFile -NoNewline
+            }
+            { Get-FileFromWeb -Url 'https://example.com/big.bin' -File $target 6>$null } |
+                Should -Not -Throw
+            Test-Path $target | Should -BeTrue
+        }
+
+        It 'throws when the downloaded file is missing entirely' {
+            $target = Join-Path $script:DownloadTempDir 'missing.bin'
+            Mock Invoke-WebRequest { }
+            # No file written; the size-guard branch should trigger.
+            { Get-FileFromWeb -Url 'https://example.com/x.bin' -File $target 6>$null } |
+                Should -Throw '*Download failed or file too small*'
+        }
+
+        It 'throws when the downloaded file is smaller than the 1000-byte sanity threshold' {
+            $target = Join-Path $script:DownloadTempDir 'tiny.bin'
+            Mock Invoke-WebRequest {
+                param($Uri, $OutFile, $UseBasicParsing)
+                # Only 50 bytes — well under the 1000-byte guard.
+                'x' * 50 | Set-Content -LiteralPath $OutFile -NoNewline
+            }
+            { Get-FileFromWeb -Url 'https://example.com/x.bin' -File $target 6>$null } |
+                Should -Throw '*Download failed or file too small*'
+        }
+    }
+
+    Context 'Test-FileAuthenticode — signer-CN match logic' {
+
+        It 'returns $false when signature status is anything but Valid' {
+            Mock Get-AuthenticodeSignature {
+                [PSCustomObject]@{ Status = 'NotSigned'; SignerCertificate = $null }
+            }
+            Test-FileAuthenticode -Path '/tmp/whatever' | Should -BeFalse
+        }
+
+        It 'returns $true when signature is Valid and no signer requirement provided' {
+            Mock Get-AuthenticodeSignature {
+                [PSCustomObject]@{
+                    Status = 'Valid'
+                    SignerCertificate = [PSCustomObject]@{ Subject = 'CN=Whoever' }
+                }
+            }
+            Test-FileAuthenticode -Path '/tmp/whatever' | Should -BeTrue
+        }
+
+        It 'returns $true when signer matches the expected substring' {
+            Mock Get-AuthenticodeSignature {
+                [PSCustomObject]@{
+                    Status = 'Valid'
+                    SignerCertificate = [PSCustomObject]@{
+                        Subject = 'CN=NVIDIA Corporation, O=NVIDIA, L=Santa Clara'
+                    }
+                }
+            }
+            Test-FileAuthenticode -Path '/tmp/nvfile.exe' -ExpectedSignerCN 'NVIDIA Corporation' |
+                Should -BeTrue
+        }
+
+        It 'returns $false when signer does NOT match the expected substring' {
+            Mock Get-AuthenticodeSignature {
+                [PSCustomObject]@{
+                    Status = 'Valid'
+                    SignerCertificate = [PSCustomObject]@{
+                        Subject = 'CN=Bogus, Inc.'
+                    }
+                }
+            }
+            Test-FileAuthenticode -Path '/tmp/foo.exe' -ExpectedSignerCN 'NVIDIA Corporation' |
+                Should -BeFalse
         }
     }
 }

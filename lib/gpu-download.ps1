@@ -5,7 +5,20 @@
 # Requires: lib/download-helpers.ps1 (dot-sourced before this file)
 # ============================================================
 
-$script:GpuDriverStageRoot = Join-Path $env:ProgramData "GamingOpt\Drivers"
+# Stage root selection mirrors lib/toolkit-state.ps1 + version-manifest.ps1:
+#   - Windows runtime          → $env:ProgramData (prod target)
+#   - macOS / Linux dev hosts  → $XDG_DATA_HOME
+#   - Anywhere else            → $HOME/.local/share
+# Without this chain, Join-Path threw "argument is null" on dev macOS
+# and the script var ended up empty — breaking downstream Test-Path /
+# New-Item calls silently.
+if ($env:ProgramData) {
+    $script:GpuDriverStageRoot = Join-Path $env:ProgramData 'GamingOpt/Drivers'
+} elseif ($env:XDG_DATA_HOME) {
+    $script:GpuDriverStageRoot = Join-Path $env:XDG_DATA_HOME 'GamingOpt/Drivers'
+} else {
+    $script:GpuDriverStageRoot = Join-Path $HOME '.local/share/GamingOpt/Drivers'
+}
 
 function Get-GpuDriverVersionManifest {
     <#

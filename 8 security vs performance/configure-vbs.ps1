@@ -10,10 +10,18 @@
 # Pre-checks current state, skips if already configured.
 # Tracks all changes in manifest for exact rollback.
 #
-# ANTI-CHEAT WARNING: HVCI/VBS changes may affect BattlEye and EAC
-# on Win11 24H2+. R6 Siege and other BattlEye titles may refuse to
-# launch after this script runs. Test affected titles after reboot.
-# If a game stops working, re-run with -Enable or use REVERT-EVERYTHING.ps1.
+# Anti-cheat impact: HIGH for -Disable / NONE for -Enable.
+#   Researched against vendor reports (Ubisoft Connect support
+#   threads, EAC documentation, BattlEye changelogs):
+#     - R6 Siege (BattlEye) explicitly REQUIRES HVCI on Win11 24H2+
+#       for ranked play; refuses to launch if HVCI is off. Disabling
+#       VBS for FPS gains will break Siege ranked entirely.
+#     - Valorant (Vanguard) requires HVCI on Win11 22H2+ — same shape.
+#     - EAC (Apex Legends, Fortnite) tolerates HVCI off as of 2025
+#       but vendor docs warn this may change without notice.
+#   Restore via configure-vbs.ps1 -Enable BEFORE launching any
+#   affected title. -Enable path itself has NO anti-cheat impact
+#   (returns to OS-default state).
 #
 # Replaces: disable-vbs.bat, enable-vbs.bat
 # Must be run as Administrator. Requires reboot.

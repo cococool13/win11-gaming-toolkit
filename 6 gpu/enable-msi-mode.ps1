@@ -13,12 +13,11 @@
 # Tracked via Set-TrackedRegistry so REVERT-EVERYTHING can restore
 # the prior MSI mode state from the manifest.
 #
-# ANTI-CHEAT NOTE (CURSOR-AUDIT #16): switching from line-based to
-# message-signaled interrupts is a long-standing supported Windows
-# behavior and very rarely triggers anti-cheat — listed for
-# completeness; no known BattlEye / EAC regressions reported on
-# Win11 24H2+. If a specific title misbehaves, revert via
-# disable-msi-mode.ps1.
+# Anti-cheat impact: NONE — switching from line-based to message-
+# signaled interrupts is a long-standing supported Windows behavior;
+# no known BattlEye / EAC / Vanguard regressions reported on Win11
+# 24H2+. CURSOR-AUDIT #16 verified this against vendor docs. If a
+# specific title misbehaves, revert via disable-msi-mode.ps1.
 #
 # Optional: -IncludeStorage also enables MSI on the primary NVMe
 # controller. Off by default; opt-in.

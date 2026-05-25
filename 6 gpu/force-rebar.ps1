@@ -24,6 +24,10 @@
 # Implementation: writes Display Class > 0000 (and adapter-resolved
 # subkeys) HwUMAEnable=1. Manifest-tracked for revert.
 #
+# Anti-cheat impact: NONE — ReBAR is a PCIe BAR-window-size feature
+# at the firmware + driver layer; not inspected by BattlEye / EAC /
+# Vanguard. Has been a stable Windows feature since Win10 21H1.
+#
 # Must be run as Administrator. Pair: disable-rebar.ps1.
 # ============================================================
 

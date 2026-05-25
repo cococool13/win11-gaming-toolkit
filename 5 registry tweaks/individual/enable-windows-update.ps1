@@ -19,6 +19,9 @@
 .NOTES
     Tier: Safe (restores OS update path)
     Pair: disable-windows-update.ps1
+    Anti-cheat impact: NONE (restores the OS update path; the
+        suppression had indirect impact via missed anti-cheat
+        version updates — re-enabling clears that risk).
     Must be run as Administrator.
 #>
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]

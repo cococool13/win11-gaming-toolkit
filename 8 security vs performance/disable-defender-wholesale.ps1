@@ -32,6 +32,13 @@
 # Pass -Force to skip the confirmation prompt.
 # Must be run as Administrator.
 # Pair: enable-defender-wholesale.ps1
+#
+# Anti-cheat impact: NONE direct. Anti-cheat doesn't check whether
+# Defender is on. INDIRECT risk: disabling Defender removes the OS
+# baseline malware shield, so any malware that bypasses other defenses
+# can tamper with anti-cheat state, but that's a system-security
+# concern, not a vendor-policy concern. BattlEye / EAC / Vanguard do
+# not refuse to launch based on Defender state alone.
 # ============================================================
 
 param([switch]$Force)

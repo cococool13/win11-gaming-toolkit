@@ -11,6 +11,10 @@
 .NOTES
     Tier: Safe (restores OS default)
     Pair: disable-smt-ht.ps1
+    Anti-cheat impact: NONE — re-enabling SMT restores OS-default
+        logical-processor topology. The sibling (disable-smt-ht) carries
+        LOW-MED anti-cheat heuristic risk on Zen 5 per recent reports,
+        but the re-enable direction is always safe.
     Reboot required for SMT to come back online.
 #>
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]

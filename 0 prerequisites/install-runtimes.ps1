@@ -17,6 +17,10 @@
 
 .NOTES
     Tier: Safe (installs Microsoft-signed runtimes)
+    Anti-cheat impact: NONE — installs Microsoft-signed VC++ runtimes
+        and DirectX redistributable from official download URLs. The
+        Authenticode signature check is the trust boundary; these are
+        the same DLLs the anti-cheat layers themselves expect to find.
     Replaces: install-runtimes.ps1 (dumb version)
     Must be run as Administrator. Requires internet connection.
 #>

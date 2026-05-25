@@ -25,7 +25,7 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     exit 1
 }
 
-$state = Initialize-ToolkitState
+Initialize-ToolkitState | Out-Null
 $succeeded = 0
 $failed = 0
 
@@ -76,12 +76,12 @@ Write-Host "  Backup folder: $backupDir" -ForegroundColor Gray
 
 # Comprehensive registry paths — covers ALL areas the toolkit modifies
 $registryPaths = @(
-    @{ Key = "HKCU\Control Panel\Desktop";                     Name = "Desktop" }
-    @{ Key = "HKCU\Control Panel\Mouse";                       Name = "Mouse" }
+    @{ Key = "HKCU\Control Panel\Desktop"; Name = "Desktop" }
+    @{ Key = "HKCU\Control Panel\Mouse"; Name = "Mouse" }
     @{ Key = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer"; Name = "Explorer" }
     @{ Key = "HKCU\Software\Microsoft\Windows\CurrentVersion\GameDVR"; Name = "GameDVR" }
-    @{ Key = "HKCU\System\GameConfigStore";                    Name = "GameConfigStore" }
-    @{ Key = "HKCU\Software\Microsoft\GameBar";                Name = "GameBar" }
+    @{ Key = "HKCU\System\GameConfigStore"; Name = "GameConfigStore" }
+    @{ Key = "HKCU\Software\Microsoft\GameBar"; Name = "GameBar" }
     @{ Key = "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"; Name = "Personalize" }
     @{ Key = "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"; Name = "ContentDelivery" }
     @{ Key = "HKCU\Software\Microsoft\Windows\CurrentVersion\Search"; Name = "Search" }
@@ -89,9 +89,9 @@ $registryPaths = @(
     @{ Key = "HKCU\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo"; Name = "AdvertisingInfo" }
     @{ Key = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching"; Name = "DriverSearching" }
     @{ Key = "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power"; Name = "SessionManagerPower" }
-    @{ Key = "HKLM\SYSTEM\CurrentControlSet\Control\Power";   Name = "Power" }
+    @{ Key = "HKLM\SYSTEM\CurrentControlSet\Control\Power"; Name = "Power" }
     @{ Key = "HKLM\SYSTEM\CurrentControlSet\Control\DeviceGuard"; Name = "DeviceGuard" }
-    @{ Key = "HKLM\SYSTEM\CurrentControlSet\Control\Lsa";     Name = "LSA" }
+    @{ Key = "HKLM\SYSTEM\CurrentControlSet\Control\Lsa"; Name = "LSA" }
     @{ Key = "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces"; Name = "TcpipInterfaces" }
     @{ Key = "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"; Name = "SystemProfile" }
     @{ Key = "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl"; Name = "PriorityControl" }
@@ -103,7 +103,8 @@ $current = 0
 foreach ($entry in $registryPaths) {
     $current++
     $outputFile = Join-Path $backupDir "$($entry.Name).reg"
-    $result = reg export $entry.Key $outputFile /y 2>&1
+    # Discard reg.exe stdout/stderr; success decided by $LASTEXITCODE.
+    reg export $entry.Key $outputFile /y 2>&1 | Out-Null
     if ($LASTEXITCODE -eq 0) {
         Write-Host "  [$current/$total] $($entry.Name)" -ForegroundColor Green
         $succeeded++

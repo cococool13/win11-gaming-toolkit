@@ -2,27 +2,46 @@
 # VBS / Memory Integrity Configuration (Smart)
 # Windows 11 Gaming Optimization Guide
 # ============================================================
+# Tier: Security Trade-off
+#
 # Disables VBS, HVCI (Memory Integrity), and optionally LSA
 # Protection for maximum gaming performance (+5-25% FPS).
 #
 # Pre-checks current state, skips if already configured.
 # Tracks all changes in manifest for exact rollback.
 #
+# ANTI-CHEAT WARNING: HVCI/VBS changes may affect BattlEye and EAC
+# on Win11 24H2+. R6 Siege and other BattlEye titles may refuse to
+# launch after this script runs. Test affected titles after reboot.
+# If a game stops working, re-run with -Enable or use REVERT-EVERYTHING.ps1.
+#
 # Replaces: disable-vbs.bat, enable-vbs.bat
 # Must be run as Administrator. Requires reboot.
 # ============================================================
 
 param(
-    [switch]$Enable  # Pass -Enable to re-enable VBS/HVCI
+    # CURSOR-AUDIT #7: default invocation now reports state only. Pass -Disable
+    # to actually disable VBS/HVCI/LSA (the FPS-gaining path), or -Enable to
+    # restore them. Running the script with no flag is non-mutating; this
+    # prevents accidental disable when a user explores the script.
+    [switch]$Enable,
+    [switch]$Disable
 )
+
+if ($Enable -and $Disable) {
+    Write-Host "[ERROR] -Enable and -Disable are mutually exclusive." -ForegroundColor Red
+    exit 1
+}
 
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"
 
 $Host.UI.RawUI.WindowTitle = "Gaming Optimization — VBS / Memory Integrity"
 
+$mode = if ($Enable) { 'RE-ENABLE' } elseif ($Disable) { 'DISABLE' } else { 'REPORT' }
+
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "  VBS / Memory Integrity — $(if ($Enable) { 'RE-ENABLE' } else { 'DISABLE' })" -ForegroundColor Cyan
+Write-Host "  VBS / Memory Integrity — $mode" -ForegroundColor Cyan
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -32,7 +51,7 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     exit 1
 }
 
-$state = Initialize-ToolkitState
+Initialize-ToolkitState | Out-Null
 $stepName = "vbs-security"
 
 # ---- Pre-check current state ----
@@ -54,6 +73,25 @@ Write-Host "  Memory Integrity (HVCI): $hvciStatus" -ForegroundColor $(if ($hvci
 Write-Host "  VBS:                     $vbsStatus" -ForegroundColor $(if ($vbsStatus -eq "Disabled") { "Green" } else { "Yellow" })
 Write-Host "  LSA Protection:          $lsaStatus" -ForegroundColor $(if ($lsaStatus -eq "Disabled") { "Green" } else { "Yellow" })
 Write-Host ""
+
+if (-not $Enable -and -not $Disable) {
+    # Default: report-only. CURSOR-AUDIT #7 — running with no flag must
+    # NOT mutate. Print the next-step hint and exit.
+    Write-Host ""
+    Write-Host "  REPORT MODE — no changes made." -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  To disable VBS/HVCI/LSA (gaming performance path):" -ForegroundColor Yellow
+    Write-Host "    .\configure-vbs.ps1 -Disable" -ForegroundColor White
+    Write-Host ""
+    Write-Host "  To re-enable VBS/HVCI:" -ForegroundColor Green
+    Write-Host "    .\configure-vbs.ps1 -Enable" -ForegroundColor White
+    Write-Host ""
+    Write-Host "  See header of this script for the BattlEye/EAC anti-cheat warning." -ForegroundColor Gray
+    Write-Host ""
+    Add-ToolkitStepResult -Key $stepName -Tier "Security Trade-off" -Status "report" -Reason "Report-only invocation (no -Enable/-Disable flag)"
+    Read-Host "Press Enter to exit"
+    exit 0
+}
 
 if ($Enable) {
     # Re-enable flow
@@ -88,7 +126,7 @@ if ($Enable) {
     Write-Host "  VBS/HVCI re-enabled. REBOOT REQUIRED." -ForegroundColor Green
 
 } else {
-    # Disable flow
+    # Disable flow ($Disable is set; -Enable + no-flag already returned above)
     if ($hvciStatus -eq "Disabled" -and $vbsStatus -eq "Disabled" -and $lsaStatus -eq "Disabled") {
         Write-Host "  All already disabled. Nothing to do." -ForegroundColor Green
         Add-ToolkitStepResult -Key $stepName -Tier "Security Trade-off" -Status "preexisting" -Reason "Already disabled"
@@ -100,6 +138,10 @@ if ($Enable) {
     Write-Host ""
     Write-Host "  Benefits: +5-25% FPS improvement in many games" -ForegroundColor Green
     Write-Host "  Risk:     Reduced protection against kernel-level exploits" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "  ANTI-CHEAT: BattlEye and EAC on Win11 24H2+ may stop working." -ForegroundColor Red
+    Write-Host "  R6 Siege and other BattlEye titles may refuse to launch." -ForegroundColor Red
+    Write-Host "  Test affected titles after reboot; revert if needed." -ForegroundColor Yellow
     Write-Host ""
     Write-Host "  Press Ctrl+C to cancel, or" -ForegroundColor Yellow
     Read-Host "  Press Enter to continue"

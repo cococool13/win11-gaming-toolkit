@@ -251,7 +251,6 @@ foreach ($gpuStep in $gpuSteps) {
 
 # Restore GPU-related services disabled during driver install
 foreach ($svc in @("NvTelemetryContainer", "amdfendr", "amdfendrmgr", "Intel(R) Computing Improvement Program")) {
-    $svcEntry = $null
     if (Test-ToolkitMapHasKey -Map $state.services -Key $svc) {
         Run-Step "Restoring $svc" {
             Restore-ToolkitServiceStartMode -Name $svc | Out-Null
@@ -271,10 +270,39 @@ Run-Step "Re-enabling Large Send Offload" {
     }
 }
 Run-Step "Removing Nagle overrides" {
+    # CURSOR-AUDIT #5 fix: prefer manifest-driven restore. Both APPLY-EVERYTHING.ps1
+    # and 7 network/optimize-network.ps1 now write tracked entries with Id format
+    # net:TcpAckFrequency:<iface-guid> / net:TCPNoDelay:<iface-guid>. Restore from
+    # manifest first, then fall back to blind remove for any interface whose
+    # Nagle state pre-dates the toolkit-state pattern (legacy apply path).
+    $handled = @{}
+    $state = Get-ToolkitState
+    if ($state -and $state.PSObject.Properties["registry"] -and $state.registry) {
+        $regKeys = @()
+        if ($state.registry -is [hashtable]) {
+            $regKeys = @($state.registry.Keys)
+        } else {
+            $regKeys = @($state.registry.PSObject.Properties.Name)
+        }
+        foreach ($id in $regKeys) {
+            if ($id -like "net:TcpAckFrequency:*" -or $id -like "net:TCPNoDelay:*") {
+                $entry = Get-ToolkitMapValue -Map $state.registry -Key $id
+                if (Restore-ToolkitRegistryValue -Id $id) {
+                    if ($entry -and $entry.path -and $entry.name) {
+                        $handled["$($entry.path)|$($entry.name)"] = $true
+                    }
+                }
+            }
+        }
+    }
     $interfaces = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces"
-    Get-ChildItem $interfaces | ForEach-Object {
-        Remove-ItemProperty $_.PSPath -Name "TcpAckFrequency" -ErrorAction SilentlyContinue
-        Remove-ItemProperty $_.PSPath -Name "TCPNoDelay" -ErrorAction SilentlyContinue
+    Get-ChildItem $interfaces -ErrorAction SilentlyContinue | ForEach-Object {
+        foreach ($name in @("TcpAckFrequency", "TCPNoDelay")) {
+            $key = "$($_.PSPath)|$name"
+            if (-not $handled.ContainsKey($key)) {
+                Remove-ItemProperty $_.PSPath -Name $name -ErrorAction SilentlyContinue
+            }
+        }
     }
 }
 Run-Step "Restoring DNS" {

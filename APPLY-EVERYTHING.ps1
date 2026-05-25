@@ -3,8 +3,7 @@
 # ============================================================
 #
 # Applies the maximal supported tweak set in one run.
-# Unsupported tweaks are skipped. Security/functionality trade-offs
-# are intentional in this flow.
+# Unsupported tweaks are skipped.
 #
 # What it does:
 #   1. Creates a system restore point + registry backup
@@ -15,15 +14,30 @@
 #   6. Disables startup bloat
 #   7. Enables GPU MSI mode
 #   8. Optimizes network + DNS
-#   9. Suppresses Windows Update aggressively
-#   10. Disables VBS / HVCI / LSA
+#   9. (opt-in) Suppresses Windows Update aggressively
+#   10. (opt-in) Disables VBS / HVCI / LSA / Spectre / Meltdown
 #   11. Applies Windows customization tweaks
 #   12. Adds Defender exclusions
 #   13. Removes bloatware apps
 #   14. Cleans temp files
 #
+# Phases 9 and 10 are Security Trade-off tier and only run when
+# -IncludeSecurityTradeoffs is passed. Default is OFF.
+#
+# ANTI-CHEAT: -IncludeSecurityTradeoffs disables HVCI/VBS. On Win11
+# 24H2+ this may break BattlEye and EAC — R6 Siege and similar titles
+# may refuse to launch. Test affected games after reboot.
+#
 # Undo: REVERT-EVERYTHING.ps1
 # ============================================================
+
+[CmdletBinding()]
+param(
+    # Run Phases 9 (Windows Update suppression) and 10 (VBS/HVCI/LSA/Spectre).
+    # Default OFF per the v1.1 audit gate. Pass -IncludeSecurityTradeoffs to
+    # opt in. Skipped phases are recorded in the manifest as "skipped".
+    [switch]$IncludeSecurityTradeoffs
+)
 
 . "$PSScriptRoot\lib\toolkit-state.ps1"
 . "$PSScriptRoot\lib\ui-helpers.ps1"
@@ -37,13 +51,23 @@ UI-RequireAdmin -ScriptName "Apply Everything"
 # Set-ToolkitRegistryValue / Set-ToolkitServiceStartMode each guard against
 # overwriting an existing entry's `before` block, so re-apply is idempotent.
 $state = Initialize-ToolkitState
-$profile = $state.context
+$machineProfile = $state.context
 
-UI-ShowProfile -Profile $profile
-UI-Confirm -Message "This path applies every automatable tweak, including security and convenience trade-offs." -Warnings @(
+UI-ShowProfile -Profile $machineProfile
+UI-Confirm -Message "This path applies every automatable tweak (Safe + Advanced)." -Warnings @(
     "Rollback is strongest where the manifest captured prior state.",
-    "Use the launcher or GUIDE.md if you want a narrower path."
+    "Use the launcher or GUIDE.md if you want a narrower path.",
+    "Phases 9 (Windows Update) + 10 (VBS/HVCI/LSA/Spectre) are OFF by default; pass -IncludeSecurityTradeoffs to include them."
 )
+
+if ($IncludeSecurityTradeoffs) {
+    UI-Confirm -Message "Security trade-offs are ENABLED for this run. Phase 9 (Windows Update suppression) and Phase 10 (VBS / HVCI / LSA / Spectre) will execute." -Warnings @(
+        "ANTI-CHEAT: Disabling HVCI/VBS may break BattlEye and EAC on Win11 24H2+.",
+        "Specifically, R6 Siege and other BattlEye titles may refuse to launch.",
+        "Test your titles after reboot. Run REVERT-EVERYTHING.ps1 if anything breaks.",
+        "Windows Update suppression stalls security/driver/anti-cheat patches. Plan to apply monthly updates manually."
+    )
+}
 
 $startTime = Get-Date
 UI-ResetCounters
@@ -75,6 +99,12 @@ function Reg-Add {
 }
 
 function Set-TrackedRegistry {
+    # Thin pass-through to Set-ToolkitRegistryValue + step-result record.
+    # ShouldProcess() called explicitly at the wrapper level so PSShouldProcess
+    # is satisfied. The inner Set-ToolkitRegistryValue also calls ShouldProcess;
+    # both gates are checked, which is correct (outer can decline before any
+    # state-capture happens; inner gates the actual write).
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     param(
         [string]$Id,
         [string]$Path,
@@ -84,17 +114,26 @@ function Set-TrackedRegistry {
         [string]$Tier,
         [string]$Step
     )
+    $target = if ($Name -eq '') { "$Path\(default)" } else { "$Path\$Name" }
+    if (-not $PSCmdlet.ShouldProcess($target, "Set tracked registry value '$Value' (type $Type, tier $Tier)")) {
+        return
+    }
     Set-ToolkitRegistryValue -Id $Id -Path $Path -Name $Name -Value $Value -Type $Type -Tier $Tier -Step $Step
     Add-ToolkitStepResult -Key $Id -Tier $Tier -Status "applied" -Reason $Step
 }
 
 function Set-TrackedService {
+    # Thin pass-through; explicit ShouldProcess at this layer.
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     param(
         [string]$Name,
         [string]$Mode,
         [string]$Tier,
         [string]$Step
     )
+    if (-not $PSCmdlet.ShouldProcess("service:$Name", "Set tracked start mode '$Mode' (tier $Tier)")) {
+        return
+    }
     Set-ToolkitServiceStartMode -Name $Name -Mode $Mode -Tier $Tier -Step $Step
     Add-ToolkitStepResult -Key "service:$Name" -Tier $Tier -Status "applied" -Reason $Step
 }
@@ -143,7 +182,18 @@ Run-Step "Activating Ultimate Performance plan" {
     cmd /c "powercfg /SETACTIVE $planGuid" 2>&1 | Out-Null
 }
 
-function Set-PowerIdx($SubGroup, $Setting, $Value) {
+function Set-PowerIdx {
+    # Power-plan AC/DC index setter. Mutates the running power profile —
+    # ShouldProcess gate respects -WhatIf for the outer script.
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]
+    param(
+        [Parameter(Mandatory)][string]$SubGroup,
+        [Parameter(Mandatory)][string]$Setting,
+        [Parameter(Mandatory)][string]$Value
+    )
+    if (-not $PSCmdlet.ShouldProcess("power-plan $planGuid", "set $SubGroup/$Setting = $Value (AC+DC)")) {
+        return
+    }
     powercfg /setacvalueindex $planGuid $SubGroup $Setting $Value 2>&1 | Out-Null
     powercfg /setdcvalueindex $planGuid $SubGroup $Setting $Value 2>&1 | Out-Null
 }
@@ -232,8 +282,18 @@ UI-Section -Title "Phase 5: Registry Pack" -Context "Apply low-level latency, UI
 Run-Step "MenuShowDelay = 0" { Reg-Add "HKCU\Control Panel\Desktop" /v "MenuShowDelay" /t REG_SZ /d "0" /f }
 Run-Step "MouseHoverTime = 10" { Reg-Add "HKCU\Control Panel\Mouse" /v "MouseHoverTime" /t REG_SZ /d "10" /f }
 Run-Step "Startup delay disabled" { Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize" /v "StartupDelayInMSec" /t REG_DWORD /d 0 /f }
-Run-Step "Auto driver searching disabled" { Reg-Add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching" /v "SearchOrderConfig" /t REG_DWORD /d 0 /f }
-Run-Step "Fast Startup disabled" { Reg-Add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v "HiberbootEnabled" /t REG_DWORD /d 0 /f }
+Run-Step "Auto driver searching disabled" {
+    # CURSOR-AUDIT #13: high-impact HKLM key — track for revert
+    Set-ToolkitRegistryValue -Id "reg:DriverSearchOrderConfig" `
+        -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching" -Name "SearchOrderConfig" `
+        -Value 0 -Type "DWord" -Tier "Advanced" -Step "registry"
+}
+Run-Step "Fast Startup disabled" {
+    # CURSOR-AUDIT #13: high-impact HKLM key — track for revert
+    Set-ToolkitRegistryValue -Id "reg:HiberbootEnabled" `
+        -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power" -Name "HiberbootEnabled" `
+        -Value 0 -Type "DWord" -Tier "Advanced" -Step "registry"
+}
 Run-Step "Fullscreen optimizations disabled" {
     Reg-Add "HKCU\System\GameConfigStore" /v "GameDVR_FSEBehaviorMode" /t REG_DWORD /d 2 /f
     Reg-Add "HKCU\System\GameConfigStore" /v "GameDVR_HonorUserFSEBehaviorMode" /t REG_DWORD /d 1 /f
@@ -251,7 +311,10 @@ Run-Step "Network throttling disabled" {
     Reg-Add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v "NetworkThrottlingIndex" /t REG_DWORD /d 0xFFFFFFFF /f
 }
 Run-Step "Power throttling disabled" {
-    Reg-Add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" /v "PowerThrottlingOff" /t REG_DWORD /d 1 /f
+    # CURSOR-AUDIT #13: high-impact HKLM key — track for revert
+    Set-ToolkitRegistryValue -Id "reg:PowerThrottlingOff" `
+        -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" -Name "PowerThrottlingOff" `
+        -Value 1 -Type "DWord" -Tier "Advanced" -Step "registry"
 }
 Run-Step "Game Bar / DVR disabled" {
     Reg-Add "HKCU\System\GameConfigStore" /v "GameDVR_Enabled" /t REG_DWORD /d 0 /f
@@ -270,7 +333,10 @@ Run-Step "Visual effects optimized for performance" {
     Reg-Add "HKCU\Control Panel\Desktop" /v "FontSmoothing" /t REG_SZ /d "2" /f
     Reg-Add "HKCU\Control Panel\Desktop\WindowMetrics" /v "MinAnimate" /t REG_SZ /d "0" /f
     Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarAnimations" /t REG_DWORD /d 0 /f
-    Reg-Add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 0x26 /f
+    # CURSOR-AUDIT #13: high-impact HKLM key — track for revert
+    Set-ToolkitRegistryValue -Id "reg:Win32PrioritySeparation" `
+        -Path "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" -Name "Win32PrioritySeparation" `
+        -Value 0x26 -Type "DWord" -Tier "Advanced" -Step "registry"
 }
 Run-Step "Explorer tweaks" {
     Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "LaunchTo" /t REG_DWORD /d 1 /f
@@ -291,7 +357,11 @@ Run-Step "Privacy / telemetry disabled" {
     Reg-Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Privacy" /v "TailoredExperiencesWithDiagnosticDataEnabled" /t REG_DWORD /d 0 /f
     Reg-Add "HKCU\Software\Microsoft\InputPersonalization" /v "RestrictImplicitInkCollection" /t REG_DWORD /d 1 /f
     Reg-Add "HKCU\Software\Microsoft\InputPersonalization" /v "RestrictImplicitTextCollection" /t REG_DWORD /d 1 /f
-    Reg-Add "HKLM\Software\Policies\Microsoft\Windows\DataCollection" /v "AllowTelemetry" /t REG_DWORD /d 0 /f
+    # CURSOR-AUDIT #13: HKLM policy — track for revert (high-impact, users
+    # may want to re-enable to receive Edge / Defender update signals).
+    Set-ToolkitRegistryValue -Id "reg:AllowTelemetry" `
+        -Path "HKLM:\Software\Policies\Microsoft\Windows\DataCollection" -Name "AllowTelemetry" `
+        -Value 0 -Type "DWord" -Tier "Advanced" -Step "registry"
     Reg-Add "HKCU\SOFTWARE\Microsoft\Siuf\Rules" /v "NumberOfSIUFInPeriod" /t REG_DWORD /d 0 /f
     Reg-Add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v "PublishUserActivities" /t REG_DWORD /d 0 /f
     Reg-Add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location" /v "Value" /t REG_SZ /d "Deny" /f
@@ -392,66 +462,88 @@ Run-Step "Large Send Offload disabled where supported" {
     }
 }
 Run-Step "Nagle's Algorithm disabled on active adapters" {
+    # CURSOR-AUDIT #5 fix: route per-interface writes through Set-ToolkitRegistryValue
+    # so REVERT-EVERYTHING.ps1 can roll them back via the manifest. Id format matches
+    # 7 network/optimize-network.ps1 — both paths produce the same manifest keys.
     $interfaces = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces"
     Get-ChildItem $interfaces | ForEach-Object {
         $ip = (Get-ItemProperty $_.PSPath -Name "DhcpIPAddress" -ErrorAction SilentlyContinue).DhcpIPAddress
         if ($ip -and $ip -ne "0.0.0.0") {
-            Set-ItemProperty $_.PSPath -Name "TcpAckFrequency" -Value 1 -Type DWord -Force
-            Set-ItemProperty $_.PSPath -Name "TCPNoDelay" -Value 1 -Type DWord -Force
+            $iface = $_.PSChildName
+            Set-ToolkitRegistryValue -Id "net:TcpAckFrequency:$iface" `
+                -Path $_.PSPath -Name "TcpAckFrequency" `
+                -Value 1 -Type "DWord" -Tier "Advanced" -Step "network"
+            Set-ToolkitRegistryValue -Id "net:TCPNoDelay:$iface" `
+                -Path $_.PSPath -Name "TCPNoDelay" `
+                -Value 1 -Type "DWord" -Tier "Advanced" -Step "network"
+            Add-ToolkitStepResult -Key "net:Nagle:$iface" -Tier "Advanced" -Status "applied" -Reason "Nagle disabled (TcpAckFrequency + TCPNoDelay = 1)"
         }
     }
 }
 Run-Step "DNS set to Cloudflare on active adapters" {
-    Set-ToolkitDnsServers -ServerAddresses @("1.1.1.1","1.0.0.1","2606:4700:4700::1111","2606:4700:4700::1001") -Tier "Advanced" -Step "network"
+    Set-ToolkitDnsServers -ServerAddresses @("1.1.1.1", "1.0.0.1", "2606:4700:4700::1111", "2606:4700:4700::1001") -Tier "Advanced" -Step "network"
     Clear-DnsClientCache -ErrorAction SilentlyContinue
 }
 
 # ============================================================
-# STEP 9: WINDOWS UPDATE
+# STEP 9: WINDOWS UPDATE  (Security Trade-off — gated)
 # ============================================================
-UI-Section -Title "Phase 9: Windows Update Suppression" -Context "Intentional security trade-off for dedicated gaming setups"
+UI-Section -Title "Phase 9: Windows Update Suppression" -Context "Security Trade-off — only runs with -IncludeSecurityTradeoffs"
 
-Run-Step "Disable auto-restart for updates" {
-    Set-TrackedRegistry -Id "reg:NoAutoRebootWithLoggedOnUsers" -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "NoAutoRebootWithLoggedOnUsers" -Value 1 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
-    Set-TrackedRegistry -Id "reg:AUOptions" -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "AUOptions" -Value 3 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
-    Set-TrackedRegistry -Id "reg:NoAutoUpdate" -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "NoAutoUpdate" -Value 1 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
-}
-Run-Step "Set active hours 8AM-2AM" {
-    Set-TrackedRegistry -Id "reg:ActiveHoursStart" -Path "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings" -Name "ActiveHoursStart" -Value 8 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
-    Set-TrackedRegistry -Id "reg:ActiveHoursEnd" -Path "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings" -Name "ActiveHoursEnd" -Value 2 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
-    Set-TrackedRegistry -Id "reg:IsActiveHoursEnabled" -Path "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings" -Name "IsActiveHoursEnabled" -Value 1 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
-}
-foreach ($updateSvc in @("wuauserv", "UsoSvc", "DoSvc")) {
-    Run-Step "Disable $updateSvc" {
-        Set-TrackedService -Name $updateSvc -Mode "disabled" -Tier "Security Trade-off" -Step "windows-update"
-        Stop-Service -Name $updateSvc -Force -ErrorAction SilentlyContinue
+if ($IncludeSecurityTradeoffs) {
+    Run-Step "Disable auto-restart for updates" {
+        Set-TrackedRegistry -Id "reg:NoAutoRebootWithLoggedOnUsers" -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "NoAutoRebootWithLoggedOnUsers" -Value 1 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
+        Set-TrackedRegistry -Id "reg:AUOptions" -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "AUOptions" -Value 3 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
+        Set-TrackedRegistry -Id "reg:NoAutoUpdate" -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "NoAutoUpdate" -Value 1 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
     }
-}
-Run-Step "Disable WaaSMedicSvc (best effort)" {
-    Set-TrackedRegistry -Id "reg:WaaSMedicSvcStart" -Path "HKLM:\SYSTEM\CurrentControlSet\Services\WaaSMedicSvc" -Name "Start" -Value 4 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
+    Run-Step "Set active hours 8AM-2AM" {
+        Set-TrackedRegistry -Id "reg:ActiveHoursStart" -Path "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings" -Name "ActiveHoursStart" -Value 8 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
+        Set-TrackedRegistry -Id "reg:ActiveHoursEnd" -Path "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings" -Name "ActiveHoursEnd" -Value 2 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
+        Set-TrackedRegistry -Id "reg:IsActiveHoursEnabled" -Path "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings" -Name "IsActiveHoursEnabled" -Value 1 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
+    }
+    foreach ($updateSvc in @("wuauserv", "UsoSvc", "DoSvc")) {
+        Run-Step "Disable $updateSvc" {
+            Set-TrackedService -Name $updateSvc -Mode "disabled" -Tier "Security Trade-off" -Step "windows-update"
+            Stop-Service -Name $updateSvc -Force -ErrorAction SilentlyContinue
+        }
+    }
+    Run-Step "Disable WaaSMedicSvc (best effort)" {
+        Set-TrackedRegistry -Id "reg:WaaSMedicSvcStart" -Path "HKLM:\SYSTEM\CurrentControlSet\Services\WaaSMedicSvc" -Name "Start" -Value 4 -Type "DWord" -Tier "Security Trade-off" -Step "windows-update"
+    }
+} else {
+    Skip-Step -Description "phase9-windows-update" -Reason "Skipped — pass -IncludeSecurityTradeoffs to include" -Tier "Security Trade-off"
 }
 
 # ============================================================
-# STEP 10: SECURITY TRADE-OFFS
+# STEP 10: SECURITY TRADE-OFFS  (Security Trade-off — gated)
 # ============================================================
-UI-Section -Title "Phase 10: Security Trade-offs" -Context "Reduce Windows protections that add overhead"
+UI-Section -Title "Phase 10: Security Trade-offs" -Context "Security Trade-off — only runs with -IncludeSecurityTradeoffs"
 
-Run-Step "Disable Memory Integrity (HVCI)" {
-    Set-TrackedRegistry -Id "reg:HVCIEnabled" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity" -Name "Enabled" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
-}
-Run-Step "Disable VBS" {
-    Set-TrackedRegistry -Id "reg:EnableVBS" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard" -Name "EnableVirtualizationBasedSecurity" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
-}
-Run-Step "Disable LSA protection" {
-    Set-TrackedRegistry -Id "reg:RunAsPPL" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name "RunAsPPL" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
-    Set-TrackedRegistry -Id "reg:LsaCfgFlags" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name "LsaCfgFlags" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
-}
-Run-Step "Disable Spectre / Meltdown CPU mitigations" {
-    # Source: FR33THYFR33THY/Ultimate — 8 Advanced/3 Spectre Meltdown.ps1
-    # Tier matches the surrounding section (VBS / HVCI / LSA also Security Trade-off).
-    $mmPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"
-    Set-TrackedRegistry -Id "reg:FeatureSettingsOverride" -Path $mmPath -Name "FeatureSettingsOverride" -Value 3 -Type "DWord" -Tier "Security Trade-off" -Step "security"
-    Set-TrackedRegistry -Id "reg:FeatureSettingsOverrideMask" -Path $mmPath -Name "FeatureSettingsOverrideMask" -Value 3 -Type "DWord" -Tier "Security Trade-off" -Step "security"
+if ($IncludeSecurityTradeoffs) {
+    UI-Note -Message "[!] ANTI-CHEAT: HVCI/VBS changes may affect BattlEye and EAC on Win11 24H2+." -Color "Red"
+    UI-Note -Message "    R6 Siege and other BattlEye titles may refuse to launch. Test after reboot." -Color "Red"
+    UI-Note -Message "    Revert via REVERT-EVERYTHING.ps1 if affected titles stop working." -Color "Yellow"
+    Write-Host ""
+
+    Run-Step "Disable Memory Integrity (HVCI)" {
+        Set-TrackedRegistry -Id "reg:HVCIEnabled" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity" -Name "Enabled" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
+    }
+    Run-Step "Disable VBS" {
+        Set-TrackedRegistry -Id "reg:EnableVBS" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard" -Name "EnableVirtualizationBasedSecurity" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
+    }
+    Run-Step "Disable LSA protection" {
+        Set-TrackedRegistry -Id "reg:RunAsPPL" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name "RunAsPPL" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
+        Set-TrackedRegistry -Id "reg:LsaCfgFlags" -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name "LsaCfgFlags" -Value 0 -Type "DWord" -Tier "Security Trade-off" -Step "security"
+    }
+    Run-Step "Disable Spectre / Meltdown CPU mitigations" {
+        # Source: FR33THYFR33THY/Ultimate — 8 Advanced/3 Spectre Meltdown.ps1
+        # Tier matches the surrounding section (VBS / HVCI / LSA also Security Trade-off).
+        $mmPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"
+        Set-TrackedRegistry -Id "reg:FeatureSettingsOverride" -Path $mmPath -Name "FeatureSettingsOverride" -Value 3 -Type "DWord" -Tier "Security Trade-off" -Step "security"
+        Set-TrackedRegistry -Id "reg:FeatureSettingsOverrideMask" -Path $mmPath -Name "FeatureSettingsOverrideMask" -Value 3 -Type "DWord" -Tier "Security Trade-off" -Step "security"
+    }
+} else {
+    Skip-Step -Description "phase10-security-tradeoffs" -Reason "Skipped — pass -IncludeSecurityTradeoffs to include" -Tier "Security Trade-off"
 }
 
 # ============================================================
@@ -591,7 +683,7 @@ Run-Step "Removing leftover folders" {
         # contains the IIS metabase indicators, treat as installed.
         $iisMarkers = @("history", "logs", "temp", "wwwroot", "config")
         $iisInstalled = (Test-Path "$env:SystemDrive\inetpub") -and
-            ((Get-ChildItem "$env:SystemDrive\inetpub" -Force -ErrorAction SilentlyContinue |
+        ((Get-ChildItem "$env:SystemDrive\inetpub" -Force -ErrorAction SilentlyContinue |
                 Where-Object { $iisMarkers -contains $_.Name }).Count -ge 2)
     }
     if ($iisInstalled) {

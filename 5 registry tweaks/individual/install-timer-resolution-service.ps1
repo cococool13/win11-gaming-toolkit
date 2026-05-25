@@ -2,12 +2,44 @@
 # Install Timer Resolution Service (STR)
 # Windows 11 Gaming Optimization Guide
 # ============================================================
+# Tier: Advanced
+#
 # Creates a Windows service that forces the system timer to its
 # maximum resolution (~0.5ms instead of default ~15.6ms).
-# This reduces input lag and improves frame pacing in games.
+#
+# === CARGO-CULT WARNING (CURSOR-AUDIT #11) ===
+# Setting a low timer resolution was a real input-latency win on
+# Windows 7/8/10. On Windows 11 24H2+, scheduler and HPET behavior
+# changed: most modern games either request their own timer
+# resolution via NtSetTimerResolution at startup, or run on the
+# higher-resolution path by default. The standalone STR service
+# now provides little-to-no measurable FPS / latency benefit for
+# the majority of titles, and carries side effects (more CPU
+# wakeups, higher idle power draw, occasional anti-cheat scrutiny).
+#
+# Sources: Bruce Dawson "Timers Tutorial" (randomascii blog),
+# Microsoft Win11 24H2 scheduling notes, and the Discord-driven
+# debates from late 2024 about Win11 24H2 timer behavior.
+#
+# RECOMMENDATION: skip this unless you are explicitly debugging
+# 15ms input-latency stalls in a specific title. Use the audit
+# tools in launcher's [V] Verify menu first.
+#
+# ANTI-CHEAT: Kernel-level timer manipulation is occasionally
+# flagged by aggressive anti-cheats (Vanguard, FACEIT AC). If you
+# run those games, prefer per-title workarounds or skip entirely.
+#
+# Pair: uninstall-timer-resolution-service.ps1 (idempotent revert).
 #
 # Run as Administrator in PowerShell.
+# Pass -Force to skip the cargo-cult warning prompt (scripted use).
 # ============================================================
+
+param(
+    [switch]$Force
+)
+
+. "$PSScriptRoot\..\..\lib\toolkit-state.ps1"
 
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Cyan
@@ -21,6 +53,29 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     Read-Host "Press Enter to exit"
     exit 1
 }
+
+# CARGO-CULT confirm — explicit opt-in (CURSOR-AUDIT #11)
+if (-not $Force) {
+    Write-Host "  CARGO-CULT WARNING:" -ForegroundColor Red
+    Write-Host "    On Windows 11 24H2+, this service provides little-to-no" -ForegroundColor Yellow
+    Write-Host "    measurable FPS/latency benefit for most modern titles." -ForegroundColor Yellow
+    Write-Host "    Side effects: more CPU wakeups, higher idle power draw." -ForegroundColor Yellow
+    Write-Host "    Anti-cheats (Vanguard, FACEIT) occasionally scrutinize" -ForegroundColor Yellow
+    Write-Host "    kernel-level timer manipulation." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "    Documented for completeness; see header for sources." -ForegroundColor Yellow
+    Write-Host ""
+    $proceed = Read-Host "  Install anyway? (y/N)"
+    if ($proceed.Trim().ToUpper() -ne "Y") {
+        Write-Host "  Cancelled." -ForegroundColor Gray
+        exit 0
+    }
+    Write-Host ""
+}
+
+# Initialize manifest so the registry write below captures before-state
+Initialize-ToolkitState | Out-Null
+$stepName = "timer-resolution"
 
 # C# source for the timer resolution service
 $csSource = @'
@@ -124,20 +179,45 @@ if (-not (Test-Path $exePath)) {
 }
 
 Write-Host "[3/4] Installing service..." -ForegroundColor Yellow
-# Remove old service if exists
-if (Get-Service -Name "STR" -ErrorAction SilentlyContinue) {
-    Stop-Service -Name "STR" -Force -ErrorAction SilentlyContinue
-    sc.exe delete "STR" | Out-Null
-    Start-Sleep -Seconds 2
+# CURSOR-AUDIT #11 idempotency: only recreate if the service is missing or
+# points at a different binary. Re-running with the same exe is a no-op.
+$existingService = Get-CimInstance -ClassName Win32_Service -Filter "Name='STR'" -ErrorAction SilentlyContinue
+$needsRecreate = $true
+if ($existingService -and $existingService.PathName) {
+    # PathName may be quoted; strip and compare
+    $existingPath = $existingService.PathName.Trim('"')
+    if ($existingPath -ieq $exePath) {
+        Write-Host "      STR service already installed pointing at $exePath — skipping recreate." -ForegroundColor Gray
+        $needsRecreate = $false
+    }
 }
-
-New-Service -Name "STR" -DisplayName "Set Timer Resolution Service" -BinaryPathName $exePath -StartupType Automatic -ErrorAction SilentlyContinue | Out-Null
+if ($needsRecreate) {
+    if (Get-Service -Name "STR" -ErrorAction SilentlyContinue) {
+        Stop-Service -Name "STR" -Force -ErrorAction SilentlyContinue
+        sc.exe delete "STR" | Out-Null
+        Start-Sleep -Seconds 2
+    }
+    New-Service -Name "STR" -DisplayName "Set Timer Resolution Service" -BinaryPathName $exePath -StartupType Automatic -ErrorAction SilentlyContinue | Out-Null
+}
 
 Write-Host "[4/4] Starting service and enabling global timer resolution..." -ForegroundColor Yellow
 Start-Service -Name "STR" -ErrorAction SilentlyContinue
 
-# Enable global timer resolution requests (Win11 24H2+)
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\kernel" /v "GlobalTimerResolutionRequests" /t REG_DWORD /d 1 /f 2>$null | Out-Null
+# CURSOR-AUDIT #11 idempotency: only write the kernel value if not already 1.
+# Tracked via Set-ToolkitRegistryValue so uninstall-timer-resolution-service.ps1
+# (or REVERT-EVERYTHING.ps1) can revert to the captured pre-install state.
+$kernelPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel"
+$currentKernelValue = (Get-ItemProperty -Path $kernelPath -Name "GlobalTimerResolutionRequests" -ErrorAction SilentlyContinue).GlobalTimerResolutionRequests
+if ($currentKernelValue -ne 1) {
+    Set-ToolkitRegistryValue -Id "reg:GlobalTimerResolutionRequests" `
+        -Path $kernelPath -Name "GlobalTimerResolutionRequests" `
+        -Value 1 -Type "DWord" -Tier "Advanced" -Step $stepName
+} else {
+    Write-Host "      GlobalTimerResolutionRequests already = 1; skipping write." -ForegroundColor Gray
+}
+
+Add-ToolkitStepResult -Key $stepName -Tier "Advanced" -Status "applied" `
+    -Reason "STR service installed, GlobalTimerResolutionRequests = 1"
 
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Cyan

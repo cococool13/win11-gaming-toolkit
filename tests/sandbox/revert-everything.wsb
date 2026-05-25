@@ -1,0 +1,25 @@
+<Configuration>
+    <!--
+        REVERT-EVERYTHING.ps1 against a manifest-less Sandbox.
+
+        Important corner case: most users don't run REVERT until they've
+        run APPLY. But REVERT must NOT throw or corrupt anything when
+        run cold. Fresh Sandbox = empty manifest = this is the test.
+
+        Expected: every Run-Step logs "Skipped (no manifest entry)" or
+        falls back to a defaults-style restore that's a no-op on a
+        fresh VM. Final summary should show many Skipped, zero Failed.
+    -->
+    <VGpu>Disable</VGpu>
+    <Networking>Default</Networking>
+    <MappedFolders>
+        <MappedFolder>
+            <HostFolder>%REPO%</HostFolder>
+            <SandboxFolder>C:\repo</SandboxFolder>
+            <ReadOnly>true</ReadOnly>
+        </MappedFolder>
+    </MappedFolders>
+    <LogonCommand>
+        <Command>powershell.exe -NoExit -ExecutionPolicy Bypass -Command "Set-Location C:\repo; Write-Host 'Sandbox ready — REVERT-EVERYTHING.ps1 on empty manifest' -ForegroundColor Cyan; .\REVERT-EVERYTHING.ps1"</Command>
+    </LogonCommand>
+</Configuration>

@@ -2,6 +2,8 @@
 # Enable MSI Mode for Detected GPUs
 # Windows 11 Gaming Optimization Guide
 # ============================================================
+# Tier: Advanced
+#
 # Enables Message Signaled Interrupts (MSI) for real GPUs only.
 # Filters out Microsoft Basic Display Adapter, Hyper-V, and
 # virtual displays (Parsec, OBS Virtual Cam, IDD drivers).
@@ -10,6 +12,13 @@
 #
 # Tracked via Set-TrackedRegistry so REVERT-EVERYTHING can restore
 # the prior MSI mode state from the manifest.
+#
+# ANTI-CHEAT NOTE (CURSOR-AUDIT #16): switching from line-based to
+# message-signaled interrupts is a long-standing supported Windows
+# behavior and very rarely triggers anti-cheat — listed for
+# completeness; no known BattlEye / EAC regressions reported on
+# Win11 24H2+. If a specific title misbehaves, revert via
+# disable-msi-mode.ps1.
 #
 # Optional: -IncludeStorage also enables MSI on the primary NVMe
 # controller. Off by default; opt-in.
@@ -58,7 +67,7 @@ foreach ($gpu in $gpuDevices) {
 if ($IncludeStorage) {
     UI-Section -Title "Storage MSI extension (-IncludeStorage)"
     $nvmeDevices = @(Get-PnpDevice -Class SCSIAdapter -ErrorAction SilentlyContinue |
-        Where-Object { $_.InstanceId -match "PCI\\VEN_" -and $_.FriendlyName -match "NVMe" -and $_.Status -eq "OK" })
+            Where-Object { $_.InstanceId -match "PCI\\VEN_" -and $_.FriendlyName -match "NVMe" -and $_.Status -eq "OK" })
     if ($nvmeDevices.Count -eq 0) {
         UI-Skip -Label "NVMe MSI" -Reason "No NVMe controller detected"
     } else {

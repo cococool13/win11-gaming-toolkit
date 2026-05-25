@@ -37,7 +37,20 @@ function UI-RequireAdmin {
 }
 
 function UI-RequireInternet {
-    if (-not (Test-Connection -ComputerName "8.8.8.8" -Count 1 -Quiet -ErrorAction SilentlyContinue)) {
+    # Direct .NET ping. Avoids Test-Connection's CimInstance overhead
+    # and the PSAvoidUsingComputerNameHardcoded false positive on
+    # well-known public DNS reachability targets.
+    $reachable = $false
+    $ping = [System.Net.NetworkInformation.Ping]::new()
+    try {
+        $reply = $ping.Send('8.8.8.8', 1500)
+        $reachable = ($reply.Status -eq [System.Net.NetworkInformation.IPStatus]::Success)
+    } catch [System.Net.NetworkInformation.PingException] {
+        $reachable = $false
+    } finally {
+        $ping.Dispose()
+    }
+    if (-not $reachable) {
         Write-Host ""
         Write-Host "  [ERROR] Internet connection required." -ForegroundColor $script:UI_Error
         Write-Host ""
@@ -99,17 +112,21 @@ function UI-KeyValue {
 }
 
 function UI-ShowProfile {
-    param($Profile)
+    # PSAvoidAssignmentToAutomaticVariable: PowerShell's automatic
+    # $Profile is the user's profile-script path. The parameter inside
+    # this function is a *machine profile* (CPU/GPU/RAM/OS metadata),
+    # renamed to avoid shadowing the automatic in calling scope.
+    param([Alias('Profile')]$MachineProfile)
 
-    if (-not $Profile) {
+    if (-not $MachineProfile) {
         return
     }
 
-    UI-KeyValue -Label "Machine" -Value ("{0} {1}" -f $Profile.manufacturer, $Profile.model)
-    UI-KeyValue -Label "Windows" -Value $Profile.windowsCaption -Color $script:UI_Info
-    UI-KeyValue -Label "Power" -Value $Profile.powerState -Color $script:UI_Info
-    UI-KeyValue -Label "Graphics" -Value ("{0} GPU(s) | Hybrid {1}" -f $Profile.gpuCount, $Profile.isHybridGraphics) -Color $script:UI_Info
-    UI-KeyValue -Label "Domain" -Value ([string]$Profile.partOfDomain) -Color $script:UI_Info
+    UI-KeyValue -Label "Machine" -Value ("{0} {1}" -f $MachineProfile.manufacturer, $MachineProfile.model)
+    UI-KeyValue -Label "Windows" -Value $MachineProfile.windowsCaption -Color $script:UI_Info
+    UI-KeyValue -Label "Power" -Value $MachineProfile.powerState -Color $script:UI_Info
+    UI-KeyValue -Label "Graphics" -Value ("{0} GPU(s) | Hybrid {1}" -f $MachineProfile.gpuCount, $MachineProfile.isHybridGraphics) -Color $script:UI_Info
+    UI-KeyValue -Label "Domain" -Value ([string]$MachineProfile.partOfDomain) -Color $script:UI_Info
 }
 
 function UI-Step {

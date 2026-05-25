@@ -33,7 +33,7 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 }
 
 $state = Initialize-ToolkitState
-$profile = $state.context
+$machineProfile = $state.context
 $stepName = "power-plan"
 
 # ---- Detect current power plan ----
@@ -41,9 +41,10 @@ Write-Host "  Checking current power plan..." -ForegroundColor Gray
 
 $activePlanOutput = powercfg /getactivescheme 2>&1
 $activePlanName = ""
-$activePlanGuid = ""
+# Note: GUID is also captured by the regex (group 1) but currently unused.
+# If a future tweak needs to switch active plans without re-detecting,
+# add a $activePlanGuid local and pull $Matches[1].
 if ($activePlanOutput -match "([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s+\((.+)\)") {
-    $activePlanGuid = $Matches[1]
     $activePlanName = $Matches[2]
 }
 
@@ -51,7 +52,7 @@ Write-Host "  Current plan: $activePlanName" -ForegroundColor $(if ($activePlanN
 Write-Host ""
 
 # ---- Laptop awareness ----
-if ($profile.isLaptop) {
+if ($machineProfile.isLaptop) {
     Write-Host "  LAPTOP DETECTED" -ForegroundColor Yellow
     Write-Host "  This plan keeps CPU at max frequency and disables sleep." -ForegroundColor Yellow
     Write-Host "  Battery life will be significantly reduced." -ForegroundColor Yellow
@@ -62,7 +63,7 @@ if ($profile.isLaptop) {
     Write-Host "      powercfg /setactive SCHEME_BALANCED" -ForegroundColor Gray
     Write-Host ""
 
-    if ($profile.powerState -eq "On battery") {
+    if ($machineProfile.powerState -eq "On battery") {
         Write-Host "  WARNING: You are currently on battery power!" -ForegroundColor Red
         Write-Host "  Applying these settings on battery will drain quickly." -ForegroundColor Red
         Write-Host ""
@@ -134,7 +135,16 @@ if ($verifyOutput -match "([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a
 }
 
 # Helper — sets both AC (plugged in) and DC (battery)
-function Set-PowerIndex($subgroup, $setting, $value) {
+function Set-PowerIndex {
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]
+    param(
+        [Parameter(Mandatory)][string]$subgroup,
+        [Parameter(Mandatory)][string]$setting,
+        [Parameter(Mandatory)][string]$value
+    )
+    if (-not $PSCmdlet.ShouldProcess("power-plan $activePlan", "set $subgroup/$setting = $value (AC+DC)")) {
+        return
+    }
     powercfg /setacvalueindex $activePlan $subgroup $setting $value 2>$null
     powercfg /setdcvalueindex $activePlan $subgroup $setting $value 2>$null
 }
@@ -268,7 +278,7 @@ Write-Host "    - PCI-E / USB power management: off" -ForegroundColor Gray
 Write-Host "    - Sleep / Hibernate / Fast Startup: disabled" -ForegroundColor Gray
 Write-Host "    - Power throttling: disabled" -ForegroundColor Gray
 Write-Host ""
-if ($profile.isLaptop) {
+if ($machineProfile.isLaptop) {
     Write-Host "  LAPTOP REMINDER: Switch to Balanced on battery:" -ForegroundColor Yellow
     Write-Host "    powercfg /setactive SCHEME_BALANCED" -ForegroundColor Gray
     Write-Host ""

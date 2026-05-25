@@ -1,14 +1,26 @@
-# ============================================================
-# Cleanup Temp Files and Caches (Smart)
-# Windows 11 Gaming Optimization Guide
-# ============================================================
-# Clears temporary files, Windows Update cache, shader cache,
-# and other junk. Handles locked files gracefully and estimates
-# space freed. Warns about shader cache impact.
-#
-# Replaces: cleanup-temp.bat
-# Must be run as Administrator.
-# ============================================================
+<#
+.SYNOPSIS
+    Clear temporary files, Windows Update cache, and GPU shader
+    caches with -WhatIf preview support.
+
+.DESCRIPTION
+    Iterates a list of cleanup targets and removes their contents.
+    Handles locked files gracefully and estimates space freed.
+
+    SupportsShouldProcess: every destructive operation (per-folder
+    Remove-Item loop, Stop/Start of wuauserv, cleanmgr launch,
+    Disk Cleanup registry preset writes) is gated by
+    $PSCmdlet.ShouldProcess so -WhatIf prints what WOULD be deleted
+    without actually deleting.
+
+.NOTES
+    Tier: Safe (destructive but reversible only by re-downloading
+    what was deleted — e.g. shader caches rebuild on next game launch).
+    Replaces: cleanup-temp.bat
+    Must be run as Administrator.
+#>
+[CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
+param()
 
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"
 
@@ -26,6 +38,11 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     exit 1
 }
 
+# Audit-trail: log this script invocation to
+# %ProgramData%\Win11GamingToolkit\logs\<stem>-<ts>-<pid>.log
+# (or $XDG_DATA_HOME on dev macOS). Idempotent per process.
+Write-ToolkitScriptStart
+
 $totalFreed = 0
 
 function Get-FolderSizeMB {
@@ -36,6 +53,7 @@ function Get-FolderSizeMB {
 }
 
 function Clear-FolderSafe {
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     param(
         [string]$Path,
         [string]$Description,
@@ -46,6 +64,11 @@ function Clear-FolderSafe {
 
     if (-not (Test-Path $Path)) {
         Write-Host " Not found" -ForegroundColor Gray
+        return
+    }
+
+    if (-not $PSCmdlet.ShouldProcess($Path, "Remove all contents recursively")) {
+        Write-Host " Skipped (-WhatIf)" -ForegroundColor Gray
         return
     }
 
@@ -77,14 +100,14 @@ function Clear-FolderSafe {
 Write-Host "  Estimating space to free..." -ForegroundColor Gray
 
 $targets = @(
-    @{ Path = $env:TEMP;                                    Desc = "User temp folder" }
-    @{ Path = "$env:WINDIR\Temp";                           Desc = "Windows temp folder" }
-    @{ Path = "$env:WINDIR\SoftwareDistribution\Download";  Desc = "Windows Update cache" }
+    @{ Path = $env:TEMP; Desc = "User temp folder" }
+    @{ Path = "$env:WINDIR\Temp"; Desc = "Windows temp folder" }
+    @{ Path = "$env:WINDIR\SoftwareDistribution\Download"; Desc = "Windows Update cache" }
     @{ Path = "$env:LOCALAPPDATA\Microsoft\Windows\Explorer"; Desc = "Thumbnail cache" }
-    @{ Path = "$env:LOCALAPPDATA\D3DSCache";                Desc = "DirectX Shader Cache" }
-    @{ Path = "$env:LOCALAPPDATA\NVIDIA\DXCache";           Desc = "NVIDIA Shader Cache" }
-    @{ Path = "$env:LOCALAPPDATA\NVIDIA\GLCache";           Desc = "NVIDIA GL Cache" }
-    @{ Path = "$env:LOCALAPPDATA\AMD\DxCache";              Desc = "AMD Shader Cache" }
+    @{ Path = "$env:LOCALAPPDATA\D3DSCache"; Desc = "DirectX Shader Cache" }
+    @{ Path = "$env:LOCALAPPDATA\NVIDIA\DXCache"; Desc = "NVIDIA Shader Cache" }
+    @{ Path = "$env:LOCALAPPDATA\NVIDIA\GLCache"; Desc = "NVIDIA GL Cache" }
+    @{ Path = "$env:LOCALAPPDATA\AMD\DxCache"; Desc = "AMD Shader Cache" }
 )
 
 $estimatedTotal = 0
@@ -110,24 +133,32 @@ Clear-FolderSafe -Path "$env:WINDIR\Temp" -Description "Windows temp folder" -St
 
 # Windows Update cache — stop service first
 Write-Host "  [3/8] Windows Update cache..." -NoNewline
-$wuRunning = (Get-Service wuauserv -ErrorAction SilentlyContinue).Status -eq "Running"
-if ($wuRunning) { Stop-Service wuauserv -Force -ErrorAction SilentlyContinue }
-$sizeBefore = Get-FolderSizeMB -Path "$env:WINDIR\SoftwareDistribution\Download"
-Get-ChildItem "$env:WINDIR\SoftwareDistribution\Download" -Recurse -Force -ErrorAction SilentlyContinue |
-    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
-$sizeAfter = Get-FolderSizeMB -Path "$env:WINDIR\SoftwareDistribution\Download"
-$freed = [math]::Max(0, $sizeBefore - $sizeAfter)
-$totalFreed += $freed
-if ($wuRunning) { Start-Service wuauserv -ErrorAction SilentlyContinue }
-Write-Host " Done ($([math]::Round($freed, 0)) MB freed)" -ForegroundColor Green
+if ($PSCmdlet.ShouldProcess("Windows Update cache + wuauserv stop/start cycle", "Clear cache")) {
+    $wuRunning = (Get-Service wuauserv -ErrorAction SilentlyContinue).Status -eq "Running"
+    if ($wuRunning) { Stop-Service wuauserv -Force -ErrorAction SilentlyContinue }
+    $sizeBefore = Get-FolderSizeMB -Path "$env:WINDIR\SoftwareDistribution\Download"
+    Get-ChildItem "$env:WINDIR\SoftwareDistribution\Download" -Recurse -Force -ErrorAction SilentlyContinue |
+        Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+    $sizeAfter = Get-FolderSizeMB -Path "$env:WINDIR\SoftwareDistribution\Download"
+    $freed = [math]::Max(0, $sizeBefore - $sizeAfter)
+    $totalFreed += $freed
+    if ($wuRunning) { Start-Service wuauserv -ErrorAction SilentlyContinue }
+    Write-Host " Done ($([math]::Round($freed, 0)) MB freed)" -ForegroundColor Green
+} else {
+    Write-Host " Skipped (-WhatIf)" -ForegroundColor Gray
+}
 
 # Thumbnail cache — only .db files
 Write-Host "  [4/8] Thumbnail cache..." -NoNewline
-$thumbs = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\thumbcache_*.db" -Force -ErrorAction SilentlyContinue
-$thumbSize = ($thumbs | Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum / 1MB
-$thumbs | Remove-Item -Force -ErrorAction SilentlyContinue
-$totalFreed += [math]::Round($thumbSize, 1)
-Write-Host " Done ($([math]::Round($thumbSize, 0)) MB freed)" -ForegroundColor Green
+if ($PSCmdlet.ShouldProcess("Explorer thumbcache_*.db files", "Remove")) {
+    $thumbs = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\thumbcache_*.db" -Force -ErrorAction SilentlyContinue
+    $thumbSize = ($thumbs | Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum / 1MB
+    $thumbs | Remove-Item -Force -ErrorAction SilentlyContinue
+    $totalFreed += [math]::Round($thumbSize, 1)
+    Write-Host " Done ($([math]::Round($thumbSize, 0)) MB freed)" -ForegroundColor Green
+} else {
+    Write-Host " Skipped (-WhatIf)" -ForegroundColor Gray
+}
 
 Clear-FolderSafe -Path "$env:LOCALAPPDATA\D3DSCache" -Description "DirectX Shader Cache" -StepNum "5/8"
 Clear-FolderSafe -Path "$env:LOCALAPPDATA\NVIDIA\DXCache" -Description "NVIDIA Shader Cache" -StepNum "6/8"
@@ -135,19 +166,23 @@ Clear-FolderSafe -Path "$env:LOCALAPPDATA\AMD\DxCache" -Description "AMD Shader 
 
 # Disk Cleanup (silent)
 Write-Host "  [8/8] Disk Cleanup (silent)..." -NoNewline
-$cleanupKeys = @(
-    "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches\Temporary Files"
-    "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches\Recycle Bin"
-    "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches\Windows Error Reporting Files"
-    "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches\Delivery Optimization Files"
-)
-foreach ($key in $cleanupKeys) {
-    if (Test-Path $key) {
-        New-ItemProperty -Path $key -Name "StateFlags0100" -Value 2 -PropertyType DWord -Force -ErrorAction SilentlyContinue | Out-Null
+if ($PSCmdlet.ShouldProcess("cleanmgr /sagerun:100 (Recycle Bin, Error Reports, Delivery Optimization)", "Run Disk Cleanup")) {
+    $cleanupKeys = @(
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches\Temporary Files"
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches\Recycle Bin"
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches\Windows Error Reporting Files"
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches\Delivery Optimization Files"
+    )
+    foreach ($key in $cleanupKeys) {
+        if (Test-Path $key) {
+            New-ItemProperty -Path $key -Name "StateFlags0100" -Value 2 -PropertyType DWord -Force -ErrorAction SilentlyContinue | Out-Null
+        }
     }
+    Start-Process cleanmgr -ArgumentList "/sagerun:100" -Wait -ErrorAction SilentlyContinue
+    Write-Host " Done" -ForegroundColor Green
+} else {
+    Write-Host " Skipped (-WhatIf)" -ForegroundColor Gray
 }
-Start-Process cleanmgr -ArgumentList "/sagerun:100" -Wait -ErrorAction SilentlyContinue
-Write-Host " Done" -ForegroundColor Green
 
 Add-ToolkitStepResult -Key "cleanup" -Tier "Safe" -Status "applied" -Reason "Freed ~$([math]::Round($totalFreed, 0)) MB"
 

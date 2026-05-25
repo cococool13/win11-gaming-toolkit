@@ -1,0 +1,20 @@
+{
+  "ByFile": {
+    "verify-tweaks.ps1": 20,
+    "_common.ps1": 1,
+    "toolkit-state.Tests.ps1": 2,
+    "configure-power.ps1": 15,
+    "APPLY-EVERYTHING.ps1": 84
+  },
+  "BySeverity": {
+    "Error": 0,
+    "Warning": 0,
+    "Information": 122
+  },
+  "Generated": "2026-05-24T14:28:07.7716920-04:00",
+  "ByRule": {
+    "PSUseOutputTypeCorrectly": 1,
+    "PSAvoidUsingPositionalParameters": 121
+  },
+  "TotalCount": 122
+}

@@ -1,0 +1,26 @@
+<Configuration>
+    <!--
+        11 hardware checks/check-storage.ps1 read-only run.
+
+        Safest possible sandbox config: pure-read, no -Fix flag, no
+        registry/service writes. Useful as a smoke test that the
+        new 11 hardware checks/ folder mounts correctly + the Storage
+        cmdlets resolve in a fresh Sandbox image.
+
+        Sandbox virtualizes storage so the SSD/HDD media-type report
+        will likely show 'unknown' for the virtual disk — that's
+        expected and noted in the script header.
+    -->
+    <VGpu>Disable</VGpu>
+    <Networking>Default</Networking>
+    <MappedFolders>
+        <MappedFolder>
+            <HostFolder>%REPO%</HostFolder>
+            <SandboxFolder>C:\repo</SandboxFolder>
+            <ReadOnly>true</ReadOnly>
+        </MappedFolder>
+    </MappedFolders>
+    <LogonCommand>
+        <Command>powershell.exe -NoExit -ExecutionPolicy Bypass -Command "Set-Location 'C:\repo\11 hardware checks'; Write-Host 'Sandbox ready — check-storage.ps1 (read-only)' -ForegroundColor Cyan; .\check-storage.ps1"</Command>
+    </LogonCommand>
+</Configuration>

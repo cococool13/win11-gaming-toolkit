@@ -14,11 +14,16 @@ $Host.UI.RawUI.WindowTitle = "Re-enable Write Cache Flushing"
 UI-Header -Title "Re-enable Write Cache Buffer Flushing" -Subtitle "Restore safe storage default"
 UI-RequireAdmin -ScriptName "Re-enable Write Cache Flushing"
 
+# Audit-trail: log this script invocation to
+# %ProgramData%\Win11GamingToolkit\logs\<stem>-<ts>-<pid>.log
+# (or $XDG_DATA_HOME on dev macOS). Idempotent per process.
+Write-ToolkitScriptStart
+
 UI-ResetCounters
-$beforePath = Join-Path $env:ProgramData "Win11GamingToolkit\state\writecache-before.json"
 
 # Pull every manifest entry with step "writecache-flush" and restore it.
 $state = Get-ToolkitState
+$count = 0
 if ($state -and $state.registry) {
     $regKeys = $state.registry
     $properties = if ($regKeys -is [hashtable]) {
@@ -26,7 +31,6 @@ if ($state -and $state.registry) {
     } else {
         $regKeys.PSObject.Properties
     }
-    $count = 0
     foreach ($prop in $properties) {
         if ($prop.Value.step -eq "writecache-flush") {
             UI-Step -Label "Restoring $($prop.Name)" -Action {
@@ -35,12 +39,39 @@ if ($state -and $state.registry) {
             $count++
         }
     }
-    if ($count -eq 0) {
-        UI-Note -Message "No tracked writecache-flush entries in manifest. Nothing to restore." -Color $script:UI_Info
+}
+
+# CURSOR-AUDIT #15: fall back to the sidecar when the manifest has no
+# writecache-flush entries. Read-ToolkitSidecar returns $null when
+# missing OR unparseable — both are "no fallback available" cases.
+if ($count -eq 0) {
+    $sidecar = Read-ToolkitSidecar -Name 'writecache'
+    if ($sidecar) {
+        UI-Note -Message "Manifest empty; falling back to 'writecache' sidecar" -Color $script:UI_Warning
+        foreach ($d in $sidecar) {
+            $regPath = "HKLM:\SYSTEM\CurrentControlSet\Enum\$($d.PnpId)\Device Parameters\Disk"
+            if (-not (Test-Path $regPath)) {
+                UI-Skip -Label "Disk $($d.Index) ($($d.Model))" -Reason "Device key no longer present"
+                continue
+            }
+            UI-Step -Label "Sidecar restore — Disk $($d.Index) ($($d.Model))" -Action {
+                if ($null -eq $d.UserWriteCacheSetting) {
+                    # Pre-toolkit state: value not set. Remove the override.
+                    Remove-ItemProperty -Path $regPath -Name "UserWriteCacheSetting" -ErrorAction SilentlyContinue
+                } else {
+                    Set-ItemProperty -Path $regPath -Name "UserWriteCacheSetting" -Value $d.UserWriteCacheSetting -Type DWord -Force
+                }
+            }
+            $count++
+        }
     }
 }
 
-if (Test-Path $beforePath) { Remove-Item $beforePath -Force -ErrorAction SilentlyContinue }
+if ($count -eq 0) {
+    UI-Note -Message "No tracked writecache-flush entries in manifest or sidecar. Nothing to restore." -Color $script:UI_Info
+}
+
+Remove-ToolkitSidecar -Name 'writecache'
 
 UI-Summary -DoneMessage "Write cache flushing restored" -Details @(
     "Reboot for the storage stack to pick up the change."

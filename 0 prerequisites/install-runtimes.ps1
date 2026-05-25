@@ -1,19 +1,27 @@
-# ============================================================
-# Install Gaming Prerequisites (Smart)
-# Windows 11 Gaming Optimization Guide
-# ============================================================
-# Many games require Visual C++ Redistributables and the legacy
-# DirectX runtime. This script installs ALL versions silently.
-# Missing these causes "VCRUNTIME140.dll not found" errors.
-#
-# Smart features:
-#   - Detects already-installed VC++ versions, skips them
-#   - Authenticode signature verification on all downloads
-#   - Manifest integration for tracking
-#
-# Replaces: install-runtimes.ps1 (dumb version)
-# Must be run as Administrator. Requires internet connection.
-# ============================================================
+<#
+.SYNOPSIS
+    Install Visual C++ Redistributables and DirectX Legacy Runtime —
+    the missing-DLL set most games need.
+
+.DESCRIPTION
+    Detects already-installed VC++ versions and skips them, then
+    downloads + Authenticode-verifies + silently installs the rest.
+    DirectX June 2010 redistributable (the legacy d3dx9*.dll etc.)
+    is also fetched + verified + installed if not present.
+
+    Each Start-Process installer invocation is gated by
+    $PSCmdlet.ShouldProcess so -WhatIf previews the install plan
+    without modifying the system. Download + signature verify still
+    occur under -WhatIf so the user can see what WOULD be installed
+    and verify the binaries land in the staging temp dir clean.
+
+.NOTES
+    Tier: Safe (installs Microsoft-signed runtimes)
+    Replaces: install-runtimes.ps1 (dumb version)
+    Must be run as Administrator. Requires internet connection.
+#>
+[CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
+param()
 
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"
 
@@ -224,6 +232,10 @@ foreach ($vc in $needed) {
             $installFailed++
             continue
         }
+        if (-not $PSCmdlet.ShouldProcess("$($vc.Name) (signed by Microsoft)", "Start-Process installer")) {
+            Write-Host " Skipped (-WhatIf)" -ForegroundColor Gray
+            continue
+        }
         Start-Process -Wait $filePath -ArgumentList $vc.Args -WindowStyle Hidden -ErrorAction Stop
         Write-Host " Done" -ForegroundColor Green
         $installSuccess++
@@ -255,10 +267,17 @@ if (-not $dxInstalled) {
             continue
         }
 
-        Start-Process -Wait $dxFile -ArgumentList "/Q /T:`"$dxDir`"" -ErrorAction Stop
-        Start-Process -Wait "$dxDir\DXSETUP.exe" -ArgumentList "/silent" -WindowStyle Hidden -ErrorAction Stop
-        Write-Host " Done" -ForegroundColor Green
-        $installSuccess++
+        # Gate via if/else (not `continue`) — this block is inside an
+        # `if (-not $dxInstalled)`, NOT a loop, so `continue` would
+        # produce "The Continue statement was not within a loop."
+        if ($PSCmdlet.ShouldProcess("DirectX June 2010 Legacy Runtime", "Extract + DXSETUP.exe /silent")) {
+            Start-Process -Wait $dxFile -ArgumentList "/Q /T:`"$dxDir`"" -ErrorAction Stop
+            Start-Process -Wait "$dxDir\DXSETUP.exe" -ArgumentList "/silent" -WindowStyle Hidden -ErrorAction Stop
+            Write-Host " Done" -ForegroundColor Green
+            $installSuccess++
+        } else {
+            Write-Host " Skipped (-WhatIf)" -ForegroundColor Gray
+        }
     } catch {
         Write-Host " Failed" -ForegroundColor Yellow
         $installFailed++

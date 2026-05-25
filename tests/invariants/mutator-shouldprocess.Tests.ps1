@@ -72,13 +72,16 @@ BeforeDiscovery {
     # cmdlets that don't propagate WhatIf. Fix per script in subsequent
     # commits; shrink this list as each lands. DON'T add new entries to
     # silence regressions — fix the script.
+    # ALL ORIGINAL GAPS CLOSED — 9/9 fixed across the prior loop + this one.
+    # Keep the (empty) array so the structure stays in place for any
+    # future gaps the next contributor surfaces with a fresh script.
     $script:ShouldProcessGaps = @(
-        '0 prerequisites/install-runtimes.ps1'
-        # configure-mmagent.ps1 fixed (this commit)
-        '5 registry tweaks/individual/enable-windows-update.ps1'
-        # revert-mmagent.ps1 fixed (this commit)
+        # install-runtimes.ps1 fixed (this commit)
+        # configure-mmagent.ps1 fixed (023a6b0)
+        # enable-windows-update.ps1 fixed (this commit)
+        # revert-mmagent.ps1 fixed (023a6b0)
         # uninstall-timer-resolution-service.ps1 fixed (ac3e5a4)
-        '7 network/enable-adapter-power-savings.ps1'
+        # enable-adapter-power-savings.ps1 fixed (this commit)
         # enable-dep.ps1 fixed (28644b4)
         # enable-smt-ht.ps1 fixed (28644b4)
         # cleanup-temp.ps1 fixed (d137e85)

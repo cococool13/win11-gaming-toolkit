@@ -13,6 +13,8 @@
 #
 # Anti-cheat impact: NONE — NTFS fsutil filesystem-behavior flag;
 # anti-cheats don't inspect timestamp-update policy.
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry-only write; no on-disk file creation.
 # ============================================================
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"

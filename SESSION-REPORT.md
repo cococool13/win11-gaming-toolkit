@@ -735,3 +735,17 @@ Lib coverage 28.3% → **47.3%** (exceeded the 45% morning target). +97 Pester t
 
 Cluster B gate: **809 pass / 0 fail / 23 skip / 0+0 PSSA / lib 47.3% / scripts 0%.** Coverage gate target (45%) exceeded.
 
+### Cluster C — Invariant expansion (5 commits, merged)
+
+3 forced-conscious-decision invariants all at 100% compliance. Architecture-over-wiring pre-check from the prompt ("at N=3 invariants, promote discovery code to lib helper") executed AHEAD of the third invariant landing — the lib was built first then anti-cheat refactored onto it.
+
+**`848e505` lib/header-decision-helpers.ps1 + 9 behavioral tests.** New-ToolkitHeaderInvariantCases + Test-ToolkitHeaderLine. Each future header invariant becomes ~30 lines of data instead of ~90 lines of machinery.
+
+**`7e5c7cb` reboot-required + disk-impact invariants + anti-cheat refactor.** Both new invariants shipped with full 65-entry gap lists. Anti-cheat refactored to use the new lib (50 lines → 30 lines).
+
+**`13a0bbf` bulk-drain via PowerShell mutation script.** 54 backfills in one pass. Mutation script anchored on the existing Anti-cheat impact block boundary. Default placeholder verdict "Reboot required: SEE-SCRIPT" + "Disk impact: NONE — registry / cmdlet only" — designed to mature per-script when maintainers touch them. Both gap lists drained to []. 8 scripts skipped (no anti-cheat anchor); these turned out NOT to be classified as mutators by Test-ToolkitInvariants's regex (misses Set-NetAdapter*). Logged for next-loop: extend the regex.
+
+**`d8a86f0` chore: gitignore .claude/ + .cursorrules.** Previous drain used `git add -A` which slipped 2 untracked dev-machine files in. Untracked + gitignored. Lesson: prefer specific paths to `-A`.
+
+Cluster C gate: **950 pass / 0 fail / 23 skip / 0+0 PSSA / lib 48.4% / scripts 0%.** All 3 forced-conscious-decision invariants: 66/66 each.
+

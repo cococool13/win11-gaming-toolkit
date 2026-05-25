@@ -15,6 +15,8 @@
     Pair: configure-mmagent.ps1
     Anti-cheat impact: NONE — restorer for MMAgent kernel memory-
         manager hints; pair-symmetric with configure-mmagent.ps1.
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry-only write; no on-disk file creation.
 #>
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]
 param()

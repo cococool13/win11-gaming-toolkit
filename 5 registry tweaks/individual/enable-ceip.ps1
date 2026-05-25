@@ -12,6 +12,8 @@
     Tier: Safe (returns to OS default CEIP state)
     Anti-cheat impact: NONE — SQMClient legacy diagnostic path; not
         inspected by anti-cheat layers.
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry-only write; no on-disk file creation.
     Pair: disable-ceip.ps1
 #>
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]

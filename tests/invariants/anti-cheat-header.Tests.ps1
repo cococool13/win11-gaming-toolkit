@@ -35,21 +35,13 @@
 
 BeforeDiscovery {
     . (Join-Path $PSScriptRoot '..' '_common.ps1')
-    . (Join-Path $PSScriptRoot '..' '..' 'profile/parts/toolkit-aware.ps1')
+    . (Join-Path $PSScriptRoot '..' '..' 'lib' 'header-decision-helpers.ps1')
 
     $script:KnownExcluded = @(
         'DduManual.ps1'
     )
 
-    # ALL 52 ORIGINAL GAPS DRAINED across sessions 5 + 6:
-    #   Session 5: 18 obvious-NONE backfilled + power-plan pair (20 total)
-    #   Session 6: remaining 32 backfilled (this drain), grouped by
-    #     risk class (simple-NONE, GPU vendor, complex security,
-    #     orchestrators). Each script's header now carries an
-    #     "Anti-cheat impact:" line with per-vendor reasoning where
-    #     non-NONE (configure-vbs HIGH, install-timer-resolution
-    #     MEDIUM on Vanguard/FACEIT, disable-windows-update INDIRECT-
-    #     MEDIUM via missed AC vendor version updates).
+    # ALL 52 ORIGINAL GAPS DRAINED across sessions 5 + 6.
     # Kept as empty array (architectural slot) so any future script
     # missing the header surfaces as a gate failure without needing
     # to re-instantiate the data structure.
@@ -60,17 +52,17 @@ BeforeDiscovery {
     )
 
     $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-    $all = Test-ToolkitInvariants -RepoRoot $repoRoot
-    $script:MutatorCases = @()
-    foreach ($row in $all) {
-        if (-not $row.IsMutator) { continue }
-        if ($script:KnownExcluded -contains $row.Path) { continue }
-        $script:MutatorCases += @{
-            Path = $row.Path
-            FullPath = (Join-Path $repoRoot $row.Path)
-            HeaderGap = ($script:AntiCheatGaps -contains $row.Path)
-        }
-    }
+    $script:MutatorCases = New-ToolkitHeaderInvariantCases `
+        -RepoRoot $repoRoot `
+        -KnownExcluded $script:KnownExcluded `
+        -KnownGaps $script:AntiCheatGaps
+}
+
+BeforeAll {
+    # Dot-source again at It-body scope. Pester v5 runs BeforeDiscovery
+    # in a separate scope from the actual It blocks, so functions
+    # discovered there aren't visible to the test bodies.
+    . (Join-Path $PSScriptRoot '..' '..' 'lib' 'header-decision-helpers.ps1')
 }
 
 Describe 'Invariant: every mutator declares anti-cheat impact in header' {
@@ -81,10 +73,8 @@ Describe 'Invariant: every mutator declares anti-cheat impact in header' {
             return
         }
 
-        # Same head-window as Test-ToolkitAdminCheck / Test-ToolkitInvariants
-        # — fits well-documented comment-help blocks.
-        $head = (Get-Content -LiteralPath $FullPath -TotalCount 120) -join "`n"
-        $head | Should -Match '(?im)anti-cheat\s+impact:' `
+        $matched = Test-ToolkitHeaderLine -Path $FullPath -Pattern '(?im)anti-cheat\s+impact:'
+        $matched | Should -BeTrue `
             -Because 'every mutator must answer "anti-cheat impact" in its header — NONE is a valid answer; the point is the forced conscious decision'
     }
 }

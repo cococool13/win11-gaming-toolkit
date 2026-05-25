@@ -19,6 +19,8 @@
     Tier: Advanced
     Anti-cheat impact: NONE. DiagTrack is the user-mode telemetry
         upload service; not inspected by BattlEye / EAC / similar.
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry-only write; no on-disk file creation.
     Source: https://learn.microsoft.com/en-us/windows/privacy/manage-windows-1809-endpoints
             https://learn.microsoft.com/en-us/windows/configuration/manage-connections-from-windows-operating-system-components-to-microsoft-services
     Pair: enable-diagtrack.ps1

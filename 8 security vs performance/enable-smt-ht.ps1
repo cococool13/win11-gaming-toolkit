@@ -15,6 +15,8 @@
         logical-processor topology. The sibling (disable-smt-ht) carries
         LOW-MED anti-cheat heuristic risk on Zen 5 per recent reports,
         but the re-enable direction is always safe.
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry / cmdlet only; no installer / file extraction.
     Reboot required for SMT to come back online.
 #>
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]

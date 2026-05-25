@@ -16,6 +16,8 @@
     Anti-cheat impact: NONE — restoring DEP (nx=OptIn or whatever
         the user had pre-toolkit) is the OS-default state. Anti-cheat
         layers expect nx to be on; this is the safe direction.
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry / cmdlet only; no installer / file extraction.
     Reboot required for nx to take effect.
 #>
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]

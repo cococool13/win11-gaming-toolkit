@@ -12,6 +12,10 @@
 #
 # Anti-cheat impact: NONE — TCP/IP stack tuning + per-adapter
 # advanced properties; below the game-process layer.
+# Reboot required: PARTIAL — netsh + Set-NetAdapterAdvancedProperty
+# apply live; netsh int tcp set heuristics changes take effect on
+# next connection but no reboot needed.
+# Disk impact: NONE — netsh + registry only; no installer / file IO.
 # ============================================================
 
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"

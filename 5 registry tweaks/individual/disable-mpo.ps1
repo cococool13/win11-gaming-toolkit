@@ -36,6 +36,8 @@
     Anti-cheat impact: NONE. OverlayTestMode is a DWM diagnostic
     flag; no kernel hooks, no kernel mode driver state. Safe on
     R6 Siege / Valorant / EAC / BE.
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry-only write; no on-disk file creation.
 
 .NOTES
     Tier: Advanced (changes display compositor behavior; reversible

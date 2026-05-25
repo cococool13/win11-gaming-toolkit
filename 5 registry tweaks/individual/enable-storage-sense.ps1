@@ -12,6 +12,8 @@
 .NOTES
     Tier: Safe — restorer is always safe to run.
     Anti-cheat impact: NONE — HKCU UWP/Settings policy; no kernel hooks.
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry-only write; no on-disk file creation.
     Microsoft Learn: https://learn.microsoft.com/en-us/windows/configuration/storage-sense
 #>
 # ============================================================

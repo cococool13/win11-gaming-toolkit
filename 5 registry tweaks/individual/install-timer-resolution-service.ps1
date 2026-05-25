@@ -29,6 +29,8 @@
 #   Riot Vanguard (Valorant): the SetTimerResolution.exe + STR
 #       service have been heuristically flagged for "kernel timing
 #       manipulation" since 2024. Not always — depends on Vanguard
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry-only write; no on-disk file creation.
 #       version + recent ML model updates — but the risk is real
 #       enough that Riot's support team publicly recommends not
 #       installing third-party timer services.

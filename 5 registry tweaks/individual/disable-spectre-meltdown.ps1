@@ -25,6 +25,8 @@
 # EAC / Vanguard regressions on Win11 24H2+ as of 2025. The Security
 # Trade-off tier above is about CPU side-channel attacks (Spectre /
 # Meltdown / Retbleed), not anti-cheat policy.
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry-only write; no on-disk file creation.
 # ============================================================
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"

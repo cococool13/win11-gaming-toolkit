@@ -42,6 +42,8 @@
     and I'm going to A/B test this — please make the change."
 
     Anti-cheat impact: NONE. HAGS is a kernel scheduler feature
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry-only write; no on-disk file creation.
     Microsoft built into Windows itself; anti-cheats don't inspect
     HwSchMode and there are no reports of false positives. Safe on
     R6 Siege / Valorant / EAC / BE.

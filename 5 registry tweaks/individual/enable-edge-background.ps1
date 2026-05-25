@@ -8,6 +8,8 @@
 #
 # Anti-cheat impact: NONE — Edge browser group-policy values; no
 # kernel hooks, no driver state, no scheduler change.
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry-only write; no on-disk file creation.
 # ============================================================
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"

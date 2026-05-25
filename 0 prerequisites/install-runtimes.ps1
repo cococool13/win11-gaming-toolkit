@@ -21,6 +21,8 @@
         and DirectX redistributable from official download URLs. The
         Authenticode signature check is the trust boundary; these are
         the same DLLs the anti-cheat layers themselves expect to find.
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry / cmdlet only; no installer / file extraction.
     Replaces: install-runtimes.ps1 (dumb version)
     Must be run as Administrator. Requires internet connection.
 #>

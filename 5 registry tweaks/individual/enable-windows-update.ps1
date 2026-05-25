@@ -21,6 +21,8 @@
     Pair: disable-windows-update.ps1
     Anti-cheat impact: NONE (restores the OS update path; the
         suppression had indirect impact via missed anti-cheat
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry-only write; no on-disk file creation.
         version updates — re-enabling clears that risk).
     Must be run as Administrator.
 #>

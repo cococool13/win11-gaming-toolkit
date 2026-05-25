@@ -65,6 +65,9 @@
 
     Anti-cheat impact: NONE. DoH is transparent to gameplay; the OS
     resolves through DoH but presents stable IPs to applications.
+    Reboot required: NO — DoH template registration applies live.
+    Disk impact: NONE — DnsClient cmdlets touch only the in-memory
+        DoH server table.
 
     Exit codes:
       0  DoH templates registered (and adapters configured if requested)

@@ -10,6 +10,8 @@
 # Restoring HVCI / VBS to ON (if previously disabled) re-satisfies
 # BattlEye / Vanguard policy requirements; all other restores return
 # the OS to its default state which anti-cheat layers expect.
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry / cmdlet only; no installer / file extraction.
 #
 # Must be run as Administrator. Requires reboot after completion.
 # ============================================================

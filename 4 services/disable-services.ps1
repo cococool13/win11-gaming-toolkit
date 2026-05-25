@@ -17,6 +17,8 @@
 # telemetry/UX services with no game-process surface. None are
 # inspected by BattlEye / EAC / Vanguard. The pair (enable-services.ps1)
 # restores prior state from the manifest.
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry / cmdlet only; no installer / file extraction.
 # ============================================================
 
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"

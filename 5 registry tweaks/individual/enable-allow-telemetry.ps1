@@ -14,6 +14,8 @@
     Tier: Safe (returns to OS default telemetry policy)
     Anti-cheat impact: NONE — GPO value at DataCollection key; not
         inspected by anti-cheat layers.
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry-only write; no on-disk file creation.
     Pair: disable-allow-telemetry.ps1
 #>
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]

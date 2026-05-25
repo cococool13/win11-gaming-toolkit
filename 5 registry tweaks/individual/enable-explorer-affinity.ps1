@@ -14,6 +14,8 @@
     Pair: disable-explorer-affinity.ps1
     Anti-cheat impact: NONE — restorer for an IFEO registry value
         targeting explorer.exe; no game-process surface.
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry-only write; no on-disk file creation.
     Must be run as Administrator.
 #>
 

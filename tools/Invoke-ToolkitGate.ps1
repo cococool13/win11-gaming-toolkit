@@ -27,6 +27,15 @@
 .PARAMETER SkipAnalyzer
     Skip PSScriptAnalyzer. Useful for Pester-only runs.
 
+.PARAMETER Coverage
+    Emit a non-gating CodeCoverage report alongside the Pester run.
+    Measures coverage on lib/*.ps1 only (the helpers are the long-lived
+    surface area worth tracking; individual tweak scripts are
+    short and runtime-untestable from dev macOS). Coverage NEVER fails
+    the gate — it's an informational report so trend lines are visible
+    per-commit without blocking work that genuinely doesn't increase
+    coverage (e.g. a doc-only PR).
+
 .EXAMPLE
     PS> pwsh -File tools/Invoke-ToolkitGate.ps1
     Runs full gate on repo. Exit 0 on success.
@@ -46,7 +55,8 @@ param(
     [string]$Path = (Split-Path -Parent $PSScriptRoot),
     [switch]$Strict,
     [switch]$SkipTests,
-    [switch]$SkipAnalyzer
+    [switch]$SkipAnalyzer,
+    [switch]$Coverage
 )
 
 $ErrorActionPreference = 'Stop'
@@ -61,6 +71,7 @@ $summary = [ordered]@{
     PesterFailed = 0
     PesterPassed = 0
     PesterSkipped = 0
+    CoveragePct = $null  # populated only when -Coverage is passed
 }
 
 if (-not $SkipAnalyzer) {
@@ -118,18 +129,47 @@ if (-not $SkipTests) {
         if (-not $IsWindows) {
             $config.Filter.ExcludeTag = @('WindowsOnly')
         }
+        if ($Coverage) {
+            # Cover lib/*.ps1 only — those are the long-lived helpers
+            # the per-script suites and invariants both exercise. Per-
+            # script tweak files are short and runtime-untestable from
+            # dev macOS (registry hives don't exist), so including them
+            # would dilute the coverage signal toward "% of static
+            # parse-friendly files we touched" rather than "% of helper
+            # surface our tests exercise."
+            $libDir = Join-Path $repoRoot 'lib'
+            $config.CodeCoverage.Enabled = $true
+            $config.CodeCoverage.Path = (Join-Path $libDir '*.ps1')
+            $config.CodeCoverage.OutputFormat = 'JaCoCo'
+            $config.CodeCoverage.OutputPath = (Join-Path $repoRoot 'coverage.xml')
+        }
         $pesterResult = Invoke-Pester -Configuration $config
         $summary.PesterFailed = $pesterResult.FailedCount
         $summary.PesterPassed = $pesterResult.PassedCount
         $summary.PesterSkipped = $pesterResult.SkippedCount
+        if ($Coverage -and $pesterResult.CodeCoverage) {
+            $cc = $pesterResult.CodeCoverage
+            $total = $cc.CommandsAnalyzedCount
+            $hit = $cc.CommandsExecutedCount
+            if ($total -gt 0) {
+                $summary.CoveragePct = [math]::Round(($hit / $total) * 100, 1)
+            } else {
+                $summary.CoveragePct = 0.0
+            }
+        }
         if ($pesterResult.FailedCount -gt 0) { $exitCode = 1 }
+        # Coverage NEVER touches $exitCode — it's a report, not a gate.
     }
 }
 
 Write-Output ''
 Write-Output '== Summary =='
 foreach ($k in $summary.Keys) {
-    Write-Output ("  {0,-18} {1}" -f $k, $summary[$k])
+    $v = $summary[$k]
+    # Suppress the coverage row entirely when -Coverage wasn't passed
+    # so the default summary stays terse for the common-case run.
+    if ($k -eq 'CoveragePct' -and $null -eq $v) { continue }
+    Write-Output ("  {0,-18} {1}" -f $k, $v)
 }
 Write-Output ''
 if ($exitCode -eq 0) {

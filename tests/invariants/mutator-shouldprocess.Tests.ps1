@@ -77,7 +77,7 @@ BeforeDiscovery {
         '5 registry tweaks/individual/configure-mmagent.ps1'
         '5 registry tweaks/individual/enable-windows-update.ps1'
         '5 registry tweaks/individual/revert-mmagent.ps1'
-        '5 registry tweaks/individual/uninstall-timer-resolution-service.ps1'
+        # uninstall-timer-resolution-service.ps1 fixed (b8e3f10 — was 5c2b9d0 list)
         '7 network/enable-adapter-power-savings.ps1'
         '8 security vs performance/enable-dep.ps1'
         '8 security vs performance/enable-smt-ht.ps1'

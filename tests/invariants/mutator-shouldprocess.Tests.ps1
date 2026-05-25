@@ -74,13 +74,13 @@ BeforeDiscovery {
     # silence regressions — fix the script.
     $script:ShouldProcessGaps = @(
         '0 prerequisites/install-runtimes.ps1'
-        '5 registry tweaks/individual/configure-mmagent.ps1'
+        # configure-mmagent.ps1 fixed (this commit)
         '5 registry tweaks/individual/enable-windows-update.ps1'
-        '5 registry tweaks/individual/revert-mmagent.ps1'
+        # revert-mmagent.ps1 fixed (this commit)
         # uninstall-timer-resolution-service.ps1 fixed (ac3e5a4)
         '7 network/enable-adapter-power-savings.ps1'
-        # enable-dep.ps1 fixed (this commit)
-        # enable-smt-ht.ps1 fixed (this commit)
+        # enable-dep.ps1 fixed (28644b4)
+        # enable-smt-ht.ps1 fixed (28644b4)
         # cleanup-temp.ps1 fixed (d137e85)
     )
 

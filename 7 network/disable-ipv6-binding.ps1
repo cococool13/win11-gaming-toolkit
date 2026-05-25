@@ -16,6 +16,11 @@
 # Captures per-adapter binding state to a sidecar JSON. The reg
 # value goes through Set-TrackedRegistry so REVERT-EVERYTHING
 # can restore from the manifest.
+#
+# Anti-cheat impact: NONE — IPv6 binding state is below the
+# game-process layer; BattlEye / EAC don't inspect adapter binding
+# composition. (The Security Trade-off above is connectivity-related,
+# not anti-cheat-related.)
 # ============================================================
 
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"

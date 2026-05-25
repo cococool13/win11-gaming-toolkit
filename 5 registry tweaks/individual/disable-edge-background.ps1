@@ -11,6 +11,9 @@
 #
 # Tracked via toolkit-state so the prior policy state can be
 # restored exactly by enable-edge-background.ps1 or full revert.
+#
+# Anti-cheat impact: NONE — Edge browser group-policy values; no
+# kernel hooks, no driver state, no scheduler change.
 # ============================================================
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"

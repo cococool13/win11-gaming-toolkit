@@ -10,6 +10,9 @@
 #
 # Reboot required. Tracked via toolkit-state so the exact previous
 # value can be restored by enable-ntfs-last-access.ps1 or full revert.
+#
+# Anti-cheat impact: NONE — NTFS fsutil filesystem-behavior flag;
+# anti-cheats don't inspect timestamp-update policy.
 # ============================================================
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"

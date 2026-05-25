@@ -9,6 +9,9 @@
 #
 # Replaces: optimize-network.bat
 # Must be run as Administrator.
+#
+# Anti-cheat impact: NONE — TCP/IP stack tuning + per-adapter
+# advanced properties; below the game-process layer.
 # ============================================================
 
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"

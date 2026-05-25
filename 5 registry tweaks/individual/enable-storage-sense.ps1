@@ -11,6 +11,7 @@
 
 .NOTES
     Tier: Safe — restorer is always safe to run.
+    Anti-cheat impact: NONE — HKCU UWP/Settings policy; no kernel hooks.
     Microsoft Learn: https://learn.microsoft.com/en-us/windows/configuration/storage-sense
 #>
 # ============================================================

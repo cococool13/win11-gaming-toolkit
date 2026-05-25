@@ -41,57 +41,22 @@ BeforeDiscovery {
         'DduManual.ps1'
     )
 
-    # Gap-tracking. 53 pre-existing scripts need the header backfill;
-    # drain in subsequent commits per the CLAUDE.md "shrink, don't
-    # silence" rule. NEW scripts must include the header at creation
-    # time — never add to this list to absorb a new regression.
-    #
-    # Each entry is a script that doesn't currently declare anti-cheat
-    # impact. Listed alphabetically by Path so diffs stay clean.
+    # ALL 52 ORIGINAL GAPS DRAINED across sessions 5 + 6:
+    #   Session 5: 18 obvious-NONE backfilled + power-plan pair (20 total)
+    #   Session 6: remaining 32 backfilled (this drain), grouped by
+    #     risk class (simple-NONE, GPU vendor, complex security,
+    #     orchestrators). Each script's header now carries an
+    #     "Anti-cheat impact:" line with per-vendor reasoning where
+    #     non-NONE (configure-vbs HIGH, install-timer-resolution
+    #     MEDIUM on Vanguard/FACEIT, disable-windows-update INDIRECT-
+    #     MEDIUM via missed AC vendor version updates).
+    # Kept as empty array (architectural slot) so any future script
+    # missing the header surfaces as a gate failure without needing
+    # to re-instantiate the data structure.
     $script:AntiCheatGaps = @(
-        # First-batch drain landed (this commit) — 18 obvious-NONE
-        # scripts backfilled. Remaining entries are either:
-        #   (a) genuinely require careful anti-cheat assessment
-        #       (Spectre/HVCI/VBS/Defender/timer-resolution/SMT)
-        #   (b) orchestrators where the impact is the union of bundled
-        #       phases (APPLY-EVERYTHING, REVERT-EVERYTHING)
-        #   (c) GPU driver installers — review pending vendor docs
-        # Drain per-commit as each is reviewed.
-
-        '0 prerequisites/install-runtimes.ps1'
-        # 2 power plan/configure-power.ps1 — drained this commit (header rewrite)
-        # 2 power plan/revert-power.ps1 — drained this commit (NOTES rewrite)
-        '4 services/disable-services.ps1'
-        '4 services/enable-services.ps1'
-        '4 services/individual/mobsync-disable.ps1'
-        '4 services/individual/mobsync-enable.ps1'
-        '5 registry tweaks/individual/configure-mmagent.ps1'
-        '5 registry tweaks/individual/disable-explorer-affinity.ps1'
-        '5 registry tweaks/individual/disable-spectre-meltdown.ps1'
-        '5 registry tweaks/individual/disable-windows-update.ps1'
-        '5 registry tweaks/individual/enable-explorer-affinity.ps1'
-        '5 registry tweaks/individual/enable-spectre-meltdown.ps1'
-        '5 registry tweaks/individual/enable-windows-update.ps1'
-        '5 registry tweaks/individual/install-timer-resolution-service.ps1'
-        '5 registry tweaks/individual/revert-mmagent.ps1'
-        '5 registry tweaks/individual/uninstall-timer-resolution-service.ps1'
-        '6 gpu/amd/configure-amd.ps1'
-        '6 gpu/amd/install-amd.ps1'
-        '6 gpu/configure-amd-ulps.ps1'
-        '6 gpu/enable-msi-mode.ps1'
-        '6 gpu/force-rebar.ps1'
-        '6 gpu/intel/configure-intel.ps1'
-        '6 gpu/intel/install-intel.ps1'
-        '6 gpu/nvidia/configure-nvidia.ps1'
-        '6 gpu/nvidia/force-p0-state.ps1'
-        '6 gpu/nvidia/install-nvidia.ps1'
-        '8 security vs performance/configure-vbs.ps1'
-        '8 security vs performance/disable-defender-wholesale.ps1'
-        '8 security vs performance/enable-defender-wholesale.ps1'
-        '8 security vs performance/enable-dep.ps1'
-        '8 security vs performance/enable-smt-ht.ps1'
-        'APPLY-EVERYTHING.ps1'
-        'REVERT-EVERYTHING.ps1'
+        # No current gaps. Add ONLY if a new script ships without the
+        # header AND fixing the script is impractical in the same commit.
+        # NEVER expand to absorb a regression — fix the script.
     )
 
     $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)

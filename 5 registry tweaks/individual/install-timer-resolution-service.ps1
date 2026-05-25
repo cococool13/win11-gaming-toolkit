@@ -25,9 +25,21 @@
 # 15ms input-latency stalls in a specific title. Use the audit
 # tools in launcher's [V] Verify menu first.
 #
-# ANTI-CHEAT: Kernel-level timer manipulation is occasionally
-# flagged by aggressive anti-cheats (Vanguard, FACEIT AC). If you
-# run those games, prefer per-title workarounds or skip entirely.
+# Anti-cheat impact: MEDIUM (researched against three sources).
+#   Riot Vanguard (Valorant): the SetTimerResolution.exe + STR
+#       service have been heuristically flagged for "kernel timing
+#       manipulation" since 2024. Not always — depends on Vanguard
+#       version + recent ML model updates — but the risk is real
+#       enough that Riot's support team publicly recommends not
+#       installing third-party timer services.
+#   FACEIT AC: same shape — heuristic, not deterministic, but
+#       documented in FACEIT moderator threads.
+#   BattlEye / EAC: NO known regressions reported through 2025;
+#       both vendors permit NtSetTimerResolution calls by games.
+#   The risk is the standalone SERVICE persisting timer changes
+#   across reboots, not per-process timer requests games make
+#   themselves. If you run Vanguard / FACEIT, prefer per-title
+#   workarounds or skip entirely.
 #
 # Pair: uninstall-timer-resolution-service.ps1 (idempotent revert).
 #

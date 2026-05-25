@@ -13,6 +13,9 @@
 .NOTES
     Tier: Safe (restores security default)
     Pair: disable-dep.ps1
+    Anti-cheat impact: NONE — restoring DEP (nx=OptIn or whatever
+        the user had pre-toolkit) is the OS-default state. Anti-cheat
+        layers expect nx to be on; this is the safe direction.
     Reboot required for nx to take effect.
 #>
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]

@@ -28,13 +28,21 @@
     Skip PSScriptAnalyzer. Useful for Pester-only runs.
 
 .PARAMETER Coverage
-    Emit a non-gating CodeCoverage report alongside the Pester run.
-    Measures coverage on lib/*.ps1 only (the helpers are the long-lived
-    surface area worth tracking; individual tweak scripts are
-    short and runtime-untestable from dev macOS). Coverage NEVER fails
-    the gate — it's an informational report so trend lines are visible
-    per-commit without blocking work that genuinely doesn't increase
-    coverage (e.g. a doc-only PR).
+    Emit a CodeCoverage report alongside the Pester run. Two scopes:
+      - lib/*.ps1  (GATING — see -LibCoverageFloor below)
+      - per-folder tweak scripts (NON-GATING, baseline only)
+    Lib helpers are the long-lived surface area worth gating; per-folder
+    scripts are mostly system mutations Pester can't safely exercise
+    from dev macOS, so they trend low and gate-by-trend would punish
+    legitimate work. Two coverage rows appear in the summary when this
+    is passed: CoverageLibPct (gating) and CoverageScriptsPct (report).
+
+.PARAMETER LibCoverageFloor
+    Minimum lib/*.ps1 coverage % the gate accepts. Default 11.0 — just
+    below the 11.1% baseline established 2026-05-24 to absorb refactor
+    churn. Falling below this fires GATE: FAIL with the same severity
+    as a Pester failure. Push the floor up actively, don't let it drift
+    down. Only effective when -Coverage is also passed.
 
 .EXAMPLE
     PS> pwsh -File tools/Invoke-ToolkitGate.ps1
@@ -56,7 +64,8 @@ param(
     [switch]$Strict,
     [switch]$SkipTests,
     [switch]$SkipAnalyzer,
-    [switch]$Coverage
+    [switch]$Coverage,
+    [double]$LibCoverageFloor = 11.0
 )
 
 $ErrorActionPreference = 'Stop'
@@ -71,7 +80,8 @@ $summary = [ordered]@{
     PesterFailed = 0
     PesterPassed = 0
     PesterSkipped = 0
-    CoveragePct = $null  # populated only when -Coverage is passed
+    CoverageLibPct = $null      # populated only when -Coverage is passed
+    CoverageScriptsPct = $null  # populated only when -Coverage is passed
 }
 
 if (-not $SkipAnalyzer) {
@@ -90,6 +100,15 @@ if (-not $SkipAnalyzer) {
         ErrorAction = 'SilentlyContinue'
     }
     $results = Invoke-ScriptAnalyzer @analyzerArgs
+
+    # Exclude .claude/ from analyzer results regardless of path separator
+    # so the gate stays stable when the dev has other worktrees mounted
+    # under .claude/worktrees/ (git's working-tree home for parallel
+    # branches). PSSA's -Recurse walks every directory under -Path
+    # ignoring .gitignore, so sibling worktrees on stale commits would
+    # otherwise poison the result on a fresh main checkout.
+    $excludeFragment = '[\\/]\.claude[\\/]'
+    $results = @($results | Where-Object { $_.ScriptPath -notmatch $excludeFragment })
 
     $summary.AnalyzerErrors = @($results | Where-Object Severity -EQ 'Error').Count
     $summary.AnalyzerWarnings = @($results | Where-Object Severity -EQ 'Warning').Count
@@ -130,16 +149,32 @@ if (-not $SkipTests) {
             $config.Filter.ExcludeTag = @('WindowsOnly')
         }
         if ($Coverage) {
-            # Cover lib/*.ps1 only — those are the long-lived helpers
-            # the per-script suites and invariants both exercise. Per-
-            # script tweak files are short and runtime-untestable from
-            # dev macOS (registry hives don't exist), so including them
-            # would dilute the coverage signal toward "% of static
-            # parse-friendly files we touched" rather than "% of helper
-            # surface our tests exercise."
+            # Cover lib/*.ps1 AND the per-folder tweak scripts. Pester
+            # emits a single combined report, so we collect both
+            # globs into CodeCoverage.Path and post-split the per-file
+            # records afterwards by path-prefix into the lib bucket
+            # (gating) and the scripts bucket (informational).
+            #
+            # We deliberately exclude:
+            #   tools/    — gate / dev tooling; should not gate itself
+            #   tests/    — test files cover themselves trivially
+            #   profile/  — dev environment only, not user-facing
+            #   .claude/  — sibling worktrees / cache
             $libDir = Join-Path $repoRoot 'lib'
             $config.CodeCoverage.Enabled = $true
-            $config.CodeCoverage.Path = (Join-Path $libDir '*.ps1')
+            $coveragePaths = @(
+                (Join-Path $libDir '*.ps1')
+            )
+            # Per-folder tweak scripts: glob every .ps1 under numbered
+            # phase folders (0..12) plus the repo-root entry points
+            # (APPLY-EVERYTHING.ps1 / REVERT-EVERYTHING.ps1 /
+            # launcher.ps1 / DduManual.ps1 / DduAuto.ps1).
+            $rootScripts = Get-ChildItem -LiteralPath $repoRoot -Filter '*.ps1' -File -ErrorAction SilentlyContinue
+            foreach ($rs in $rootScripts) { $coveragePaths += $rs.FullName }
+            $phaseDirs = Get-ChildItem -LiteralPath $repoRoot -Directory -ErrorAction SilentlyContinue |
+                Where-Object { $_.Name -match '^\d+ ' }
+            foreach ($pd in $phaseDirs) { $coveragePaths += (Join-Path $pd.FullName '*.ps1') }
+            $config.CodeCoverage.Path = $coveragePaths
             $config.CodeCoverage.OutputFormat = 'JaCoCo'
             $config.CodeCoverage.OutputPath = (Join-Path $repoRoot 'coverage.xml')
         }
@@ -149,16 +184,36 @@ if (-not $SkipTests) {
         $summary.PesterSkipped = $pesterResult.SkippedCount
         if ($Coverage -and $pesterResult.CodeCoverage) {
             $cc = $pesterResult.CodeCoverage
-            $total = $cc.CommandsAnalyzedCount
-            $hit = $cc.CommandsExecutedCount
-            if ($total -gt 0) {
-                $summary.CoveragePct = [math]::Round(($hit / $total) * 100, 1)
-            } else {
-                $summary.CoveragePct = 0.0
+            # Pester v5's CodeCoverage object exposes CommandsExecuted +
+            # CommandsMissed (each entry carries a .File property) and
+            # the corresponding count properties. There is no
+            # CommandsAnalyzed list — analyzed = executed ∪ missed.
+            # Bucket by directory match on '/lib/' (or '\lib\' on
+            # Windows) so the gating measure (lib only) and the
+            # informational measure (scripts) are independent.
+            $libSep = ([System.IO.Path]::DirectorySeparatorChar) + 'lib' + ([System.IO.Path]::DirectorySeparatorChar)
+            $libGlob = '*' + $libSep + '*'
+            $libExec = @($cc.CommandsExecuted | Where-Object { $_.File -like $libGlob }).Count
+            $libMissed = @($cc.CommandsMissed | Where-Object { $_.File -like $libGlob }).Count
+            $scriptsExec = @($cc.CommandsExecuted | Where-Object { $_.File -notlike $libGlob }).Count
+            $scriptsMissed = @($cc.CommandsMissed | Where-Object { $_.File -notlike $libGlob }).Count
+            $libTotal = $libExec + $libMissed
+            $scriptsTotal = $scriptsExec + $scriptsMissed
+            $summary.CoverageLibPct = if ($libTotal -gt 0) {
+                [math]::Round(($libExec / $libTotal) * 100, 1)
+            } else { 0.0 }
+            $summary.CoverageScriptsPct = if ($scriptsTotal -gt 0) {
+                [math]::Round(($scriptsExec / $scriptsTotal) * 100, 1)
+            } else { 0.0 }
+            # GATING: lib coverage must stay at or above the floor.
+            if ($summary.CoverageLibPct -lt $LibCoverageFloor) {
+                Write-Output ''
+                Write-Output ("-- Coverage FAIL: lib at {0}% < floor {1}% --" -f $summary.CoverageLibPct, $LibCoverageFloor)
+                $exitCode = 1
             }
         }
         if ($pesterResult.FailedCount -gt 0) { $exitCode = 1 }
-        # Coverage NEVER touches $exitCode — it's a report, not a gate.
+        # Scripts coverage is informational only — never touches $exitCode.
     }
 }
 
@@ -166,10 +221,10 @@ Write-Output ''
 Write-Output '== Summary =='
 foreach ($k in $summary.Keys) {
     $v = $summary[$k]
-    # Suppress the coverage row entirely when -Coverage wasn't passed
+    # Suppress coverage rows entirely when -Coverage wasn't passed
     # so the default summary stays terse for the common-case run.
-    if ($k -eq 'CoveragePct' -and $null -eq $v) { continue }
-    Write-Output ("  {0,-18} {1}" -f $k, $v)
+    if (($k -eq 'CoverageLibPct' -or $k -eq 'CoverageScriptsPct') -and $null -eq $v) { continue }
+    Write-Output ("  {0,-20} {1}" -f $k, $v)
 }
 Write-Output ''
 if ($exitCode -eq 0) {

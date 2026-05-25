@@ -1,3 +1,111 @@
+# FINAL SESSION REPORT — Session 6 (overnight autonomous run, 2026-05-24)
+
+## 30-second executive summary
+
+> **What landed overnight:** 30 commits across 5 merges, growing the
+> toolkit from 712 Pester tests to 1161 (+449), lib coverage from
+> 28.3% to 48.4% (+20.1pp), and adding 2 new forced-conscious-decision
+> invariants both at 100% compliance. 17 new user-facing Phase C
+> scripts shipped (telemetry expansion + hardware audits + receive-path
+> network pairs + pagefile pair). README rewritten as production-grade
+> with evidence-backed tweak catalog and alt-tool comparison.
+
+### Gate progression (session 6 start → session 6 end)
+
+| Metric | Start | End | Δ |
+|---|---|---|---|
+| PSScriptAnalyzer Errors | 0 | 0 | preserved |
+| PSScriptAnalyzer Warnings | 0 | 0 | preserved |
+| Pester passing | 712 | **1161** | +449 |
+| Pester skipped (gap-tracked) | 55 | 23 | -32 (gap arrays drained) |
+| Lib coverage (gating, 25.0% floor) | 28.3% | **48.4%** | +20.1pp |
+| Scripts coverage (informational) | 0% | 0% | baseline (Pester doesn't invoke script bodies — needs Windows CI) |
+| Anti-cheat header invariant | 28/60 (47%) | **66/66 (100%)** | 47 → 100 |
+| Reboot-required header invariant | — | **66/66 (100%)** | NEW |
+| Disk-impact header invariant | — | **66/66 (100%)** | NEW |
+| ShouldProcess invariant | 53/53 (100%) | 53/53 (100%) | maintained |
+| Pair-restore invariant | 56/56 (100%) | 56/56 (100%) | maintained |
+| Log-wiring-unconditional invariant | 60/60 (100%) | 60/60 (100%) | maintained |
+| Downloader-trust invariant | 4/4 (100%) | 4/4 (100%) | maintained |
+| Total invariant suites | 5 | **7** | +2 |
+| User-facing scripts in tree | ~50 | ~67 | +17 |
+| Merges to main | — | **5** | A / B / C / D-1 / D-2+E |
+
+### Production-readiness checklist
+
+- ☑ Lib coverage ≥45% (48.4%, gating floor raised 11→25)
+- ☑ Anti-cheat header invariant 100%
+- ☑ Reboot-required invariant 100%
+- ☑ Disk-impact invariant 100%
+- ☑ Pair-restore invariant 100% (maintained)
+- ☑ ShouldProcess invariant 100% (maintained)
+- ☑ Log-wiring invariant 100% (maintained)
+- ☑ Cross-platform dot-source clean for all `lib/*.ps1` (fixed
+   `lib/gpu-download.ps1` Join-Path-null on macOS — session 5 audit
+   had missed it via grep filter)
+- ◐ All Cluster D Phase C priorities shipped (17 of ~25; remaining:
+   Defender per-feature granularity 5 pairs, Core Isolation
+   per-feature 3 pairs, MSI mode mutate, USB polling tune mutate)
+- ☐ Profile system landed (not started — DEFERRED to next session)
+- ☑ README rewrite landed (200-line user-facing pitch with
+   evidence-backed catalog + alt-tool comparison)
+- ☑ ≥5 merge commits on main, each reviewable in isolation
+
+### Top 3 highlights
+
+1. **Crossed 1000 Pester tests** while raising lib coverage 28.3%
+   → 48.4% in one session. 30 behavioral tests added to
+   `lib/toolkit-state.ps1` alone (the biggest leverage file at
+   613 instructions). Pattern: behavioral tests that actually
+   invoke the lib functions, with per-test temp-dir overrides for
+   state isolation.
+
+2. **3 forced-conscious-decision invariants now at 100% (192/192
+   total).** Anti-cheat header drain (32 → 0), plus 2 NEW
+   invariants (reboot-required + disk-impact) that shipped with
+   full 65-entry gap lists populated and drained in the same
+   cluster via a PowerShell bulk-mutation script anchored on the
+   anti-cheat block boundary. Architecture-over-wiring at N=3:
+   `lib/header-decision-helpers.ps1` landed FIRST per the prompt's
+   pre-check rule.
+
+3. **17 new user-facing Phase C scripts** with Microsoft Learn /
+   vendor citations in every header. Hardware audits (ReBAR,
+   DirectStorage, pagefile, CPU/GPU/RAM stress, MSI mode),
+   network pairs (RSC + NDIS coalescing — completes the receive-
+   path latency tuning story), telemetry expansion (5 per-component
+   pairs joining the existing trio), pagefile sizing pair. Every
+   pair: SupportsShouldProcess + sidecar capture + paired restore
+   + all 3 header decisions in-script + auto-validated by 7
+   invariants on first ship.
+
+### Top 3 deferrals (carry forward to next session)
+
+1. **Profile system** (scaffolding-complete on the production-readiness
+   checklist; not started this session). Design: `profiles/` directory
+   with named PSD1 profile descriptors (Gaming, Productivity,
+   Battery, Latency, Privacy), each listing the scripts to invoke.
+   Orchestrator applies a named profile; sidecar tracks pre-profile
+   state for restore. Standalone branch effort, ~10-15 commits.
+
+2. **Defender per-feature granularity (5 pairs) + Core Isolation
+   per-feature granularity (3 pairs) + MSI mode mutate + USB polling
+   tune mutate.** All 4 are Cluster D priorities not yet shipped.
+   Pairs are ~2 scripts each (~16 new scripts total) plus tests.
+   Audits for some already exist (check-msi-mode in cluster D-1).
+
+3. **CI workflow improvements + manifest schema validation invariant
+   + cross-version Windows metadata invariant.** Three Cluster E
+   items deferred this run. CI matrix (PowerShell 7.4 + 7.6,
+   windows-2022 + windows-2025) is the highest-value of the three —
+   would catch any new cross-version regression at PR time.
+
+---
+
+## Per-cluster breakdown (chronological detail below)
+
+---
+
 # Session Report — Audit Remediation + FR33THY Port
 
 Branch: `CC/dazzling-perlman-ff4e98`
@@ -766,4 +874,22 @@ Cluster C gate: **950 pass / 0 fail / 23 skip / 0+0 PSSA / lib 48.4% / scripts 0
 **`60716ee` 5 telemetry-expansion pairs** — Cortana, Edge prefetch, Web search in Start, Activity history, Advertising ID. Per-component, not bundled. All 3 header invariants pass at ship.
 
 Cluster D sub-merge 1 gate: **1153 pass / 0 fail / 23 skip / 0+0 PSSA / lib 48.4% / scripts 0%.**
+
+### Cluster D sub-merge 2 + Cluster E essentials (3 commits, merged)
+
+Final sub-merge of the session. Closes out the pagefile story, lands the README rewrite, prepends the FINAL-SESSION-REPORT executive summary at the top.
+
+**`8e9e960` configure-pagefile + revert-pagefile pair** — companion to `check-pagefile.ps1` (cluster D-1). Applies Microsoft-recommended sizing (RAM × 1.0 / × 1.5), captures pre-toolkit state to 'pagefile' sidecar, restorer reads sidecar to put it back exactly (or re-enables AutomaticManagedPagefile if that was the pre-toolkit default). Disk impact: HIGH (initial pagefile.sys reservation on next boot).
+
+**`602372f` README full rewrite** — 200-line user-facing pitch with:
+  - At-a-glance production-readiness metrics (11 dimensions)
+  - Quickstart (unchanged from prior)
+  - Risk-tier explanation + manifest-revert contract
+  - Evidence-backed tweak catalog: every shipped tweak grouped by folder, 1-line "what it does" + Microsoft Learn / vendor source link
+  - Comparison table vs. ChrisTitusTech/winutil, FR33THY/Ultimate, BoringBoredom/PC-Tuning, djdallmann/GamingPCSetup — with explicit "where they win" notes (not one-sided)
+  - Doc index + Credits + License + Versioning
+
+**This commit** — prepended FINAL-SESSION-REPORT executive summary at the top of SESSION-REPORT.md per the prompt spec.
+
+Cluster D-2 + E gate: **1161 pass / 0 fail / 23 skip / 0+0 PSSA / lib 48.4% / scripts 0%.**
 

@@ -1,13 +1,28 @@
-# ============================================================
-# Enable Windows Update Service (Revert)
-# Windows 11 Gaming Optimization Guide
-# ============================================================
-#
-# Re-enables the Windows Update service and all related services.
-# Run this when you want to check for and install updates.
-#
-# Must be run as Administrator.
-# ============================================================
+<#
+.SYNOPSIS
+    Re-enable Windows Update services (wuauserv, UsoSvc, DoSvc,
+    WaaSMedicSvc) and remove the NoAutoUpdate Group Policy override.
+
+.DESCRIPTION
+    Pairs with disable-windows-update.ps1. Sets each service start mode
+    via sc.exe config, then starts the service. Each step is gated by
+    $PSCmdlet.ShouldProcess so -WhatIf previews without modifying
+    service state.
+
+    Service start-mode targets:
+      wuauserv      → demand (matches Windows default for the user-initiated flow)
+      UsoSvc        → demand
+      DoSvc         → auto (delivery optimization is auto-start by default)
+      WaaSMedicSvc  → Start=3 (manual) via direct registry — see Get-Help
+                      for why this is registry not sc.exe (DACL block on 24H2+).
+
+.NOTES
+    Tier: Safe (restores OS update path)
+    Pair: disable-windows-update.ps1
+    Must be run as Administrator.
+#>
+[CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
+param()
 
 $Host.UI.RawUI.WindowTitle = "Enable Windows Update"
 
@@ -33,36 +48,49 @@ Write-Host "  RE-ENABLING WINDOWS UPDATE" -ForegroundColor Cyan
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# 1. Re-enable services
-Write-Host "  Enabling Windows Update service..." -NoNewline
-sc.exe config wuauserv start= demand 2>&1 | Out-Null
-Start-Service -Name wuauserv -ErrorAction SilentlyContinue
-Write-Host " Done" -ForegroundColor Green
+# Re-enable services — data-driven loop so adding a fifth service is a
+# 1-line array push, not a 4-line block copy. Each iteration gates the
+# write via $PSCmdlet.ShouldProcess for -WhatIf support.
+$services = @(
+    @{ Name = 'wuauserv'; StartMode = 'demand'; Label = 'Windows Update service' }
+    @{ Name = 'UsoSvc'; StartMode = 'demand'; Label = 'Update Orchestrator' }
+    @{ Name = 'DoSvc'; StartMode = 'auto'; Label = 'Delivery Optimization' }
+)
+foreach ($svc in $services) {
+    Write-Host "  Enabling $($svc.Label)..." -NoNewline
+    if (-not $PSCmdlet.ShouldProcess("Service '$($svc.Name)' (start=$($svc.StartMode))", "sc.exe config + Start-Service")) {
+        Write-Host " Skipped (-WhatIf)" -ForegroundColor Gray
+        continue
+    }
+    sc.exe config $svc.Name start= $svc.StartMode 2>&1 | Out-Null
+    Start-Service -Name $svc.Name -ErrorAction SilentlyContinue
+    Write-Host " Done" -ForegroundColor Green
+}
 
-Write-Host "  Enabling Update Orchestrator..." -NoNewline
-sc.exe config UsoSvc start= demand 2>&1 | Out-Null
-Start-Service -Name UsoSvc -ErrorAction SilentlyContinue
-Write-Host " Done" -ForegroundColor Green
-
-Write-Host "  Enabling Delivery Optimization..." -NoNewline
-sc.exe config DoSvc start= auto 2>&1 | Out-Null
-Start-Service -Name DoSvc -ErrorAction SilentlyContinue
-Write-Host " Done" -ForegroundColor Green
-
+# WaaSMedicSvc needs direct registry write — on 24H2+ the DACL blocks
+# `sc.exe config WaaSMedicSvc start= demand` even from SYSTEM.
 Write-Host "  Enabling Windows Update Medic Service..." -NoNewline
 $medicPath = "HKLM:\SYSTEM\CurrentControlSet\Services\WaaSMedicSvc"
-if (Test-Path $medicPath) {
-    Set-ItemProperty $medicPath -Name "Start" -Value 3 -Type DWord -Force -ErrorAction SilentlyContinue
+if ($PSCmdlet.ShouldProcess("$medicPath\Start = 3 (Manual)", "Set-ItemProperty")) {
+    if (Test-Path $medicPath) {
+        Set-ItemProperty $medicPath -Name "Start" -Value 3 -Type DWord -Force -ErrorAction SilentlyContinue
+    }
+    Write-Host " Done" -ForegroundColor Green
+} else {
+    Write-Host " Skipped (-WhatIf)" -ForegroundColor Gray
 }
-Write-Host " Done" -ForegroundColor Green
 
-# 2. Remove Group Policy override
+# Remove Group Policy override
 Write-Host "  Removing Group Policy override..." -NoNewline
 $auPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU"
-if (Test-Path $auPath) {
-    Remove-ItemProperty $auPath -Name "NoAutoUpdate" -ErrorAction SilentlyContinue
+if ($PSCmdlet.ShouldProcess("$auPath\NoAutoUpdate", "Remove-ItemProperty")) {
+    if (Test-Path $auPath) {
+        Remove-ItemProperty $auPath -Name "NoAutoUpdate" -ErrorAction SilentlyContinue
+    }
+    Write-Host " Done" -ForegroundColor Green
+} else {
+    Write-Host " Skipped (-WhatIf)" -ForegroundColor Gray
 }
-Write-Host " Done" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Green

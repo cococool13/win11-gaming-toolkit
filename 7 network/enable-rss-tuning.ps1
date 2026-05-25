@@ -88,12 +88,6 @@ if (-not $PSBoundParameters.ContainsKey('MaxQueues') -or $MaxQueues -le 0) {
     Write-Host "  Auto-detected queue cap: $MaxQueues (logical CPUs=$logical, ceiling=8)" -ForegroundColor Gray
 }
 
-$sidecarDir = Split-Path -Parent (Get-ToolkitManifestPath)
-if (-not (Test-Path -LiteralPath $sidecarDir)) {
-    New-Item -ItemType Directory -Path $sidecarDir -Force -ErrorAction SilentlyContinue | Out-Null
-}
-$sidecarPath = Join-Path $sidecarDir 'rss-before.json'
-
 $adapters = @(Get-NetAdapter -ErrorAction SilentlyContinue |
         Where-Object { $_.Status -eq 'Up' -and $_.InterfaceType -in 6, 71 })   # 6=Ethernet, 71=802.11
 if ($adapters.Count -eq 0) {
@@ -101,29 +95,22 @@ if ($adapters.Count -eq 0) {
     exit 0
 }
 
-# Capture before-state on first run only. If sidecar already exists,
-# preserve it (a previous apply already captured the real pre-toolkit
-# state; a second apply would overwrite with toolkit-modified state).
-if (-not (Test-Path -LiteralPath $sidecarPath)) {
-    $snapshot = foreach ($a in $adapters) {
-        $rss = Get-NetAdapterRss -Name $a.Name -ErrorAction SilentlyContinue
-        if (-not $rss) { continue }
-        [PSCustomObject]@{
-            Name = $a.Name
-            Enabled = [bool]$rss.Enabled
-            NumberOfReceiveQueues = [int]$rss.NumberOfReceiveQueues
-            MaxReceiveQueues = [int]$rss.MaxReceiveQueues
-        }
+# Capture before-state via Save-ToolkitSidecar (lib helper).
+# Default behavior is "capture once" — a previous apply's baseline
+# is preserved across re-runs of this script.
+$snapshot = foreach ($a in $adapters) {
+    $rss = Get-NetAdapterRss -Name $a.Name -ErrorAction SilentlyContinue
+    if (-not $rss) { continue }
+    [PSCustomObject]@{
+        Name = $a.Name
+        Enabled = [bool]$rss.Enabled
+        NumberOfReceiveQueues = [int]$rss.NumberOfReceiveQueues
+        MaxReceiveQueues = [int]$rss.MaxReceiveQueues
     }
-    try {
-        $snapshot | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath $sidecarPath -Encoding utf8
-        Write-Host "  Captured baseline at $sidecarPath" -ForegroundColor Gray
-        Write-ToolkitLog 'rss-baseline-captured' -Data @{ path = $sidecarPath; adapters = $snapshot.Count }
-    } catch {
-        Write-Host "  [FAIL] sidecar write: $($_.Exception.Message)" -ForegroundColor Red
-        Write-ToolkitLog 'rss-baseline-failed' -Level error -Data @{ err = $_.Exception.Message }
-        exit 3
-    }
+}
+$saved = Save-ToolkitSidecar -Name 'rss' -InputObject $snapshot
+if ($saved) {
+    Write-Host "  Captured baseline at $saved" -ForegroundColor Gray
 }
 
 UI-Section -Title 'Applying'

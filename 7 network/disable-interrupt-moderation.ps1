@@ -80,12 +80,6 @@ if (-not (Get-Command Get-NetAdapterAdvancedProperty -ErrorAction SilentlyContin
 # Known property names. Order matters — the first match per adapter wins.
 $modProperties = @('*InterruptModeration', 'InterruptModerationRate', 'Interrupt Moderation')
 
-$sidecarDir = Split-Path -Parent (Get-ToolkitManifestPath)
-if (-not (Test-Path -LiteralPath $sidecarDir)) {
-    New-Item -ItemType Directory -Path $sidecarDir -Force -ErrorAction SilentlyContinue | Out-Null
-}
-$sidecarPath = Join-Path $sidecarDir 'rss-im-before.json'
-
 $adapters = @(Get-NetAdapter -ErrorAction SilentlyContinue |
         Where-Object { $_.Status -eq 'Up' -and $_.InterfaceType -in 6, 71 })
 if ($adapters.Count -eq 0) {
@@ -113,17 +107,11 @@ $rows = foreach ($a in $adapters) {
     }
 }
 
-# Capture baseline on first run only (preserve existing sidecar).
-if (-not (Test-Path -LiteralPath $sidecarPath)) {
-    try {
-        $rows | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath $sidecarPath -Encoding utf8
-        Write-Host "  Captured baseline at $sidecarPath" -ForegroundColor Gray
-        Write-ToolkitLog 'im-baseline-captured' -Data @{ path = $sidecarPath; adapters = $rows.Count }
-    } catch {
-        Write-Host "  [FAIL] sidecar write: $($_.Exception.Message)" -ForegroundColor Red
-        Write-ToolkitLog 'im-baseline-failed' -Level error -Data @{ err = $_.Exception.Message }
-        exit 3
-    }
+# Capture baseline via Save-ToolkitSidecar (lib helper) — capture-once
+# default preserves an earlier apply's true pre-toolkit baseline.
+$saved = Save-ToolkitSidecar -Name 'rss-im' -InputObject $rows
+if ($saved) {
+    Write-Host "  Captured baseline at $saved" -ForegroundColor Gray
 }
 
 UI-Section -Title 'Applying'

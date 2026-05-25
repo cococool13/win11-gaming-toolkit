@@ -35,18 +35,9 @@ if (-not (Get-Command Set-NetAdapterAdvancedProperty -ErrorAction SilentlyContin
     exit 2
 }
 
-$sidecarPath = Join-Path (Split-Path -Parent (Get-ToolkitManifestPath)) 'rss-im-before.json'
-if (-not (Test-Path -LiteralPath $sidecarPath)) {
-    Write-Host "  [SKIP] No sidecar at $sidecarPath — disable-interrupt-moderation.ps1 never ran." -ForegroundColor Yellow
-    exit 1
-}
-
-$snapshot = @()
-try {
-    $snapshot = Get-Content -Raw -LiteralPath $sidecarPath | ConvertFrom-Json
-    if ($snapshot -isnot [System.Array]) { $snapshot = @($snapshot) }
-} catch {
-    Write-Host "  [FAIL] Could not parse sidecar: $($_.Exception.Message)" -ForegroundColor Red
+$snapshot = Read-ToolkitSidecar -Name 'rss-im'
+if (-not $snapshot) {
+    Write-Host "  [SKIP] No 'rss-im' sidecar — disable-interrupt-moderation.ps1 never ran." -ForegroundColor Yellow
     exit 1
 }
 
@@ -74,7 +65,7 @@ foreach ($entry in $snapshot) {
     }
 }
 
-Remove-Item -LiteralPath $sidecarPath -Force -ErrorAction SilentlyContinue
+Remove-ToolkitSidecar -Name 'rss-im'
 Add-ToolkitStepResult -Key 'interrupt-moderation-revert' -Tier 'Safe' -Status 'applied' `
     -Reason "Restored $restored adapter property pairs"
 exit 0

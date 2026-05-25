@@ -43,17 +43,24 @@ Describe 'Interrupt Moderation script pair' {
         }
     }
 
-    Context 'Sidecar discipline + cross-script parity' {
-        It 'both scripts use rss-im-before.json as the sidecar' {
-            # Catches accidental rename that would break the contract.
-            $script:DisableContent | Should -Match "'rss-im-before\.json'"
-            $script:EnableContent | Should -Match "'rss-im-before\.json'"
+    Context 'Sidecar via lib helpers (post-9d8781b refactor)' {
+        It 'disable captures via Save-ToolkitSidecar -Name rss-im' {
+            $script:DisableContent | Should -Match "Save-ToolkitSidecar\s+-Name\s+'rss-im'"
         }
-        It 'enable removes the sidecar after restore' {
-            $script:EnableContent | Should -Match 'Remove-Item -LiteralPath \$sidecarPath'
+        It 'enable reads via Read-ToolkitSidecar -Name rss-im' {
+            $script:EnableContent | Should -Match "Read-ToolkitSidecar\s+-Name\s+'rss-im'"
         }
-        It 'disable preserves existing sidecar (idempotent capture)' {
-            $script:DisableContent | Should -Match 'if \(-not \(Test-Path -LiteralPath \$sidecarPath\)\)'
+        It 'enable cleans up via Remove-ToolkitSidecar -Name rss-im' {
+            $script:EnableContent | Should -Match "Remove-ToolkitSidecar\s+-Name\s+'rss-im'"
+        }
+        It 'enable+disable agree on the sidecar stem' {
+            # Cross-script parity (Note: capture happens in DISABLE,
+            # restore in ENABLE — inverse of the RSS pair).
+            $disableMatch = [regex]::Match($script:DisableContent, "Save-ToolkitSidecar\s+-Name\s+'([^']+)'")
+            $enableMatch = [regex]::Match($script:EnableContent, "Read-ToolkitSidecar\s+-Name\s+'([^']+)'")
+            $disableMatch.Success | Should -BeTrue
+            $enableMatch.Success | Should -BeTrue
+            $disableMatch.Groups[1].Value | Should -Be $enableMatch.Groups[1].Value
         }
     }
 

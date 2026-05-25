@@ -10,6 +10,9 @@
 # a tree without manifest entries still resumes WU.
 #
 # Must be run as Administrator.
+#
+# Anti-cheat impact: NONE — WindowsUpdate flight-settings registry
+# values; no kernel hooks, no scheduler change.
 # ============================================================
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"

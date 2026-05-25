@@ -13,8 +13,23 @@
 # ============================================================
 
 $script:ManifestGitHubUrl = "https://raw.githubusercontent.com/cococool13/TweakEazy/main/versions.json"
-$script:ManifestCachePath = Join-Path $env:ProgramData "GamingOpt\versions-cache.json"
-$script:ManifestBundledPath = Join-Path $PSScriptRoot "..\versions.json"
+
+# Cache root selection mirrors lib/toolkit-state.ps1's fallback chain so
+# the lib dot-sources cleanly on:
+#   - Windows runtime               → $env:ProgramData (the prod target)
+#   - macOS / Linux dev hosts        → $XDG_DATA_HOME
+#   - Anywhere else (Server Core...) → $HOME/.local/share
+# Without this chain, Join-Path threw "argument is null" on dev macOS
+# and the script var ended up empty — breaking Test-Path checks downstream.
+if ($env:ProgramData) {
+    $script:ManifestCacheRoot = $env:ProgramData
+} elseif ($env:XDG_DATA_HOME) {
+    $script:ManifestCacheRoot = $env:XDG_DATA_HOME
+} else {
+    $script:ManifestCacheRoot = Join-Path $HOME '.local/share'
+}
+$script:ManifestCachePath = Join-Path $script:ManifestCacheRoot 'GamingOpt/versions-cache.json'
+$script:ManifestBundledPath = Join-Path $PSScriptRoot '..' | ForEach-Object { Join-Path $_ 'versions.json' }
 
 function Get-VersionManifest {
     <#

@@ -5,6 +5,9 @@
 # Restores per-adapter ms_tcpip6 bindings from the sidecar JSON
 # captured by disable-ipv6-binding.ps1, and removes the
 # DisabledComponents registry value via the manifest restore.
+#
+# Anti-cheat impact: NONE — IPv6 binding state is below the
+# game-process layer; no kernel hooks, no driver state.
 # ============================================================
 
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"

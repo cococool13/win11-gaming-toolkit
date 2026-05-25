@@ -5,6 +5,9 @@
 # Restores the prior Edge policy state captured by
 # disable-edge-background.ps1. If no manifest entry exists, removes
 # the policy values so Edge returns to its default behavior.
+#
+# Anti-cheat impact: NONE — Edge browser group-policy values; no
+# kernel hooks, no driver state, no scheduler change.
 # ============================================================
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"

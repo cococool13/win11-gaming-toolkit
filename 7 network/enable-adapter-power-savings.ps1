@@ -19,6 +19,8 @@
 .NOTES
     Tier: Safe (restores OS defaults / sidecar baseline)
     Pair: disable-adapter-power-savings.ps1
+    Anti-cheat impact: NONE — per-adapter selective-suspend / wake-on
+        properties; no game-process scheduling change.
 #>
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]
 param()

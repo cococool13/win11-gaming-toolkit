@@ -4,15 +4,36 @@
 # ============================================================
 # Unhides and activates Ultimate Performance power plan, then
 # configures every sub-option for maximum gaming performance:
-# CPU 100%, cores unparked, USB/PCI-E power saving off, etc.
+# CPU 100% min/max, cores unparked, USB/PCI-E power saving off, etc.
 #
 # Smart features:
 #   - Laptop-aware: warns about battery impact, offers AC-only
 #   - Pre-checks active plan, skips if already configured
 #   - Manifest-tracked registry changes for exact rollback
-#   - Merges the old .bat + .ps1 into one unified script
+#   - Captures the pre-run active plan GUID + name to the
+#     'power-plan' sidecar so revert-power.ps1 can restore the
+#     user's prior plan (not just "fall back to Balanced")
+#   - Logs the before / after active plan GUID via
+#     Write-ToolkitLog — answers "what was applied" without
+#     re-querying the registry
+#
+# Empirical case for Ultimate Performance on a gaming desktop:
+#   - CPU min-state 100% removes P-state ramp latency on input bursts
+#   - Core parking off keeps every logical CPU available for game
+#     thread scheduling without scheduler-wakeup penalty
+#   - PCI-E ASPM off removes link-power-state transitions that add
+#     microseconds of latency to every PCIe transaction
+#   The trade-off is power draw + heat. Documented for laptops below.
+#
+# Anti-cheat impact: NONE. powercfg only touches per-plan / per-
+# subgroup index values; not inspected by BattlEye / EAC / similar.
+#
+# Microsoft Learn:
+#   https://learn.microsoft.com/en-us/windows-server/administration/performance-tuning/hardware/power/power-performance-tuning
+#   https://learn.microsoft.com/en-us/windows-hardware/customize/power-settings/configure-power-settings
 #
 # Replaces: enable-ultimate-performance.bat, configure-power-plan.ps1
+# Pair: revert-power.ps1
 # Must be run as Administrator.
 # ============================================================
 
@@ -41,15 +62,36 @@ Write-Host "  Checking current power plan..." -ForegroundColor Gray
 
 $activePlanOutput = powercfg /getactivescheme 2>&1
 $activePlanName = ""
-# Note: GUID is also captured by the regex (group 1) but currently unused.
-# If a future tweak needs to switch active plans without re-detecting,
-# add a $activePlanGuid local and pull $Matches[1].
+$priorPlanGuid = ""
 if ($activePlanOutput -match "([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s+\((.+)\)") {
+    $priorPlanGuid = $Matches[1]
     $activePlanName = $Matches[2]
 }
 
 Write-Host "  Current plan: $activePlanName" -ForegroundColor $(if ($activePlanName -match "Ultimate") { "Green" } else { "Yellow" })
 Write-Host ""
+
+# Capture pre-run plan to sidecar so revert-power.ps1 can restore the
+# user's prior plan exactly. Capture-once semantics (Save-ToolkitSidecar
+# default) preserves the first-ever captured plan if this script is
+# re-run, so a true pre-toolkit baseline survives.
+if ($priorPlanGuid) {
+    $sidecarPath = Save-ToolkitSidecar -Name 'power-plan' -InputObject ([PSCustomObject]@{
+            ActiveGuid = $priorPlanGuid
+            ActiveName = $activePlanName
+            CapturedAt = (Get-Date).ToString('o')
+        })
+    if ($sidecarPath) {
+        Write-Host "  Captured prior plan to $sidecarPath" -ForegroundColor Gray
+    }
+    # Before/after metric per Phase C standard — log the active plan
+    # GUID so log scraping can answer "what plan was the user on
+    # before this script ran" without re-querying the registry later.
+    Write-ToolkitLog 'power-plan-before' -Data @{
+        guid = $priorPlanGuid
+        name = $activePlanName
+    }
+}
 
 # ---- Laptop awareness ----
 if ($machineProfile.isLaptop) {
@@ -257,6 +299,17 @@ Run-Step "Power throttling: disabled" {
 
 Add-ToolkitStepResult -Key $stepName -Tier "Safe" -Status "applied" `
     -Reason "Ultimate Performance active, $succeeded settings applied"
+
+# Before/after metric: the post-config active plan GUID. Compare to
+# the 'power-plan-before' line emitted at script start.
+$afterOutput = powercfg /getactivescheme 2>&1
+if ($afterOutput -match "([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s+\((.+)\)") {
+    Write-ToolkitLog 'power-plan-after' -Data @{
+        guid = $Matches[1]
+        name = $Matches[2]
+        priorGuid = $priorPlanGuid
+    }
+}
 
 # ============================================================
 # Summary

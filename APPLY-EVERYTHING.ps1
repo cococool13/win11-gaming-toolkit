@@ -24,9 +24,15 @@
 # Phases 9 and 10 are Security Trade-off tier and only run when
 # -IncludeSecurityTradeoffs is passed. Default is OFF.
 #
-# ANTI-CHEAT: -IncludeSecurityTradeoffs disables HVCI/VBS. On Win11
-# 24H2+ this may break BattlEye and EAC — R6 Siege and similar titles
-# may refuse to launch. Test affected games after reboot.
+# Anti-cheat impact: COMPOSITE — depends on flags.
+#   Default run (no flags): NONE. Service / registry / network tweaks
+#       only; nothing reaches anti-cheat-inspected surfaces.
+#   -IncludeSecurityTradeoffs: HIGH. Disables HVCI / VBS — R6 Siege
+#       (BattlEye) and Valorant (Vanguard) WILL refuse to launch on
+#       Win11 24H2+ until you re-enable via REVERT-EVERYTHING.ps1.
+#       EAC (Apex, Fortnite) tolerates HVCI-off as of 2025 but the
+#       vendors warn this may change.
+#   See per-script "Anti-cheat impact:" lines for component details.
 #
 # Undo: REVERT-EVERYTHING.ps1
 # ============================================================

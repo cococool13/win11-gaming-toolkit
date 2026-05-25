@@ -14,6 +14,9 @@
 # system change.
 #
 # Tracked via Set-TrackedRegistry on the resolved adapter path.
+#
+# Anti-cheat impact: NONE — AMD driver registry value at the GPU
+# adapter Class GUID; not inspected by BattlEye / EAC / Vanguard.
 # ============================================================
 
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"

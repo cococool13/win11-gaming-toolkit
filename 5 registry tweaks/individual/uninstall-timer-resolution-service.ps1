@@ -17,6 +17,10 @@
 .NOTES
     Tier: Advanced (reverts an Advanced-tier install)
     Pair: install-timer-resolution-service.ps1
+    Anti-cheat impact: NONE (this is the cleanup direction). The
+        install side has MEDIUM risk on Vanguard / FACEIT; removing
+        the service eliminates that risk. Reboot after uninstall to
+        clear any residual timer-resolution state.
     Must be run as Administrator.
 #>
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]

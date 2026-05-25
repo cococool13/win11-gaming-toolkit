@@ -17,6 +17,14 @@
 #
 # Both go through Set-TrackedRegistry so REVERT-EVERYTHING and
 # the matching enable script can restore from the manifest.
+#
+# Anti-cheat impact: NONE direct. FeatureSettingsOverride is a kernel
+# memory-management flag controlling CPU speculative-execution
+# mitigations; it changes timing characteristics that anti-cheat
+# heuristics MIGHT theoretically notice, but no documented BattlEye /
+# EAC / Vanguard regressions on Win11 24H2+ as of 2025. The Security
+# Trade-off tier above is about CPU side-channel attacks (Spectre /
+# Meltdown / Retbleed), not anti-cheat policy.
 # ============================================================
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"

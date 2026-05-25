@@ -12,10 +12,13 @@
 # (monthly is recommended) by running enable-windows-update.ps1,
 # installing updates, then running this script again.
 #
-# ANTI-CHEAT: Suppressing Windows Update also stalls anti-cheat
-# and driver updates that some titles (BattlEye/EAC + ROG Ally /
-# Steam Deck Windows installs) ship through WU. Plan to enable
-# manually each month and re-check affected games after.
+# Anti-cheat impact: INDIRECT (medium). The WU service itself is
+# not inspected by anti-cheat, but suppressing it stalls anti-cheat
+# AND driver updates that some titles (BattlEye / EAC + ROG Ally
+# Windows installs + Steam Deck WoW64) ship through WU. Plan to
+# enable manually each month, install updates, then disable again.
+# Affected titles will fall behind their server-side anti-cheat
+# minimum-version policy and may refuse to launch until updated.
 #
 # Must be run as Administrator.
 # To revert: run enable-windows-update.ps1

@@ -13,6 +13,8 @@
 .NOTES
     Tier: Safe (restores prior state)
     Pair: configure-mmagent.ps1
+    Anti-cheat impact: NONE — restorer for MMAgent kernel memory-
+        manager hints; pair-symmetric with configure-mmagent.ps1.
 #>
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]
 param()

@@ -7,6 +7,10 @@
 #
 # Requires: lib/download-helpers.ps1, lib/toolkit-state.ps1
 # Called by: 6 gpu/install-gpu-driver.ps1
+#
+# Anti-cheat impact: NONE — installs Intel's official signed driver
+# via pnputil /add-driver /install. Resulting driver state is
+# identical to a manual install from intel.com.
 # ============================================================
 
 param(

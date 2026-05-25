@@ -12,6 +12,10 @@
 # but also safe to invoke standalone — admin self-check below ensures
 # the script fails fast rather than producing cryptic Set-ItemProperty
 # errors when run from a non-admin shell. (CLAUDE.md invariant #6)
+#
+# Anti-cheat impact: NONE — AMD driver registry values at the
+# adapter's Display Class GUID subkey; not inspected by BattlEye /
+# EAC / Vanguard. Same surface AMD's own Radeon Software writes.
 # ============================================================
 
 # CURSOR-AUDIT #6: explicit per-script admin gate. Inline rather than

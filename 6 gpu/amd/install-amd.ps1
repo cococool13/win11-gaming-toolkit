@@ -4,6 +4,11 @@
 # ============================================================
 # Requires: lib/download-helpers.ps1, lib/toolkit-state.ps1
 # Called by: 6 gpu/install-gpu-driver.ps1
+#
+# Anti-cheat impact: NONE — installs AMD's official signed driver
+# package. Anti-cheat layers inspect game processes, not driver
+# install events; the resulting driver state is identical to a
+# manual install from amd.com.
 # ============================================================
 
 param(

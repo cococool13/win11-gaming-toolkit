@@ -6,6 +6,11 @@
 # Restores everything it can from the manifest-backed state capture.
 # Falls back to default-based restoration for the broader registry pack.
 #
+# Anti-cheat impact: NONE — the revert direction is universally safe.
+# Restoring HVCI / VBS to ON (if previously disabled) re-satisfies
+# BattlEye / Vanguard policy requirements; all other restores return
+# the OS to its default state which anti-cheat layers expect.
+#
 # Must be run as Administrator. Requires reboot after completion.
 # ============================================================
 

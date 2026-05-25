@@ -228,6 +228,147 @@ function Write-ToolkitLog {
     }
 }
 
+# ============================================================
+# Sidecar JSON helpers
+# ============================================================
+# Some tweaks (write-cache-flush, RSS tuning, interrupt moderation)
+# capture pre-toolkit state in a per-tweak sidecar JSON beside the
+# manifest, because the values live in vendor-specific NIC properties
+# or per-PnP-device registry keys that don't fit the manifest's
+# uniform Id-keyed shape. Sidecars are an escape hatch, not an
+# alternative — Set-ToolkitRegistryValue stays the canonical path for
+# anything that fits.
+#
+# Naming: each tweak owns a stem (e.g. 'writecache', 'rss', 'rss-im')
+# and the helpers append '-before.json'. Files live at:
+#   %ProgramData%\Win11GamingToolkit\state\<stem>-before.json
+# (or the cross-platform fallback root on macOS dev boxes).
+
+function Get-ToolkitSidecarPath {
+    <#
+    .SYNOPSIS
+        Return the canonical sidecar file path for a given stem.
+    .DESCRIPTION
+        Pure path resolution; does not touch disk. Use for inspection
+        or for cases where Save/Read isn't a good fit.
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param([Parameter(Mandatory)][string]$Name)
+    Join-Path $script:ToolkitStateRoot ("$Name-before.json")
+}
+
+function Save-ToolkitSidecar {
+    <#
+    .SYNOPSIS
+        Idempotently capture pre-toolkit state to a sidecar JSON.
+    .DESCRIPTION
+        Default behavior is "capture once": if the sidecar already
+        exists, no write happens — preserving the original pre-toolkit
+        baseline across re-runs of the apply script. Pass -Force to
+        overwrite (rare; useful for tests).
+
+        Honors -WhatIf via ShouldProcess. Logs 'sidecar-captured' on
+        success and 'sidecar-capture-failed' (Level=error) on I/O
+        failure. Returns the sidecar path on success, $null on
+        capture-skip (already exists) or write failure.
+    .PARAMETER Name
+        Sidecar stem (e.g. 'writecache', 'rss', 'rss-im').
+    .PARAMETER InputObject
+        Object to serialize. Typically an array of PSCustomObjects;
+        the JSON conversion handles any serializable shape.
+    .PARAMETER Force
+        Overwrite an existing sidecar. Default: preserve.
+    .PARAMETER Depth
+        ConvertTo-Json -Depth. Default: 3.
+    .EXAMPLE
+        $rows = Get-NetAdapterRss | Select Name, Enabled, NumberOfReceiveQueues
+        Save-ToolkitSidecar -Name 'rss' -InputObject $rows
+    #>
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)][string]$Name,
+        [Parameter(Mandatory)][object]$InputObject,
+        [switch]$Force,
+        [int]$Depth = 3
+    )
+    if (-not (Test-Path -LiteralPath $script:ToolkitStateRoot)) {
+        New-Item -ItemType Directory -Path $script:ToolkitStateRoot -Force -ErrorAction SilentlyContinue | Out-Null
+    }
+    $path = Get-ToolkitSidecarPath -Name $Name
+    if ((Test-Path -LiteralPath $path) -and -not $Force) {
+        Write-ToolkitLog 'sidecar-preserve' -Data @{ name = $Name; path = $path; reason = 'already exists' }
+        return $null
+    }
+    if (-not $PSCmdlet.ShouldProcess($path, "Capture sidecar '$Name'")) {
+        Write-ToolkitLog 'sidecar-capture-skipped-whatif' -Level warn -Data @{ name = $Name }
+        return $null
+    }
+    try {
+        $InputObject | ConvertTo-Json -Depth $Depth | Set-Content -LiteralPath $path -Encoding utf8 -ErrorAction Stop
+        Write-ToolkitLog 'sidecar-captured' -Data @{ name = $Name; path = $path }
+        return $path
+    } catch {
+        Write-ToolkitLog 'sidecar-capture-failed' -Level error -Data @{
+            name = $Name; path = $path; err = $_.Exception.Message
+        }
+        return $null
+    }
+}
+
+function Read-ToolkitSidecar {
+    <#
+    .SYNOPSIS
+        Read a sidecar JSON and return its contents as an array.
+    .DESCRIPTION
+        Returns $null when the sidecar doesn't exist OR can't be
+        parsed (logs 'sidecar-read-failed' in the parse-error case).
+        Always returns an array on success — wraps scalars so callers
+        don't have to handle the ConvertFrom-Json single-object quirk
+        (single-element JSON arrays decode to scalars in PS 5.1).
+    .EXAMPLE
+        $snapshot = Read-ToolkitSidecar -Name 'rss'
+        if (-not $snapshot) { exit 1 }
+        foreach ($entry in $snapshot) { ... }
+    #>
+    [CmdletBinding()]
+    [OutputType([object[]])]
+    param([Parameter(Mandatory)][string]$Name)
+    $path = Get-ToolkitSidecarPath -Name $Name
+    if (-not (Test-Path -LiteralPath $path)) {
+        return $null
+    }
+    try {
+        $obj = Get-Content -Raw -LiteralPath $path -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+        if ($null -eq $obj) { return @() }
+        if ($obj -isnot [System.Array]) { return @($obj) }
+        return $obj
+    } catch {
+        Write-ToolkitLog 'sidecar-read-failed' -Level error -Data @{
+            name = $Name; path = $path; err = $_.Exception.Message
+        }
+        return $null
+    }
+}
+
+function Remove-ToolkitSidecar {
+    <#
+    .SYNOPSIS
+        Delete a sidecar JSON. Idempotent — silent if absent.
+    .DESCRIPTION
+        Called by restore-side scripts after a successful revert so the
+        next apply can capture a fresh baseline. Honors -WhatIf.
+    #>
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]
+    param([Parameter(Mandatory)][string]$Name)
+    $path = Get-ToolkitSidecarPath -Name $Name
+    if (-not (Test-Path -LiteralPath $path)) { return }
+    if (-not $PSCmdlet.ShouldProcess($path, "Remove sidecar '$Name'")) { return }
+    Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+    Write-ToolkitLog 'sidecar-removed' -Data @{ name = $Name; path = $path }
+}
+
 function Test-ToolkitMapHasKey {
     param($Map, [string]$Key)
     if ($Map -is [hashtable]) {

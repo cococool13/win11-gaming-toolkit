@@ -18,6 +18,8 @@
 # no known BattlEye / EAC / Vanguard regressions reported on Win11
 # 24H2+. CURSOR-AUDIT #16 verified this against vendor docs. If a
 # specific title misbehaves, revert via disable-msi-mode.ps1.
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry / cmdlet only; no installer / file extraction.
 #
 # Optional: -IncludeStorage also enables MSI on the primary NVMe
 # controller. Off by default; opt-in.

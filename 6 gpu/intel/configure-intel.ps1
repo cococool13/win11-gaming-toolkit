@@ -19,6 +19,8 @@
 # Anti-cheat impact: NONE — Intel driver registry values at the
 # adapter's Display Class GUID subkey; not inspected by BattlEye /
 # EAC / Vanguard. Same surface Intel's own Arc Control writes.
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry / cmdlet only; no installer / file extraction.
 # ============================================================
 
 # CURSOR-AUDIT #6: explicit per-script admin gate. Inline rather than

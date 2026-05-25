@@ -11,6 +11,8 @@
 # Anti-cheat impact: NONE — installs Intel's official signed driver
 # via pnputil /add-driver /install. Resulting driver state is
 # identical to a manual install from intel.com.
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry / cmdlet only; no installer / file extraction.
 # ============================================================
 
 param(

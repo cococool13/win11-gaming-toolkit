@@ -10,6 +10,8 @@
 # Experience, NVIDIA Container telemetry, etc.); the core Display.Driver
 # is byte-identical to a manual install from nvidia.com. Anti-cheat
 # layers see the same driver state either way.
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry / cmdlet only; no installer / file extraction.
 # ============================================================
 
 param(

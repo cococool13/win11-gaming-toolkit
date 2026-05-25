@@ -28,6 +28,8 @@
 #
 # Anti-cheat impact: NONE — per-disk Enum\<id>\Device Parameters
 # registry value; no kernel hooks, no driver state.
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry-only write; no on-disk file creation.
 # ============================================================
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"

@@ -10,6 +10,8 @@
 # Anti-cheat impact: NONE — CscService (Offline Files) is the legacy
 # corporate-redirected-folders feature; no kernel hooks, no game-
 # process awareness. Not inspected by BattlEye / EAC / Vanguard.
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry / cmdlet only; no installer / file extraction.
 # ============================================================
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"

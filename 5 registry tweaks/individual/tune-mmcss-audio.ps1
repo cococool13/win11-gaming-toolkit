@@ -31,6 +31,8 @@
 
     Anti-cheat impact: NONE. MMCSS is a per-thread API; raising audio-
     worker priority does not give game processes elevated access.
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry-only write; no on-disk file creation.
 
 .PARAMETER WhatIf
     Standard ShouldProcess.

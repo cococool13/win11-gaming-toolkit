@@ -22,6 +22,8 @@
     Tier: Advanced
     Anti-cheat impact: NONE. SQMClient is the older diagnostic-data
         path; not inspected by BattlEye / EAC / similar.
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry-only write; no on-disk file creation.
     Source: https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-7/dd565638(v=ws.10)
     Pair: enable-ceip.ps1
 #>

@@ -25,6 +25,8 @@
         for explorer.exe; anti-cheat layers inspect game processes,
         not Explorer. Per-process CPU affinity hint is a user-mode
         scheduler nudge, no kernel hooks.
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry-only write; no on-disk file creation.
     Source: FR33THYFR33THY/Ultimate — 8 Advanced/9 Core 1 Thread 1.ps1
             (Copyright FR33THY, MIT)
 #>

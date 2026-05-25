@@ -18,6 +18,8 @@
     Tier:     Safe (restores prior state)
     Anti-cheat impact: NONE. RSS is below the game layer; CPUs assigned
         to receive queues are invisible to BattlEye / EAC.
+    Reboot required: NO — Set-NetAdapterRss applies live.
+    Disk impact: LOW — reads + deletes the rss sidecar JSON (~1 KB).
 
     # CROSS-PLATFORM-NOTE
     # Windows-only (Set-NetAdapterRss).

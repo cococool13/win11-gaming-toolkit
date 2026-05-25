@@ -28,6 +28,9 @@
     Pair: configure-power.ps1
     Anti-cheat impact: NONE. powercfg + per-subgroup index values; not
         inspected by BattlEye / EAC / similar.
+    Reboot required: NO — powercfg /setactive applies live; hibernate
+        re-enable takes effect on next boot but no reboot needed.
+    Disk impact: NONE — powercfg + small registry writes.
     Microsoft Learn:
       https://learn.microsoft.com/en-us/windows-hardware/customize/power-settings/configure-power-settings
     Must be run as Administrator.

@@ -22,6 +22,8 @@
 #   Restore via configure-vbs.ps1 -Enable BEFORE launching any
 #   affected title. -Enable path itself has NO anti-cheat impact
 #   (returns to OS-default state).
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry / cmdlet only; no installer / file extraction.
 #
 # Replaces: disable-vbs.bat, enable-vbs.bat
 # Must be run as Administrator. Requires reboot.

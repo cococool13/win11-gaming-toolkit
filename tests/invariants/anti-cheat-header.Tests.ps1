@@ -59,8 +59,8 @@ BeforeDiscovery {
         # Drain per-commit as each is reviewed.
 
         '0 prerequisites/install-runtimes.ps1'
-        '2 power plan/configure-power.ps1'
-        '2 power plan/revert-power.ps1'
+        # 2 power plan/configure-power.ps1 — drained this commit (header rewrite)
+        # 2 power plan/revert-power.ps1 — drained this commit (NOTES rewrite)
         '4 services/disable-services.ps1'
         '4 services/enable-services.ps1'
         '4 services/individual/mobsync-disable.ps1'

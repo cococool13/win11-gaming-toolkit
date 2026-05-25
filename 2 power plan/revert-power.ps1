@@ -1,20 +1,35 @@
 <#
 .SYNOPSIS
-    Revert power plan to Balanced and restore default settings.
+    Restore the power plan that was active before configure-power.ps1
+    ran, falling back to Balanced when no capture exists.
 
 .DESCRIPTION
-    Counterpart to configure-power.ps1. Restores the power plan to
-    Windows defaults (Balanced scheme) and resets all per-device power
-    settings to their defaults. Manifest-tracked registry changes are
-    restored via the toolkit; everything else falls back to system defaults.
+    Counterpart to configure-power.ps1. Reads the 'power-plan' sidecar
+    (captured by configure-power at first run) for the prior plan's
+    GUID + name and reactivates it via powercfg /setactive. If the
+    sidecar is missing — e.g. configure-power was never run, or the
+    sidecar was wiped — falls back to Windows Balanced (SCHEME_BALANCED)
+    as the universal-known-good default.
 
-    Each powercfg and Set-ToolkitRegistryValue call is gated by
-    $PSCmdlet.ShouldProcess so -WhatIf previews the revert plan
-    without modifying the system.
+    Also reverts the auxiliary settings configure-power flipped:
+      - Fast Startup re-enabled (HiberbootEnabled = 1)
+      - Hibernate re-enabled (powercfg /hibernate on)
+      - PowerThrottling override removed
+    Manifest-tracked registry values restore via Set-ToolkitRegistryValue;
+    untracked tweaks fall back to OS defaults.
+
+    Each powercfg and registry call is gated by $PSCmdlet.ShouldProcess
+    so -WhatIf previews the revert plan without modifying the system.
+    Sidecar is removed at the end so a fresh re-configure can capture
+    a new baseline.
 
 .NOTES
-    Tier: Safe (restores OS power-management defaults)
+    Tier: Safe (restores OS power-management defaults / prior plan)
     Pair: configure-power.ps1
+    Anti-cheat impact: NONE. powercfg + per-subgroup index values; not
+        inspected by BattlEye / EAC / similar.
+    Microsoft Learn:
+      https://learn.microsoft.com/en-us/windows-hardware/customize/power-settings/configure-power-settings
     Must be run as Administrator.
 #>
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
@@ -41,22 +56,38 @@ Write-Host ''
 
 # Surface the revert plan
 $activePlanOutput = powercfg /getactivescheme 2>&1
-$activePlanName = ""
-if ($activePlanOutput -match "([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s\+\((.+)\)") {
+$activePlanName = ''
+# Fixed regex: the previous version had a stray `\+` between the GUID
+# and the parens, which never matched. Now uses `\s+\(`.
+if ($activePlanOutput -match "([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s+\((.+)\)") {
     $activePlanName = $Matches[2]
 }
 
+# Sidecar drives the restore target — prior plan if captured, else
+# Balanced. Read-ToolkitSidecar returns $null when missing/unparseable;
+# either case falls through to the Balanced default below.
+$priorSidecar = Read-ToolkitSidecar -Name 'power-plan'
+$targetGuid = $null
+$targetName = 'Balanced (default fallback)'
+if ($priorSidecar -and $priorSidecar.ActiveGuid) {
+    $targetGuid = $priorSidecar.ActiveGuid
+    $targetName = "$($priorSidecar.ActiveName) (from sidecar, captured $($priorSidecar.CapturedAt))"
+}
+
 Write-Host "  Current plan: $activePlanName" -ForegroundColor Yellow
-Write-Host "  Will restore to: Windows Balanced" -ForegroundColor Gray
+Write-Host "  Will restore to: $targetName" -ForegroundColor Gray
 Write-Host ''
 
 # Revert steps
 Write-Host "  Restoring power plan..." -NoNewline
-if (-not $PSCmdlet.ShouldProcess("Power plan", "powercfg /setactive SCHEME_BALANCED")) {
+$setActiveTarget = if ($targetGuid) { $targetGuid } else { 'SCHEME_BALANCED' }
+if (-not $PSCmdlet.ShouldProcess("Power plan", "powercfg /setactive $setActiveTarget")) {
     Write-Host " Skipped (-WhatIf)" -ForegroundColor Gray
 } else {
     try {
-        powercfg /setactive SCHEME_BALANCED 2>&1 | Out-Null
+        powercfg /setactive $setActiveTarget 2>&1 | Out-Null
+        # Best-effort delete the custom Ultimate Performance duplicate
+        # configure-power.ps1 created — silent if it doesn't exist.
         powercfg /delete 99999999-9999-9999-9999-999999999999 2>&1 | Out-Null
         Write-Host " Done" -ForegroundColor Green
     } catch {
@@ -94,8 +125,12 @@ if (-not $PSCmdlet.ShouldProcess("Hibernate", "powercfg /hibernate on")) {
     Write-Host " Done" -ForegroundColor Green
 }
 
+# Sidecar cleanup — once we've restored, drop the capture so a
+# future re-run of configure-power.ps1 takes a fresh baseline.
+Remove-ToolkitSidecar -Name 'power-plan'
+
 Add-ToolkitStepResult -Key "power-revert" -Tier "Safe" -Status "applied" `
-    -Reason "Reverted power plan to Balanced, restored default power settings"
+    -Reason "Reverted power plan to $targetName, restored default power settings"
 
 Write-Host ''
 Write-Host '============================================================' -ForegroundColor Green

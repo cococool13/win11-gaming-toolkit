@@ -69,16 +69,13 @@ BeforeDiscovery {
         # Fix: add 2 power plan/revert-power.ps1.
         '2 power plan/configure-power.ps1'
 
-        # Stem lacks verb prefix; naturally pairs with
-        # restore-explorer-affinity.ps1 but parser can't see the link.
-        # Fix: rename explorer-affinity-core1 → disable-explorer-affinity
-        # AND restore-explorer-affinity → enable-explorer-affinity.
-        '5 registry tweaks/individual/explorer-affinity-core1.ps1'
-        '5 registry tweaks/individual/restore-explorer-affinity.ps1'
-
-        # Driver installer/uninstaller pairs landed (this commit):
+        # explorer-affinity rename landed (worktree commit 127fda2):
+        #   explorer-affinity-core1.ps1 → disable-explorer-affinity.ps1
+        #   restore-explorer-affinity.ps1 → enable-explorer-affinity.ps1
+        # Both pass naturally via the verb-prefix map.
+        #
+        # GPU install/uninstall pairs landed (commit 127fda2):
         #   lib/gpu-uninstall.ps1 helper + 3 vendor wrappers.
-        # Tests/lib/gpu-uninstall.Tests.ps1 covers the helper contract.
     )
 
     $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)

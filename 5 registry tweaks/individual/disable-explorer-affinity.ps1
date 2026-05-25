@@ -1,30 +1,29 @@
-# ============================================================
-# Pin explorer.exe to Core 1 (CARGO-CULT, opt-in)
-# Windows 11 Gaming Optimization Guide
-# Source: FR33THYFR33THY/Ultimate — 8 Advanced/9 Core 1 Thread 1.ps1
-# Copyright FR33THY (MIT)
-# ============================================================
-# Tier: Advanced
-#
-# === CARGO-CULT WARNING ===
-# Pinning Explorer to a single logical core (CPU0) is a long-standing
-# myth from the Win7 era. It produces ZERO measurable game-FPS benefit
-# on Win11 24H2+ and can cause UI hitches when Explorer competes with
-# other CPU0-pinned threads (audio driver, RTC, etc.).
-#
-# Documented here for completeness — the toolkit's design philosophy
-# is "nothing permanently off-limits" and a user who specifically
-# wants this can opt in. The empirical case against is at the top of
-# the script so they make an informed choice.
-#
-# Implementation: writes ImagePath\explorer.exe\CpuPriorityClass and
-# AffinityMask under HKLM\...\Image File Execution Options. Affinity
-# mask 1 = bit 0 only = CPU0.
-#
-# Pass -Force to skip the confirmation prompt.
-# Must be run as Administrator.
-# Pair: restore-explorer-affinity.ps1
-# ============================================================
+<#
+.SYNOPSIS
+    Pin explorer.exe to CPU0 (single-core affinity) — opt-in
+    CARGO-CULT tweak preserved for completeness.
+
+.DESCRIPTION
+    Writes CpuPriorityClass=5 and AffinityMask=1 under
+    HKLM\...\Image File Execution Options\explorer.exe\PerfOptions,
+    pinning Explorer's threads to logical CPU 0.
+
+    === CARGO-CULT WARNING ===
+    Pinning Explorer to a single logical core is a Win7-era myth. On
+    Win11 24H2+ it produces ZERO measurable game-FPS benefit and CAN
+    cause UI hitches when Explorer competes with other CPU0-pinned
+    threads (audio driver, real-time clock, etc.). Shipped because
+    the toolkit's design philosophy is "nothing permanently
+    off-limits" — informed-choice opt-in.
+
+    Pass -Force to skip the confirmation prompt.
+
+.NOTES
+    Tier: Advanced
+    Pair: enable-explorer-affinity.ps1
+    Source: FR33THYFR33THY/Ultimate — 8 Advanced/9 Core 1 Thread 1.ps1
+            (Copyright FR33THY, MIT)
+#>
 
 param([switch]$Force)
 
@@ -40,7 +39,7 @@ if (-not $Force) {
     Write-Host "    benefit on Win11 24H2+ and CAN cause UI hitches under load." -ForegroundColor Yellow
     Write-Host "    Documented for completeness; not recommended." -ForegroundColor Yellow
     Write-Host ""
-    Write-Host "    Revert: run restore-explorer-affinity.ps1." -ForegroundColor Gray
+    Write-Host "    Revert: run enable-explorer-affinity.ps1." -ForegroundColor Gray
     Write-Host ""
     $proceed = Read-Host "  Continue? (y/N)"
     if ($proceed.Trim().ToUpper() -ne "Y") {

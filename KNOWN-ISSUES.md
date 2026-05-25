@@ -128,8 +128,10 @@ still boots and games still run, so they pass the hard-constraint test.
   empirical regression.
 - **`8 Advanced/9 Core 1 Thread 1` (explorer.exe → single-core affinity)** —
   pure cargo-cult; zero measurable benefit and can cause Explorer UI hitches
-  under multitasking. Ship as `5 registry tweaks/individual/explorer-affinity-core1.ps1`
-  with header text noting "no measurable benefit; documented for completeness."
+  under multitasking. Shipped as
+  `5 registry tweaks/individual/disable-explorer-affinity.ps1` +
+  `enable-explorer-affinity.ps1` with header text noting "no measurable benefit;
+  documented for completeness."
 
 ---
 

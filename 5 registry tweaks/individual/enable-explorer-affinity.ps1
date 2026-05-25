@@ -1,16 +1,19 @@
-# ============================================================
-# Restore explorer.exe Default Affinity
-# Windows 11 Gaming Optimization Guide
-# ============================================================
-# Tier: Safe (restores OS default)
-#
-# Pair with: explorer-affinity-core1.ps1
-# Restores explorer.exe to Windows-default CPU affinity by removing
-# the Image File Execution Options override values from the manifest
-# (or, if not in manifest, removing the values blindly).
-#
-# Must be run as Administrator.
-# ============================================================
+<#
+.SYNOPSIS
+    Restore explorer.exe to Windows-default CPU affinity by removing
+    the IFEO override written by disable-explorer-affinity.ps1.
+
+.DESCRIPTION
+    Tries Restore-ToolkitRegistryValue on both manifest entries first
+    (exact-prior-value restore). If neither key is in the manifest,
+    removes the CpuPriorityClass + AffinityMask values blindly so
+    Explorer goes back to its scheduler-managed default.
+
+.NOTES
+    Tier: Safe (restores OS default)
+    Pair: disable-explorer-affinity.ps1
+    Must be run as Administrator.
+#>
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"
 . "$PSScriptRoot\..\..\lib\ui-helpers.ps1"

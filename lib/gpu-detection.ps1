@@ -17,11 +17,11 @@ function Get-GpuVendor {
     #>
 
     $devices = @(Get-PnpDevice -Class Display -PresentOnly -ErrorAction SilentlyContinue |
-        Where-Object {
-            $_.FriendlyName -notmatch "Microsoft Basic|Hyper-V" -and
-            $_.Status -eq "OK" -and
-            $_.InstanceId -match "VEN_(10DE|1002|8086)"
-        })
+            Where-Object {
+                $_.FriendlyName -notmatch "Microsoft Basic|Hyper-V" -and
+                $_.Status -eq "OK" -and
+                $_.InstanceId -match "VEN_(10DE|1002|8086)"
+            })
 
     $results = @()
     foreach ($device in $devices) {
@@ -47,13 +47,13 @@ function Get-GpuVendor {
         $isDiscrete = $vendor -ne "intel" -or (Test-IntelArcDevice -DeviceId $deviceId)
 
         $results += [PSCustomObject]@{
-            Vendor              = $vendor
-            FriendlyName        = $device.FriendlyName
-            DeviceId            = $deviceId
-            InstanceId          = $instanceId
+            Vendor = $vendor
+            FriendlyName = $device.FriendlyName
+            DeviceId = $deviceId
+            InstanceId = $instanceId
             AdapterRegistryPath = $adapterPath
-            IsDiscrete          = $isDiscrete
-            Status              = $device.Status
+            IsDiscrete = $isDiscrete
+            Status = $device.Status
         }
     }
 

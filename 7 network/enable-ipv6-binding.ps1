@@ -14,6 +14,11 @@ $Host.UI.RawUI.WindowTitle = "Enable IPv6 Binding"
 UI-Header -Title "Enable IPv6 Binding" -Subtitle "Restore default IPv6 configuration"
 UI-RequireAdmin -ScriptName "Enable IPv6"
 
+# Audit-trail: log this script invocation to
+# %ProgramData%\Win11GamingToolkit\logs\<stem>-<ts>-<pid>.log
+# (or $XDG_DATA_HOME on dev macOS). Idempotent per process.
+Write-ToolkitScriptStart
+
 UI-ResetCounters
 $beforePath = Join-Path $env:ProgramData "Win11GamingToolkit\state\ipv6-binding-before.json"
 

@@ -11,8 +11,25 @@ param(
     [string[]]$Components = @("Display.Driver", "HDAudio")
 )
 
-. "$PSScriptRoot\..\lib\download-helpers.ps1"
-. "$PSScriptRoot\..\lib\toolkit-state.ps1"
+# CLAUDE.md invariant #6 — every mutating script self-checks admin.
+# Surfaced by Test-ToolkitInvariants (profile/parts/toolkit-aware.ps1).
+if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Host ''
+    Write-Host '  [ERROR] install-nvidia.ps1 must be run as Administrator.' -ForegroundColor Red
+    Write-Host '  Re-launch PowerShell as Admin or invoke via 6 gpu\install-gpu-driver.ps1.' -ForegroundColor Red
+    Write-Host ''
+    exit 1
+}
+
+. "$PSScriptRoot\..\..\lib\download-helpers.ps1"
+. "$PSScriptRoot\..\..\lib\toolkit-state.ps1"
+
+# Audit-trail: log this script invocation to
+# %ProgramData%\Win11GamingToolkit\logs\<stem>-<ts>-<pid>.log
+# (or $XDG_DATA_HOME on dev macOS). Idempotent per process.
+# Must come AFTER lib/toolkit-state.ps1 dot-source — that's where
+# Write-ToolkitScriptStart is defined.
+Write-ToolkitScriptStart
 
 $extractDir = Join-Path $env:TEMP "NvidiaDriverExtract"
 
@@ -55,6 +72,8 @@ function Install-NvidiaDriver {
 }
 
 function Remove-NvidiaTelemetry {
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
+    param()
     Write-Info "Disabling NVIDIA telemetry..."
 
     # Disable NvTelemetryContainer service

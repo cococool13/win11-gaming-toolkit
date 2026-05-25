@@ -78,8 +78,7 @@ try {
 }
 
 # --- Initialize state ---
-$state = Initialize-ToolkitState
-
+Initialize-ToolkitState | Out-Null
 # --- Detect GPU ---
 Write-Info "Detecting GPU..."
 
@@ -218,8 +217,8 @@ if (-not $SkipSettings) {
     try {
         switch ($targetGpu.Vendor) {
             "nvidia" { & "$PSScriptRoot\nvidia\configure-nvidia.ps1" }
-            "amd"    { & "$PSScriptRoot\amd\configure-amd.ps1" }
-            "intel"  { & "$PSScriptRoot\intel\configure-intel.ps1" }
+            "amd" { & "$PSScriptRoot\amd\configure-amd.ps1" }
+            "intel" { & "$PSScriptRoot\intel\configure-intel.ps1" }
         }
     } catch {
         Write-Host "[WARNING] Settings application failed: $($_.Exception.Message)" -ForegroundColor Yellow

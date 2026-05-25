@@ -1,19 +1,27 @@
-# ============================================================
-# Install Gaming Prerequisites (Smart)
-# Windows 11 Gaming Optimization Guide
-# ============================================================
-# Many games require Visual C++ Redistributables and the legacy
-# DirectX runtime. This script installs ALL versions silently.
-# Missing these causes "VCRUNTIME140.dll not found" errors.
-#
-# Smart features:
-#   - Detects already-installed VC++ versions, skips them
-#   - Authenticode signature verification on all downloads
-#   - Manifest integration for tracking
-#
-# Replaces: install-runtimes.ps1 (dumb version)
-# Must be run as Administrator. Requires internet connection.
-# ============================================================
+<#
+.SYNOPSIS
+    Install Visual C++ Redistributables and DirectX Legacy Runtime —
+    the missing-DLL set most games need.
+
+.DESCRIPTION
+    Detects already-installed VC++ versions and skips them, then
+    downloads + Authenticode-verifies + silently installs the rest.
+    DirectX June 2010 redistributable (the legacy d3dx9*.dll etc.)
+    is also fetched + verified + installed if not present.
+
+    Each Start-Process installer invocation is gated by
+    $PSCmdlet.ShouldProcess so -WhatIf previews the install plan
+    without modifying the system. Download + signature verify still
+    occur under -WhatIf so the user can see what WOULD be installed
+    and verify the binaries land in the staging temp dir clean.
+
+.NOTES
+    Tier: Safe (installs Microsoft-signed runtimes)
+    Replaces: install-runtimes.ps1 (dumb version)
+    Must be run as Administrator. Requires internet connection.
+#>
+[CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
+param()
 
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"
 
@@ -32,14 +40,26 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     exit 1
 }
 
-# Check internet
-if (-not (Test-Connection -ComputerName "8.8.8.8" -Count 1 -Quiet -ErrorAction SilentlyContinue)) {
+# Check internet — direct .NET ping (avoids Test-Connection CimInstance
+# overhead + the PSAvoidUsingComputerNameHardcoded false positive on
+# well-known public DNS reachability targets).
+$reachable = $false
+$ping = [System.Net.NetworkInformation.Ping]::new()
+try {
+    $reply = $ping.Send('8.8.8.8', 1500)
+    $reachable = ($reply.Status -eq [System.Net.NetworkInformation.IPStatus]::Success)
+} catch [System.Net.NetworkInformation.PingException] {
+    $reachable = $false
+} finally {
+    $ping.Dispose()
+}
+if (-not $reachable) {
     Write-Host "[ERROR] Internet connection required." -ForegroundColor Red
     Read-Host "Press Enter to exit"
     exit 1
 }
 
-$state = Initialize-ToolkitState
+Initialize-ToolkitState | Out-Null
 $ProgressPreference = 'SilentlyContinue'
 $tempDir = "$env:SystemRoot\Temp\GamingPrereqs"
 New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
@@ -111,16 +131,16 @@ function Test-VcRedistInstalled {
 # Define VC++ Redistributables
 # ============================================================
 $vcRedists = @(
-    @{ Name = "VC++ 2005 x86";  URL = "https://download.microsoft.com/download/8/B/4/8B42259F-5D70-43F4-AC2E-4B208FD8D66A/vcredist_x86.EXE"; File = "vcredist2005_x86.exe"; Args = '/Q /C:"msiexec /i vcredist.msi /qn /norestart"' }
-    @{ Name = "VC++ 2005 x64";  URL = "https://download.microsoft.com/download/8/B/4/8B42259F-5D70-43F4-AC2E-4B208FD8D66A/vcredist_x64.EXE"; File = "vcredist2005_x64.exe"; Args = '/Q /C:"msiexec /i vcredist.msi /qn /norestart"' }
-    @{ Name = "VC++ 2008 x86";  URL = "https://download.microsoft.com/download/5/D/8/5D8C65CB-C849-4025-8E95-C3966CAFD8AE/vcredist_x86.exe"; File = "vcredist2008_x86.exe"; Args = "/q" }
-    @{ Name = "VC++ 2008 x64";  URL = "https://download.microsoft.com/download/5/D/8/5D8C65CB-C849-4025-8E95-C3966CAFD8AE/vcredist_x64.exe"; File = "vcredist2008_x64.exe"; Args = "/q" }
-    @{ Name = "VC++ 2010 x86";  URL = "https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x86.exe"; File = "vcredist2010_x86.exe"; Args = "/quiet /norestart" }
-    @{ Name = "VC++ 2010 x64";  URL = "https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x64.exe"; File = "vcredist2010_x64.exe"; Args = "/quiet /norestart" }
-    @{ Name = "VC++ 2012 x86";  URL = "https://download.microsoft.com/download/1/6/B/16B06F60-3B20-4FF2-B699-5E9B7962F9AE/VSU_4/vcredist_x86.exe"; File = "vcredist2012_x86.exe"; Args = "/quiet /norestart" }
-    @{ Name = "VC++ 2012 x64";  URL = "https://download.microsoft.com/download/1/6/B/16B06F60-3B20-4FF2-B699-5E9B7962F9AE/VSU_4/vcredist_x64.exe"; File = "vcredist2012_x64.exe"; Args = "/quiet /norestart" }
-    @{ Name = "VC++ 2013 x86";  URL = "https://download.microsoft.com/download/2/e/6/2e61cfa4-993b-4dd4-91da-3737cd5cd6e3/vcredist_x86.exe"; File = "vcredist2013_x86.exe"; Args = "/quiet /norestart" }
-    @{ Name = "VC++ 2013 x64";  URL = "https://download.microsoft.com/download/2/e/6/2e61cfa4-993b-4dd4-91da-3737cd5cd6e3/vcredist_x64.exe"; File = "vcredist2013_x64.exe"; Args = "/quiet /norestart" }
+    @{ Name = "VC++ 2005 x86"; URL = "https://download.microsoft.com/download/8/B/4/8B42259F-5D70-43F4-AC2E-4B208FD8D66A/vcredist_x86.EXE"; File = "vcredist2005_x86.exe"; Args = '/Q /C:"msiexec /i vcredist.msi /qn /norestart"' }
+    @{ Name = "VC++ 2005 x64"; URL = "https://download.microsoft.com/download/8/B/4/8B42259F-5D70-43F4-AC2E-4B208FD8D66A/vcredist_x64.EXE"; File = "vcredist2005_x64.exe"; Args = '/Q /C:"msiexec /i vcredist.msi /qn /norestart"' }
+    @{ Name = "VC++ 2008 x86"; URL = "https://download.microsoft.com/download/5/D/8/5D8C65CB-C849-4025-8E95-C3966CAFD8AE/vcredist_x86.exe"; File = "vcredist2008_x86.exe"; Args = "/q" }
+    @{ Name = "VC++ 2008 x64"; URL = "https://download.microsoft.com/download/5/D/8/5D8C65CB-C849-4025-8E95-C3966CAFD8AE/vcredist_x64.exe"; File = "vcredist2008_x64.exe"; Args = "/q" }
+    @{ Name = "VC++ 2010 x86"; URL = "https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x86.exe"; File = "vcredist2010_x86.exe"; Args = "/quiet /norestart" }
+    @{ Name = "VC++ 2010 x64"; URL = "https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x64.exe"; File = "vcredist2010_x64.exe"; Args = "/quiet /norestart" }
+    @{ Name = "VC++ 2012 x86"; URL = "https://download.microsoft.com/download/1/6/B/16B06F60-3B20-4FF2-B699-5E9B7962F9AE/VSU_4/vcredist_x86.exe"; File = "vcredist2012_x86.exe"; Args = "/quiet /norestart" }
+    @{ Name = "VC++ 2012 x64"; URL = "https://download.microsoft.com/download/1/6/B/16B06F60-3B20-4FF2-B699-5E9B7962F9AE/VSU_4/vcredist_x64.exe"; File = "vcredist2012_x64.exe"; Args = "/quiet /norestart" }
+    @{ Name = "VC++ 2013 x86"; URL = "https://download.microsoft.com/download/2/e/6/2e61cfa4-993b-4dd4-91da-3737cd5cd6e3/vcredist_x86.exe"; File = "vcredist2013_x86.exe"; Args = "/quiet /norestart" }
+    @{ Name = "VC++ 2013 x64"; URL = "https://download.microsoft.com/download/2/e/6/2e61cfa4-993b-4dd4-91da-3737cd5cd6e3/vcredist_x64.exe"; File = "vcredist2013_x64.exe"; Args = "/quiet /norestart" }
     @{ Name = "VC++ 2015-2022 x86"; URL = "https://aka.ms/vs/17/release/vc_redist.x86.exe"; File = "vcredist2022_x86.exe"; Args = "/quiet /norestart" }
     @{ Name = "VC++ 2015-2022 x64"; URL = "https://aka.ms/vs/17/release/vc_redist.x64.exe"; File = "vcredist2022_x64.exe"; Args = "/quiet /norestart" }
 )
@@ -212,6 +232,10 @@ foreach ($vc in $needed) {
             $installFailed++
             continue
         }
+        if (-not $PSCmdlet.ShouldProcess("$($vc.Name) (signed by Microsoft)", "Start-Process installer")) {
+            Write-Host " Skipped (-WhatIf)" -ForegroundColor Gray
+            continue
+        }
         Start-Process -Wait $filePath -ArgumentList $vc.Args -WindowStyle Hidden -ErrorAction Stop
         Write-Host " Done" -ForegroundColor Green
         $installSuccess++
@@ -234,19 +258,25 @@ if (-not $dxInstalled) {
     try {
         Invoke-WebRequest -Uri "https://download.microsoft.com/download/8/4/A/84A35BF1-DAFE-4AE8-82AF-AD2AE20B6B14/directx_Jun2010_redist.exe" -OutFile $dxFile -UseBasicParsing -ErrorAction Stop
 
-        # Verify Authenticode signature before running
+        # Verify Authenticode signature before running. Gate the install
+        # branches via if/elseif/else — this block is inside an
+        # `if (-not $dxInstalled)`, NOT a loop, so `continue` would
+        # produce "The Continue statement was not within a loop."
         $dxSig = Get-AuthenticodeSignature $dxFile
-        if ($dxSig.Status -ne 'Valid') {
+        if ($dxSig.Status -eq 'Valid') {
+            if ($PSCmdlet.ShouldProcess("DirectX June 2010 Legacy Runtime", "Extract + DXSETUP.exe /silent")) {
+                Start-Process -Wait $dxFile -ArgumentList "/Q /T:`"$dxDir`"" -ErrorAction Stop
+                Start-Process -Wait "$dxDir\DXSETUP.exe" -ArgumentList "/silent" -WindowStyle Hidden -ErrorAction Stop
+                Write-Host " Done" -ForegroundColor Green
+                $installSuccess++
+            } else {
+                Write-Host " Skipped (-WhatIf)" -ForegroundColor Gray
+            }
+        } else {
             Write-Host " Signature invalid, skipping" -ForegroundColor Yellow
             Remove-Item $dxFile -Force -ErrorAction SilentlyContinue
             $installFailed++
-            continue
         }
-
-        Start-Process -Wait $dxFile -ArgumentList "/Q /T:`"$dxDir`"" -ErrorAction Stop
-        Start-Process -Wait "$dxDir\DXSETUP.exe" -ArgumentList "/silent" -WindowStyle Hidden -ErrorAction Stop
-        Write-Host " Done" -ForegroundColor Green
-        $installSuccess++
     } catch {
         Write-Host " Failed" -ForegroundColor Yellow
         $installFailed++
@@ -258,7 +288,6 @@ if (-not $dxInstalled) {
 # Cleanup temp files
 Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
 
-$totalInstalled = $alreadyInstalled.Count + $installSuccess
 Add-ToolkitStepResult -Key "prerequisites" -Tier "Safe" -Status "applied" `
     -Reason "Installed $installSuccess new, $($alreadyInstalled.Count) already present, $installFailed failed"
 

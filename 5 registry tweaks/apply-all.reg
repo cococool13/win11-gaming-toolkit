@@ -17,6 +17,12 @@ Windows Registry Editor Version 5.00
 "MouseHoverTime"="10"
 
 ; --- Disable startup delay (default: not set) ---
+; CURSOR-AUDIT #23: Win11 24H2 uses the StartupApproved model for
+; startup-app dispatch; the legacy StartupDelayInMSec value at the
+; Serialize key is largely ignored on modern builds. Kept here for
+; (a) backward compat with Win10 and pre-22H2 Win11 and (b) it's a
+; harmless dword write. Confirmed-noop on Win11 24H2+ -- remove in
+; a future cleanup once the project drops Win10 support.
 [HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize]
 "StartupDelayInMSec"=dword:00000000
 
@@ -42,7 +48,11 @@ Windows Registry Editor Version 5.00
 "Scheduling Category"="High"
 "SFIO Priority"="High"
 
-; --- Disable network throttling ---
+; --- Disable network throttling (NetworkThrottlingIndex is cargo-cult on Win11) ---
+; CURSOR-AUDIT #12: NetworkThrottlingIndex=0xffffffff is a Win7/8-era MMCSS
+; myth; negligible measurable benefit on Win11. SystemResponsiveness=0 still
+; has a small effect on MMCSS scheduling. Kept here because users running the
+; .reg bundle expect "all knobs"; documented so behavior is auditable.
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile]
 "SystemResponsiveness"=dword:00000000
 "NetworkThrottlingIndex"=dword:ffffffff

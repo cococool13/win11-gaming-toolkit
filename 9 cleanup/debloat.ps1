@@ -2,9 +2,17 @@
 # Windows 11 Debloat Script (Smart)
 # Windows 11 Gaming Optimization Guide
 # ============================================================
+# Tier: Safe (for the default app set) / Advanced (Xbox App)
+#
 # Removes pre-installed bloatware apps that waste resources.
 # Shows what will be removed with confirmation before acting.
-# Records all removals in manifest for audit trail.
+# Records all removals in state.packages.removed and
+# state.packages.provisionedRemoved for audit trail and revert.
+#
+# Pair: restore-debloat.ps1 reads the manifest and reinstalls
+# recorded packages via winget. Provisioned (per-image) reinstall
+# typically needs the original Windows install media; winget covers
+# the per-user reinstall path.
 #
 # Replaces: debloat.ps1 (dumb version)
 # Must be run as Administrator.
@@ -26,33 +34,33 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     exit 1
 }
 
-$state = Initialize-ToolkitState
+Initialize-ToolkitState | Out-Null
 $stepName = "debloat"
 
 # Apps to remove — categorized by confidence level
 $appsToRemove = @(
-    @{ Name = "Clipchamp.Clipchamp";                   Desc = "Clipchamp Video Editor";    Tier = "Safe" }
-    @{ Name = "Microsoft.BingNews";                    Desc = "Bing News";                 Tier = "Safe" }
-    @{ Name = "Microsoft.BingWeather";                 Desc = "Bing Weather";              Tier = "Safe" }
-    @{ Name = "Microsoft.GetHelp";                     Desc = "Get Help";                  Tier = "Safe" }
-    @{ Name = "Microsoft.Getstarted";                  Desc = "Tips";                      Tier = "Safe" }
-    @{ Name = "Microsoft.MicrosoftOfficeHub";          Desc = "Office Hub";                Tier = "Safe" }
-    @{ Name = "Microsoft.MicrosoftSolitaireCollection"; Desc = "Solitaire Collection";     Tier = "Safe" }
-    @{ Name = "Microsoft.MicrosoftStickyNotes";        Desc = "Sticky Notes";              Tier = "Safe" }
-    @{ Name = "Microsoft.People";                      Desc = "People";                    Tier = "Safe" }
-    @{ Name = "Microsoft.PowerAutomateDesktop";        Desc = "Power Automate";            Tier = "Safe" }
-    @{ Name = "Microsoft.Todos";                       Desc = "Microsoft To Do";           Tier = "Safe" }
-    @{ Name = "Microsoft.WindowsAlarms";               Desc = "Alarms & Clock";            Tier = "Safe" }
-    @{ Name = "Microsoft.WindowsFeedbackHub";          Desc = "Feedback Hub";              Tier = "Safe" }
-    @{ Name = "Microsoft.WindowsMaps";                 Desc = "Maps";                      Tier = "Safe" }
-    @{ Name = "Microsoft.WindowsSoundRecorder";        Desc = "Sound Recorder";            Tier = "Safe" }
-    @{ Name = "Microsoft.YourPhone";                   Desc = "Phone Link";                Tier = "Safe" }
-    @{ Name = "Microsoft.ZuneMusic";                   Desc = "Groove Music / Media Player"; Tier = "Safe" }
-    @{ Name = "Microsoft.ZuneVideo";                   Desc = "Movies & TV";               Tier = "Safe" }
-    @{ Name = "MicrosoftCorporationII.QuickAssist";    Desc = "Quick Assist";              Tier = "Safe" }
-    @{ Name = "MicrosoftTeams";                        Desc = "Teams (personal)";          Tier = "Safe" }
-    @{ Name = "Microsoft.549981C3F5F10";               Desc = "Cortana";                   Tier = "Safe" }
-    @{ Name = "Microsoft.GamingApp";                   Desc = "Xbox App";                  Tier = "Advanced" }
+    @{ Name = "Clipchamp.Clipchamp"; Desc = "Clipchamp Video Editor"; Tier = "Safe" }
+    @{ Name = "Microsoft.BingNews"; Desc = "Bing News"; Tier = "Safe" }
+    @{ Name = "Microsoft.BingWeather"; Desc = "Bing Weather"; Tier = "Safe" }
+    @{ Name = "Microsoft.GetHelp"; Desc = "Get Help"; Tier = "Safe" }
+    @{ Name = "Microsoft.Getstarted"; Desc = "Tips"; Tier = "Safe" }
+    @{ Name = "Microsoft.MicrosoftOfficeHub"; Desc = "Office Hub"; Tier = "Safe" }
+    @{ Name = "Microsoft.MicrosoftSolitaireCollection"; Desc = "Solitaire Collection"; Tier = "Safe" }
+    @{ Name = "Microsoft.MicrosoftStickyNotes"; Desc = "Sticky Notes"; Tier = "Safe" }
+    @{ Name = "Microsoft.People"; Desc = "People"; Tier = "Safe" }
+    @{ Name = "Microsoft.PowerAutomateDesktop"; Desc = "Power Automate"; Tier = "Safe" }
+    @{ Name = "Microsoft.Todos"; Desc = "Microsoft To Do"; Tier = "Safe" }
+    @{ Name = "Microsoft.WindowsAlarms"; Desc = "Alarms & Clock"; Tier = "Safe" }
+    @{ Name = "Microsoft.WindowsFeedbackHub"; Desc = "Feedback Hub"; Tier = "Safe" }
+    @{ Name = "Microsoft.WindowsMaps"; Desc = "Maps"; Tier = "Safe" }
+    @{ Name = "Microsoft.WindowsSoundRecorder"; Desc = "Sound Recorder"; Tier = "Safe" }
+    @{ Name = "Microsoft.YourPhone"; Desc = "Phone Link"; Tier = "Safe" }
+    @{ Name = "Microsoft.ZuneMusic"; Desc = "Groove Music / Media Player"; Tier = "Safe" }
+    @{ Name = "Microsoft.ZuneVideo"; Desc = "Movies & TV"; Tier = "Safe" }
+    @{ Name = "MicrosoftCorporationII.QuickAssist"; Desc = "Quick Assist"; Tier = "Safe" }
+    @{ Name = "MicrosoftTeams"; Desc = "Teams (personal)"; Tier = "Safe" }
+    @{ Name = "Microsoft.549981C3F5F10"; Desc = "Cortana"; Tier = "Safe" }
+    @{ Name = "Microsoft.GamingApp"; Desc = "Xbox App"; Tier = "Advanced" }
 )
 
 # Apps we NEVER remove (safety list)
@@ -77,6 +85,15 @@ $toRemove = @()
 $alreadyGone = @()
 
 foreach ($app in $appsToRemove) {
+    # Defense in depth: enforce the safety list at scan time. Curated
+    # $appsToRemove should never include $neverRemove entries, but if it
+    # does (typo, future PR mistake), skip rather than remove a protected
+    # app. Clears PSUseDeclaredVarsMoreThanAssignments by actually using
+    # the list it advertises.
+    if ($neverRemove -contains $app.Name) {
+        Write-Host "  [SAFETY] Skipping $($app.Name) (in NEVER-REMOVE list)" -ForegroundColor Red
+        continue
+    }
     $package = Get-AppxPackage -Name $app.Name -ErrorAction SilentlyContinue
     if ($package) {
         $toRemove += $app
@@ -211,6 +228,7 @@ if ($skipped -gt 0) {
 Write-Host "  Already gone: $($alreadyGone.Count) apps" -ForegroundColor Gray
 Write-Host ""
 Write-Host "  Removals recorded in manifest for audit trail." -ForegroundColor Gray
-Write-Host "  Note: Removed apps can be reinstalled from Microsoft Store." -ForegroundColor Gray
+Write-Host "  To reinstall: run restore-debloat.ps1 (winget-driven, reads manifest)." -ForegroundColor Gray
+Write-Host "  Or open Microsoft Store and search by name for any individual app." -ForegroundColor Gray
 Write-Host ""
 Read-Host "Press Enter to continue"

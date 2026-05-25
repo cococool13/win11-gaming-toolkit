@@ -1,21 +1,29 @@
-# ============================================================
-# Configure Memory Manager Agent (MMAgent) for Gaming
-# Windows 11 Gaming Optimization Guide
-# Source: FR33THYFR33THY/Ultimate — 8 Advanced/6 MMAgent Features.ps1
-#         + 3 Setup/2 Memory Compression.ps1
-# ============================================================
-# Disables MMAgent features that can cause hitches in games:
-#
-#   - PageCombining   : background memory dedup, costs CPU + cache
-#   - OperationAPI    : telemetry-style API for memory ops
-#   - ApplicationPreLaunch : auto-launches recently used apps
-#   - MemoryCompression    : compresses pages instead of paging out
-#                            (large benefit on low-RAM systems,
-#                            measurable hitch source on 32GB+ rigs)
-#
-# State is captured to a sidecar JSON before apply, so revert can
-# restore the exact pre-toolkit state instead of guessing defaults.
-# ============================================================
+<#
+.SYNOPSIS
+    Configure MMAgent (Memory Manager Agent) for gaming by disabling
+    background memory features that can cause frame hitches.
+
+.DESCRIPTION
+    Disables four MMAgent features in order:
+      - PageCombining       : background memory dedup
+      - OperationAPI        : telemetry-style API for memory ops
+      - ApplicationPreLaunch : auto-launches recently used apps
+      - MemoryCompression    : compresses pages instead of paging out
+                              (helps on low-RAM, hitches 32GB+ rigs)
+
+    Each Disable-MMAgent call is gated by $PSCmdlet.ShouldProcess —
+    -WhatIf prints what would be disabled without touching MMAgent.
+    State captured to mmagent-before.json sidecar so revert can
+    restore exact pre-toolkit state.
+
+.NOTES
+    Tier: Advanced
+    Pair: revert-mmagent.ps1
+    Source: FR33THYFR33THY/Ultimate — 8 Advanced/6 MMAgent Features.ps1
+            + 3 Setup/2 Memory Compression.ps1
+#>
+[CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
+param()
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"
 . "$PSScriptRoot\..\..\lib\ui-helpers.ps1"
@@ -49,21 +57,39 @@ if (-not (Test-Path $beforePath)) {
     UI-Note -Message "MMAgent baseline already captured (re-run idempotent)" -Color $script:UI_Info
 }
 
-UI-Step -Label "Disable PageCombining" -Action {
-    Disable-MMAgent -PageCombining -ErrorAction Stop
-    Add-ToolkitStepResult -Key "mmagent:PageCombining" -Tier "Advanced" -Status "applied" -Reason "PageCombining disabled"
-}
-UI-Step -Label "Disable OperationAPI" -Action {
-    Disable-MMAgent -OperationAPI -ErrorAction Stop
-    Add-ToolkitStepResult -Key "mmagent:OperationAPI" -Tier "Advanced" -Status "applied" -Reason "OperationAPI disabled"
-}
-UI-Step -Label "Disable ApplicationPreLaunch" -Action {
-    Disable-MMAgent -ApplicationPreLaunch -ErrorAction Stop
-    Add-ToolkitStepResult -Key "mmagent:ApplicationPreLaunch" -Tier "Advanced" -Status "applied" -Reason "ApplicationPreLaunch disabled"
-}
-UI-Step -Label "Disable MemoryCompression" -Action {
-    Disable-MMAgent -MemoryCompression -ErrorAction Stop
-    Add-ToolkitStepResult -Key "mmagent:MemoryCompression" -Tier "Advanced" -Status "applied" -Reason "MemoryCompression disabled"
+# CURSOR-AUDIT #17: pre-check Get-MMAgent flags so re-running this script
+# after a successful apply skips features that are already disabled instead
+# of letting Disable-MMAgent throw on re-disable.
+$mmCurrent = Get-MMAgent
+
+# Per-feature loop. ShouldProcess gate is hoisted OUT of the UI-Step
+# action block — relying on closure capture of $PSCmdlet inside `& $Action`
+# is fragile across scope chains. Check up-front, only enter UI-Step when
+# the operation will actually run.
+$mmFeatures = @(
+    @{ Name = 'PageCombining'; Current = $mmCurrent.PageCombining }
+    @{ Name = 'OperationAPI'; Current = $mmCurrent.OperationAPI }
+    @{ Name = 'ApplicationPreLaunch'; Current = $mmCurrent.ApplicationPreLaunch }
+    @{ Name = 'MemoryCompression'; Current = $mmCurrent.MemoryCompression }
+)
+foreach ($f in $mmFeatures) {
+    $name = $f.Name
+    if (-not $f.Current) {
+        UI-Skip -Label "Disable $name" -Reason "Already disabled"
+        Add-ToolkitStepResult -Key "mmagent:$name" -Tier "Advanced" -Status "preexisting" -Reason "Already disabled"
+        continue
+    }
+    if (-not $PSCmdlet.ShouldProcess("MMAgent.$name", "Disable-MMAgent")) {
+        UI-Skip -Label "Disable $name" -Reason "-WhatIf preview"
+        continue
+    }
+    UI-Step -Label "Disable $name" -Action {
+        # Splatting because PowerShell can't bind dynamic switch by name
+        # via -$name (parser interprets the dash as subtraction).
+        $disableArgs = @{ ErrorAction = 'Stop'; $name = $true }
+        Disable-MMAgent @disableArgs
+        Add-ToolkitStepResult -Key "mmagent:$name" -Tier "Advanced" -Status "applied" -Reason "$name disabled"
+    }.GetNewClosure()
 }
 
 UI-Summary -DoneMessage "MMAgent configured for gaming" -Details @(

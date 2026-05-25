@@ -14,6 +14,11 @@ $Host.UI.RawUI.WindowTitle = "Re-enable Spectre / Meltdown Mitigations"
 UI-Header -Title "Re-enable Spectre / Meltdown Mitigations" -Subtitle "Restore safe defaults"
 UI-RequireAdmin -ScriptName "Enable Spectre/Meltdown mitigations"
 
+# CURSOR-AUDIT #22: ensure manifest exists so Restore-ToolkitRegistryValue
+# has a state object to read. Previously worked only via the remove fallback
+# when the manifest was already initialized by a sibling script.
+Initialize-ToolkitState | Out-Null
+
 UI-ResetCounters
 $path = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"
 

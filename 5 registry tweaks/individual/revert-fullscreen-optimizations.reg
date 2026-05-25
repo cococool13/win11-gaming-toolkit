@@ -1,0 +1,12 @@
+Windows Registry Editor Version 5.00
+
+; Revert: restore Windows-default fullscreen optimizations
+; Pair with: disable-fullscreen-optimizations.reg
+; CURSOR-AUDIT #20: removes all the FSE override values; Windows
+; default behavior is "fullscreen optimizations on" (DXGI flip model).
+
+[HKEY_CURRENT_USER\System\GameConfigStore]
+"GameDVR_FSEBehaviorMode"=-
+"GameDVR_HonorUserFSEBehaviorMode"=-
+"GameDVR_FSEBehavior"=-
+"GameDVR_DXGIHonorFSEWindowsCompatible"=-

@@ -1,0 +1,25 @@
+Windows Registry Editor Version 5.00
+
+; Revert: undo File Explorer customizations
+; Pair with: explorer-tweaks.reg
+; CURSOR-AUDIT #20: removes the overrides; Windows restores its
+; per-build defaults (which for most of these is "no value set" =
+; Quick Access launch, hidden extensions, frequent folders shown).
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced]
+"LaunchTo"=-
+"HideFileExt"=-
+"ShowSyncProviderNotifications"=-
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\CabinetState]
+"FullPath"=-
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer]
+"ShowFrequent"=-
+"ShowCloudFilesInQuickAccess"=-
+
+[HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers]
+"DisableAutoplay"=-
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Remote Assistance]
+"fAllowToGetHelp"=-

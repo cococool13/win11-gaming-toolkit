@@ -2,15 +2,33 @@
 # AMD GPU — Hidden Performance Settings
 # Windows 11 Gaming Optimization Guide
 # ============================================================
+# Tier: Advanced
+#
 # Applies registry-based performance settings for competitive gaming.
 # All changes tracked via Set-ToolkitRegistryValue for rollback.
 #
 # Requires: lib/toolkit-state.ps1, lib/gpu-detection.ps1
-# Called by: 6 gpu/install-gpu-driver.ps1
+# Called by: 6 gpu/install-gpu-driver.ps1 (which already verifies admin),
+# but also safe to invoke standalone — admin self-check below ensures
+# the script fails fast rather than producing cryptic Set-ItemProperty
+# errors when run from a non-admin shell. (CLAUDE.md invariant #6)
 # ============================================================
 
-. "$PSScriptRoot\..\lib\toolkit-state.ps1"
-. "$PSScriptRoot\..\lib\gpu-detection.ps1"
+# CURSOR-AUDIT #6: explicit per-script admin gate. Inline rather than
+# UI-RequireAdmin because the dot-source paths in this folder reach
+# ..\lib\* (intentional sibling sourcing from install-gpu-driver.ps1's
+# scope when invoked via &); going through ui-helpers.ps1 would require
+# fixing those resolutions in a separate change.
+if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Host ""
+    Write-Host "  [ERROR] configure-amd.ps1 must be run as Administrator." -ForegroundColor Red
+    Write-Host "  Re-launch PowerShell as Admin or invoke via 6 gpu\install-gpu-driver.ps1." -ForegroundColor Red
+    Write-Host ""
+    exit 1
+}
+
+. "$PSScriptRoot\..\..\lib\toolkit-state.ps1"
+. "$PSScriptRoot\..\..\lib\gpu-detection.ps1"
 
 $stepName = "gpu-amd-settings"
 
@@ -19,15 +37,11 @@ function Apply-AmdAdapterSettings {
 
     Write-Host "  Applying AMD adapter-level settings..." -ForegroundColor Cyan
 
-    # Disable Ultra Low Power State (ULPS) — prevents stuttering on wake
-    Set-ToolkitRegistryValue -Id "amd:EnableUlps" `
-        -Path $AdapterPath -Name "EnableUlps" `
-        -Value 0 -Type "DWord" -Tier "Advanced" -Step $stepName
-
-    # Disable ULPS for the NA key variant too
-    Set-ToolkitRegistryValue -Id "amd:EnableUlps_NA" `
-        -Path $AdapterPath -Name "EnableUlps_NA" `
-        -Value 0 -Type "DWord" -Tier "Advanced" -Step $stepName
+    # CURSOR-AUDIT #25: ULPS disable was previously duplicated here AND in
+    # 6 gpu/configure-amd-ulps.ps1 (different manifest Ids; same target keys).
+    # ULPS is now owned by configure-amd-ulps.ps1 (per-adapter Id format,
+    # vendor-gated to AMD, paired revert at revert-amd-ulps.ps1). To get
+    # ULPS off, run that script before or after this one.
 
     # Disable deep sleep clock gating — keeps GPU responsive
     Set-ToolkitRegistryValue -Id "amd:PP_SclkDeepSleepDisable" `
@@ -77,8 +91,7 @@ function Apply-AmdSystemSettings {
 
 # --- Execute ---
 try {
-    $state = Initialize-ToolkitState
-
+    Initialize-ToolkitState | Out-Null
     $gpu = Get-GpuVendor | Where-Object { $_.Vendor -eq "amd" } | Select-Object -First 1
     if (-not $gpu) {
         throw "No AMD GPU detected"

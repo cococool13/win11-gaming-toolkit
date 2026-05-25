@@ -5,7 +5,18 @@
 # Extracted from DduManual.ps1 for reuse by GPU driver scripts.
 # ============================================================
 
-$script:GamingOptRoot = Join-Path $env:ProgramData "GamingOpt"
+# Cross-platform staging root. $env:ProgramData is null on macOS / Linux
+# dev machines (lib gets dot-sourced by Pester tests on macOS); fall
+# back to $XDG_DATA_HOME / ~/.local/share so dot-source doesn't throw.
+# Production (Windows) keeps the historical %ProgramData%\GamingOpt path.
+$script:GamingOptDataHome = if ($env:ProgramData) {
+    $env:ProgramData
+} elseif ($env:XDG_DATA_HOME) {
+    $env:XDG_DATA_HOME
+} else {
+    Join-Path $HOME '.local/share'
+}
+$script:GamingOptRoot = Join-Path $script:GamingOptDataHome 'GamingOpt'
 
 function Write-Info {
     param([string]$Message)
@@ -13,8 +24,20 @@ function Write-Info {
 }
 
 function Ensure-Internet {
-    if (-not (Test-Connection -ComputerName "8.8.8.8" -Count 1 -Quiet -ErrorAction SilentlyContinue)) {
+    # Direct .NET ping. Avoids Test-Connection's CimInstance overhead
+    # and the PSAvoidUsingComputerNameHardcoded false positive on
+    # well-known public DNS reachability targets. 1500ms is generous
+    # for any non-loopback environment.
+    $ping = [System.Net.NetworkInformation.Ping]::new()
+    try {
+        $reply = $ping.Send('8.8.8.8', 1500)
+        if ($reply.Status -ne [System.Net.NetworkInformation.IPStatus]::Success) {
+            throw "Internet connection required"
+        }
+    } catch [System.Net.NetworkInformation.PingException] {
         throw "Internet connection required"
+    } finally {
+        $ping.Dispose()
     }
 }
 

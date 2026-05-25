@@ -29,7 +29,7 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 }
 
 $state = Initialize-ToolkitState
-$profile = $state.context
+$machineProfile = $state.context
 $succeeded = 0
 $skippedSmart = 0
 $skippedAlready = 0
@@ -37,20 +37,20 @@ $failed = 0
 
 # Service definitions with conditions
 $services = @(
-    @{ Name = "DiagTrack";   Desc = "Connected User Experiences (Telemetry)"; Tier = "Safe";     Condition = $null }
-    @{ Name = "PhoneSvc";    Desc = "Phone Service";                          Tier = "Safe";     Condition = $null }
-    @{ Name = "lfsvc";       Desc = "Geolocation Service";                    Tier = "Safe";     Condition = $null }
-    @{ Name = "RetailDemo";  Desc = "Retail Demo Service";                    Tier = "Safe";     Condition = $null }
-    @{ Name = "MapsBroker";  Desc = "Downloaded Maps Manager";                Tier = "Safe";     Condition = $null }
-    @{ Name = "Fax";         Desc = "Fax Service";                            Tier = "Safe";     Condition = $null }
-    @{ Name = "Spooler";     Desc = "Print Spooler";                          Tier = "Advanced"; Condition = "NoPrinters" }
-    @{ Name = "WSearch";     Desc = "Windows Search";                         Tier = "Advanced"; Condition = $null }
+    @{ Name = "DiagTrack"; Desc = "Connected User Experiences (Telemetry)"; Tier = "Safe"; Condition = $null }
+    @{ Name = "PhoneSvc"; Desc = "Phone Service"; Tier = "Safe"; Condition = $null }
+    @{ Name = "lfsvc"; Desc = "Geolocation Service"; Tier = "Safe"; Condition = $null }
+    @{ Name = "RetailDemo"; Desc = "Retail Demo Service"; Tier = "Safe"; Condition = $null }
+    @{ Name = "MapsBroker"; Desc = "Downloaded Maps Manager"; Tier = "Safe"; Condition = $null }
+    @{ Name = "Fax"; Desc = "Fax Service"; Tier = "Safe"; Condition = $null }
+    @{ Name = "Spooler"; Desc = "Print Spooler"; Tier = "Advanced"; Condition = "NoPrinters" }
+    @{ Name = "WSearch"; Desc = "Windows Search"; Tier = "Advanced"; Condition = $null }
 )
 
 # Show what will happen based on machine profile
-Write-Host "  Machine: $($profile.manufacturer) $($profile.model)" -ForegroundColor Gray
-Write-Host "  Printers: $($profile.printerCount)" -ForegroundColor Gray
-Write-Host "  Domain: $($profile.partOfDomain)" -ForegroundColor Gray
+Write-Host "  Machine: $($machineProfile.manufacturer) $($machineProfile.model)" -ForegroundColor Gray
+Write-Host "  Printers: $($machineProfile.printerCount)" -ForegroundColor Gray
+Write-Host "  Domain: $($machineProfile.partOfDomain)" -ForegroundColor Gray
 Write-Host ""
 
 # Preview changes
@@ -65,8 +65,8 @@ foreach ($svc in $services) {
     $skipReason = $null
 
     # Condition checks
-    if ($svc.Condition -eq "NoPrinters" -and $profile.printerCount -gt 0) {
-        $skipReason = "Printers detected ($($profile.printerCount))"
+    if ($svc.Condition -eq "NoPrinters" -and $machineProfile.printerCount -gt 0) {
+        $skipReason = "Printers detected ($($machineProfile.printerCount))"
     }
 
     # Already disabled?
@@ -107,9 +107,9 @@ foreach ($svc in $services) {
     $current++
 
     # Re-check conditions
-    if ($svc.Condition -eq "NoPrinters" -and $profile.printerCount -gt 0) {
+    if ($svc.Condition -eq "NoPrinters" -and $machineProfile.printerCount -gt 0) {
         Add-ToolkitStepResult -Key "svc:$($svc.Name)" -Tier $svc.Tier -Status "skipped" `
-            -Reason "Printers detected ($($profile.printerCount))"
+            -Reason "Printers detected ($($machineProfile.printerCount))"
         $skippedSmart++
         Write-Host "  [$current] $($svc.Name) — SKIPPED (printers detected)" -ForegroundColor Yellow
         continue

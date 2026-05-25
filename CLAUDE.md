@@ -101,9 +101,42 @@ Numbered folders (`0 prerequisites/` → `10 verify/`) hold per-phase scripts.
 - **Anti-cheat warnings**: any script touching VBS / HVCI / LSA-PPL / Spectre
   mitigations / kernel timer resolution must include a header comment noting
   potential BattlEye / EAC impact (R6 Siege and similar titles on 24H2+).
+- **Architecture-over-wiring**: a fix that touches 3+ scripts mechanically is
+  a signal to STOP and find the single-point upstream change (probably a
+  missing `lib/` helper). Commit the helper + behavioral tests first; per-
+  caller refactors land in follow-up commits with measurable diff shrink.
+  Mark architecture commits `arch(<lib>): <change> — replaces N call-site
+  edits, covers future M`.
+- **Invariants ship with a tracked gap list, not silenced**: each invariant
+  Pester suite in `tests/invariants/` includes a `$KnownGaps` array. Real
+  violations are added there (visible in test output as `Set-ItResult
+  -Skipped -Because '<reason>'` per entry), NOT by disabling the assertion.
+  Each fix commit removes the gap entry from the array — the diff IS the
+  proof the fix landed. NEVER expand a gap list to silence a regression;
+  fix the script.
+- **ShouldProcess gates go OUTSIDE the `& $UIStepAction` ScriptBlock.**
+  `$PSCmdlet` scope resolution inside a script block invoked via `& $block`
+  is unreliable across PowerShell versions. Pattern:
+  ```
+  if (-not $PSCmdlet.ShouldProcess(...)) { UI-Skip ...; continue }
+  UI-Step -Label ... -Action { <do the work> }.GetNewClosure()
+  ```
+  `.GetNewClosure()` captures loop variables at iteration time. The
+  `5 registry tweaks/individual/configure-mmagent.ps1` / `revert-mmagent.ps1`
+  pair is the canonical reference.
 
 ## Known gotchas
 
+- **Don't shadow PowerShell automatic variables.** PSSA's
+  `PSAvoidAssignmentToAutomaticVariable` catches the common cases at gate
+  time, but the cost is wasted dev cycles. Top offenders we've hit:
+    - `$matches` — populated by `-match` operator (use `$pkgMatches`,
+      `$results`, etc.)
+    - `$pid` — current process ID (use `$devPid` for device PIDs)
+    - `$profile` — user profile script path (use `$machineProfile`)
+    - `$error` — error array (use `$errors` if you need it as a variable)
+    - `$host` — host UI object (don't reuse for anything else)
+  Test files inherit the same rule.
 - **WaaSMedicSvc on Win11 24H2 / 25H2**: DACL blocks even SYSTEM from setting
   `Start = 4`. `disable-windows-update.ps1` detects this and warns rather than
   failing. The recovery path (manual `takeown` / `icacls`) is documented in

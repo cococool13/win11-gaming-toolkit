@@ -175,6 +175,104 @@ lib helpers. (`f5387af`)
 | After Storage Sense pair | 0 | 0 | 468 | 41 |
 | After -Coverage flag | 0 | 0 | 468 | 41 |
 
+---
+
+### 2026-05-24 fourth loop (commits `f44609c` → `92e9c3c`, 8 commits)
+
+Theme: zero out both gap arrays + ship the deferred Phase C trio. Floor
+moved from **0/0 PSSA + 474 Pester / 35 skip** to **0/0 PSSA + 518 Pester
+/ 23 skip + 11.1% coverage**. Every invariant suite at 100% compliance.
+
+**fix(shouldprocess) — close the final 3 gaps; invariant 100%.** Three
+scripts using raw native calls (`bcdedit`, `sc.exe`, `Start-Process` on
+installers, `Set-NetAdapterPowerManagement`) got `[CmdletBinding(Supports
+ShouldProcess)]` and per-call gates. `enable-windows-update.ps1`
+collapsed 3 hand-copied 4-line `sc.exe config` blocks into a
+data-driven foreach. `install-runtimes.ps1` gated its Start-Process
+chain inline; spawned a separate task for a latent `continue`-outside-
+loop bug. `enable-adapter-power-savings.ps1` used the canonical
+hoisted-gate pattern in both branches (sidecar + defaults fallback).
+ShouldProcess invariant: 50/53 → **53/53 (100%)**. (`f44609c`)
+
+**arch(lib) — gpu-uninstall helper + 3 vendor wrappers.** Three of seven
+pair-script gaps had identical shape (missing uninstall-`<vendor>`.ps1
+per GPU install-`<vendor>`.ps1). Architecture pre-check: build the
+upstream helper FIRST, then thin wrappers. New `lib/gpu-uninstall.ps1`
+exposes `Get-GpuDriverPublisherPattern`, `Get-InstalledGpuDriver
+Packages` (parses `pnputil /enum-drivers`), and `Uninstall-GpuDriver
+ByPublisher` (gates each `pnputil /delete-driver` via $PSCmdlet.Should
+Process). Cross-platform safe (returns @() on non-Windows). 7
+behavioral tests cover the contract. Three vendor wrappers
+(`uninstall-{nvidia,amd,intel}.ps1`) call the helper and recommend
+DDU follow-up. Caught `$matches` automatic-variable shadowing during
+gate run — renamed to `$pkgMatches` everywhere with explanatory
+comments. (`127fda2`)
+
+**fix(rename) — finalize explorer-affinity rename + clear all pair
+gaps.** External worktree changes renamed `explorer-affinity-core1`
+→ `disable-explorer-affinity` and `restore-explorer-affinity` →
+`enable-explorer-affinity` (now match the verb-prefix rule).
+Companion commits updated all inter-script references, the templated
+sweep's pair table, and the gap list. A separate external change
+added `revert-power.ps1` and renamed `revert-all.ps1` →
+`enable-services.ps1` — closing the last two pair gaps. **Pair
+invariant: 46/53 → 56/56 (100%).** (`53c498e`, `bbc40e0`)
+
+**feat(hardware) — check-input-polling.ps1 read-only HID audit.**
+Walks `Get-PnpDevice` for Mouse / Keyboard / HIDClass and reports
+each device's friendly name, parsed VID/PID, registry-claimed
+SampleRate, and an interpretation note (1000+ Hz OK, etc.).
+`-AsObject` switch for pipeline use. Read-only by design with a
+regression test that fails the suite if any tracked-write helper
+or `sc.exe` leaks in. Phase A foundation for a planned
+`check-mouse-polling.ps1` that downloads MouseTester with SHA-256
+verify (the new downloader will pass the trust-verify invariant
+automatically). Caught `$pid` automatic-variable shadowing during
+gate — renamed to `$devPid` with explanatory comments. (`2de14ea`)
+
+**feat(mpo) — WDDM 2.7 gate + full Phase C polish on disable-mpo.**
+`OverlayTestMode` is silently ignored below WDDM 2.7 (Windows 10
+build 18363 / 1909). Setting a manifest entry for a phantom write
+would mislead the user on revert, so the script now fails CLOSED
+below 18363 with an explicit "your build doesn't support this"
+message. Reframed banner header as full `<# .SYNOPSIS / .DESCRIPTION
+/ .NOTES #>`: case-for, case-against, before/after metric (DxDiag
+Plane Count), anti-cheat impact NONE, Microsoft Learn citations
+for both WDDM 2.7 features and DWM MPO registry docs. (`00cab05`)
+
+**feat(hags) — enable-hags + disable-hags pair, [Experimental]
+gated.** Standalone HAGS toggle extracted from the bundled APPLY
+flow (where HwSchMode=2 lands as part of windows-settings).
+`enable-hags.ps1` requires `-Experimental` switch and refuses to
+run without it, citing 24H2 (build 26100+) / 25H2 (26200+) WDDM
+scheduler regression reports on multiple NVIDIA driver branches
+(566.x, 572.x, 576.x) with symptoms (frame-time variance, stutter
+regression, TDR events). `disable-hags.ps1` writes HwSchMode = 1
+(documented "OS scheduler" value, not just delete-the-key — fresh
+installs vary by GPU vendor). Header anti-cheat impact NONE.
+Microsoft Learn cited. (`5a8b0e9`)
+
+**docs(CLAUDE.md) — codify three rules earned constitutional
+status.** Architecture-over-wiring, gap-tracking-not-silenced, and
+ShouldProcess-hoist-out-of-UI-Step are now standing rules with
+the canonical reference scripts cited. Added "don't shadow
+PowerShell automatic variables" to Known gotchas with the top-5
+offenders ($matches, $pid, $profile, $error, $host) listed. (`92e9c3c`)
+
+### Quality-gate progression (fourth loop)
+
+| Gate snapshot | Errors | Warnings | Pester | Skipped | Coverage |
+|---|---|---|---|---|---|
+| Loop start (post-batch)              | 0 | 0 | 474 | 35 | 10.2% |
+| After 3 ShouldProcess gaps closed    | 0 | 0 | 477 | 32 | 10.2% |
+| After GPU uninstall trio (lib + 3)   | 0 | 0 | 490 | 29 | 11.1% |
+| After explorer-affinity rename       | 0 | 0 | 494 | 25 | 11.1% |
+| After $PairGaps cleared              | 0 | 0 | 496 | 23 | 11.1% |
+| After check-input-polling            | 0 | 0 | 504 | 23 | 11.1% |
+| After MPO WDDM gate                  | 0 | 0 | 504 | 23 | 11.1% |
+| After HAGS pair                      | 0 | 0 | 518 | 23 | 11.1% |
+| After CLAUDE.md rule codification    | 0 | 0 | 518 | 23 | 11.1% |
+
 ## [1.0.0] — 2026-05-07
 
 First public release. The toolkit went through three predecessor passes (FR33THY integration + bug audit, codex verification + discovery, cleanup + launcher redesign) and a final production-readiness audit before this tag.

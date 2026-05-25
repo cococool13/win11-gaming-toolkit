@@ -31,6 +31,8 @@
     Anti-cheat impact: NONE. RSS is below the game layer; CPUs assigned
     to RX interrupts are still available for game threads via standard
     scheduler preemption.
+    Reboot required: NO — Set-NetAdapterRss applies live.
+    Disk impact: LOW — captures per-adapter RSS sidecar JSON (~1 KB).
 
 .PARAMETER MaxQueues
     Cap the queue count this script will set. Default: min(CPU cores, 8).

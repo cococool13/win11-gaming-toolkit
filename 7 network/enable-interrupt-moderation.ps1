@@ -13,6 +13,9 @@
     Tier:     Safe (restores prior state)
     Anti-cheat impact: NONE. Below the IP stack; no game-process
         scheduling change.
+    Reboot required: NO — Set-NetAdapterAdvancedProperty applies live.
+    Disk impact: LOW — reads + deletes the rss-im sidecar JSON
+        (~1 KB); no installer / extraction.
 
     # CROSS-PLATFORM-NOTE
     # Windows-only (Set-NetAdapterAdvancedProperty).

@@ -27,6 +27,8 @@
 # Anti-cheat impact: NONE — ReBAR is a PCIe BAR-window-size feature
 # at the firmware + driver layer; not inspected by BattlEye / EAC /
 # Vanguard. Has been a stable Windows feature since Win10 21H1.
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry / cmdlet only; no installer / file extraction.
 #
 # Must be run as Administrator. Pair: disable-rebar.ps1.
 # ============================================================

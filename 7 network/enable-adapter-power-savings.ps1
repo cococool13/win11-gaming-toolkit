@@ -21,6 +21,8 @@
     Pair: disable-adapter-power-savings.ps1
     Anti-cheat impact: NONE — per-adapter selective-suspend / wake-on
         properties; no game-process scheduling change.
+    Reboot required: NO — Set-NetAdapterPowerManagement applies live.
+    Disk impact: LOW — reads + deletes the nic-power sidecar JSON.
 #>
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]
 param()

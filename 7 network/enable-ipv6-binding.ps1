@@ -8,6 +8,9 @@
 #
 # Anti-cheat impact: NONE — IPv6 binding state is below the
 # game-process layer; no kernel hooks, no driver state.
+# Reboot required: PARTIAL — Enable-NetAdapterBinding applies live;
+# removing DisabledComponents takes effect on next adapter reset / reboot.
+# Disk impact: LOW — reads + deletes the per-adapter sidecar JSON.
 # ============================================================
 
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"

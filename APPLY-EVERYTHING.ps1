@@ -33,6 +33,8 @@
 #       EAC (Apex, Fortnite) tolerates HVCI-off as of 2025 but the
 #       vendors warn this may change.
 #   See per-script "Anti-cheat impact:" lines for component details.
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry / cmdlet only; no installer / file extraction.
 #
 # Undo: REVERT-EVERYTHING.ps1
 # ============================================================

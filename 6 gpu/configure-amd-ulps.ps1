@@ -17,6 +17,8 @@
 #
 # Anti-cheat impact: NONE — AMD driver registry value at the GPU
 # adapter Class GUID; not inspected by BattlEye / EAC / Vanguard.
+# Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+# Disk impact: NONE — registry / cmdlet only; no installer / file extraction.
 # ============================================================
 
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"

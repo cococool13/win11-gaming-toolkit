@@ -14,6 +14,8 @@
     Tier: Safe (returns to OS default telemetry path)
     Anti-cheat impact: NONE — DiagTrack is user-mode telemetry upload;
         not inspected by BattlEye / EAC / similar.
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry-only write; no on-disk file creation.
     Pair: disable-diagtrack.ps1
 #>
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]

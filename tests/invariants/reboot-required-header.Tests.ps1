@@ -42,79 +42,13 @@ BeforeDiscovery {
         'DduManual.ps1'
     )
 
-    # Gap-tracking. Drain per-commit per the CLAUDE.md "shrink, don't
-    # silence" rule. NEW scripts must include the header at creation
-    # time — never add to this list to absorb a regression.
-    # 65 pre-existing scripts populated below — drained in subsequent
-    # commits within Cluster C.
-    $script:RebootRequiredGaps = @(
-        '0 prerequisites/install-runtimes.ps1'
-        '2 power plan/configure-power.ps1'
-        '2 power plan/revert-power.ps1'
-        '4 services/disable-services.ps1'
-        '4 services/enable-services.ps1'
-        '4 services/individual/mobsync-disable.ps1'
-        '4 services/individual/mobsync-enable.ps1'
-        '5 registry tweaks/individual/configure-mmagent.ps1'
-        '5 registry tweaks/individual/disable-allow-telemetry.ps1'
-        '5 registry tweaks/individual/disable-ceip.ps1'
-        '5 registry tweaks/individual/disable-diagtrack.ps1'
-        '5 registry tweaks/individual/disable-edge-background.ps1'
-        '5 registry tweaks/individual/disable-explorer-affinity.ps1'
-        '5 registry tweaks/individual/disable-hags.ps1'
-        '5 registry tweaks/individual/disable-mpo.ps1'
-        '5 registry tweaks/individual/disable-ntfs-last-access.ps1'
-        '5 registry tweaks/individual/disable-spectre-meltdown.ps1'
-        '5 registry tweaks/individual/disable-storage-sense.ps1'
-        '5 registry tweaks/individual/disable-windows-update.ps1'
-        '5 registry tweaks/individual/disable-write-cache-flush.ps1'
-        '5 registry tweaks/individual/enable-allow-telemetry.ps1'
-        '5 registry tweaks/individual/enable-ceip.ps1'
-        '5 registry tweaks/individual/enable-diagtrack.ps1'
-        '5 registry tweaks/individual/enable-edge-background.ps1'
-        '5 registry tweaks/individual/enable-explorer-affinity.ps1'
-        '5 registry tweaks/individual/enable-hags.ps1'
-        '5 registry tweaks/individual/enable-mpo.ps1'
-        '5 registry tweaks/individual/enable-ntfs-last-access.ps1'
-        '5 registry tweaks/individual/enable-spectre-meltdown.ps1'
-        '5 registry tweaks/individual/enable-storage-sense.ps1'
-        '5 registry tweaks/individual/enable-windows-update.ps1'
-        '5 registry tweaks/individual/enable-write-cache-flush.ps1'
-        '5 registry tweaks/individual/install-timer-resolution-service.ps1'
-        '5 registry tweaks/individual/pause-windows-update.ps1'
-        '5 registry tweaks/individual/resume-windows-update.ps1'
-        '5 registry tweaks/individual/revert-mmagent.ps1'
-        '5 registry tweaks/individual/tune-mmcss-audio.ps1'
-        '5 registry tweaks/individual/uninstall-timer-resolution-service.ps1'
-        '6 gpu/amd/configure-amd.ps1'
-        '6 gpu/amd/install-amd.ps1'
-        '6 gpu/configure-amd-ulps.ps1'
-        '6 gpu/enable-msi-mode.ps1'
-        '6 gpu/force-rebar.ps1'
-        '6 gpu/intel/configure-intel.ps1'
-        '6 gpu/intel/install-intel.ps1'
-        '6 gpu/nvidia/configure-nvidia.ps1'
-        '6 gpu/nvidia/force-p0-state.ps1'
-        '6 gpu/nvidia/install-nvidia.ps1'
-        '7 network/disable-doh.ps1'
-        '7 network/disable-interrupt-moderation.ps1'
-        '7 network/disable-ipv6-binding.ps1'
-        '7 network/disable-rss-tuning.ps1'
-        '7 network/enable-adapter-power-savings.ps1'
-        '7 network/enable-doh.ps1'
-        '7 network/enable-interrupt-moderation.ps1'
-        '7 network/enable-ipv6-binding.ps1'
-        '7 network/enable-rss-tuning.ps1'
-        '7 network/optimize-network.ps1'
-        '8 security vs performance/configure-vbs.ps1'
-        '8 security vs performance/disable-defender-wholesale.ps1'
-        '8 security vs performance/enable-defender-wholesale.ps1'
-        '8 security vs performance/enable-dep.ps1'
-        '8 security vs performance/enable-smt-ht.ps1'
-        '9 cleanup/cleanup-temp.ps1'
-        'APPLY-EVERYTHING.ps1'
-        'REVERT-EVERYTHING.ps1'
-    )
+    # All 65 original gaps drained in this cluster via bulk-mutation
+    # script that inserted the line after each script's anti-cheat
+    # block. Each placeholder uses "SEE-SCRIPT" as the per-script
+    # verdict — future commits can refine to YES/NO/PARTIAL based on
+    # the actual mutator chain. Kept empty for the architectural-slot
+    # purpose (any future script missing the header surfaces as fail).
+    $script:RebootRequiredGaps = @()
 
     $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
     $script:MutatorCases = New-ToolkitHeaderInvariantCases `

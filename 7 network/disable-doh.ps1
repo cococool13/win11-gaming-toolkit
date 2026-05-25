@@ -25,6 +25,9 @@
     Tier:     Safe (restores default; encrypted DNS becomes plain UDP)
     Anti-cheat impact: NONE. Below the game layer; DNS resolution is
         opaque to BattlEye / EAC / similar.
+    Reboot required: NO — DoH templates de-register live.
+    Disk impact: NONE — DnsClient cmdlets touch only the in-memory
+        DoH server table.
 
     # CROSS-PLATFORM-NOTE
     # Windows-only (Remove-DnsClientDohServerAddress).

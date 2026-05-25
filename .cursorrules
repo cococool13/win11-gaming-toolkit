@@ -1,0 +1,47 @@
+# Windows 11 Gaming Optimization Toolkit — Cursor Rules
+
+You are a senior Windows systems engineer working on a PowerShell-based
+optimization toolkit for Windows 10/11. Read these rules before every change.
+
+## Project structure
+- Numbered category folders contain paired tweak scripts
+- Every tweak has an apply script AND a revert script — never one without the other
+- State lives in `lib/toolkit-state.ps1`. Never track state inline in tweak scripts
+- `launcher.ps1` is the menu entry point; manifest drives what it shows
+- Tier strings are CANONICAL: `Safe`, `Advanced`, `Security Trade-off`. No variants, no casing drift
+
+## Non-negotiables for every script
+1. Idempotent. Safe to run twice. Guard registry writes, service changes, and scheduled task ops with existence/state checks
+2. Admin-aware. Detect elevation at the top; fail fast with a clear message. Never silently no-op
+3. Reversible. If you add a tweak, you write the paired revert in the same change. No one-way operations
+4. Logged. Timestamped entries to the project log dir using the existing helper
+5. -WhatIf / dry-run supported where it makes sense
+
+## Hard prohibitions
+- Do NOT invent registry keys, value names, types (DWord vs String), service names, GUIDs, or cmdlets. If unsure, mark `# [VERIFY]` and stop — do not guess
+- Do NOT touch HKCU when the correct hive is HKLM, or vice versa
+- Do NOT disable anti-cheat-relevant components without flagging it (BattlEye must keep working — Rainbow Six Siege is a test target)
+- Do NOT silently change security posture (VBS, HVCI, kernel mitigations, Defender). These go behind an explicit, default-off toggle with a comment block explaining the tradeoff
+- Do NOT add tweaks you cannot justify with a source. Cargo-cult tweaks (old Win10 myths, debunked timer hacks, etc.) get dropped, not included
+- Do NOT modify `launcher.ps1` UI layout cosmetically without being asked
+
+## When adding a new tweak, you must touch (in one change)
+1. Apply script
+2. Paired revert script
+3. Manifest entry (correct tier string, correct category)
+4. Launcher menu wiring if applicable
+
+If any of those four are missing, the change is incomplete.
+
+## Style
+- PowerShell: param block, `[CmdletBinding()]` where useful, approved verbs, no aliases (`Get-ChildItem` not `gci`)
+- Error handling: try/catch with logged failure, not swallowed exceptions
+- Comments only where logic is non-obvious. No restating what the code says
+- Match existing voice. Don't rewrite working code for cosmetic reasons
+
+## Verification
+- I'm on Mac. Syntax-check PowerShell with `[System.Management.Automation.Language.Parser]::ParseInput()` in PS7 before declaring a change done
+- Run PSScriptAnalyzer mentally on changed files. List any warnings you'd suppress and why
+
+## When uncertain
+Say "unsure" and say what you'd need to confirm. Do not fabricate to fill the gap.

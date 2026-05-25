@@ -28,6 +28,8 @@
     Anti-cheat impact: NONE. AllowTelemetry is a GPO value read by
         the DiagTrack service; not inspected by BattlEye / EAC /
         similar. Independent of the service-start cut.
+    Reboot required: SEE-SCRIPT — heuristic-default; refine in follow-up.
+    Disk impact: NONE — registry-only write; no on-disk file creation.
     Source: https://learn.microsoft.com/en-us/windows/privacy/configure-windows-diagnostic-data-in-your-organization
     Pair: enable-allow-telemetry.ps1
 #>

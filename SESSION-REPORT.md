@@ -596,3 +596,106 @@ Empty `$ShouldProcessGaps = @()` per `f44609c`. All 9 original entries fixed acr
 
 Loop closed clean — gate green, every invariant at 100%, three Phase C user-facing features shipped, three rules promoted to project doc. The discipline of "shrink the gap arrays per commit" produced exactly the visible-deletion-diff trail it was designed to.
 
+---
+
+## 2026-05-24 fifth continuous-improvement loop (commits `bf75c83` → `7697377`)
+
+Theme: lift lib coverage from 11.1% baseline + ship two new invariants + three Phase C dequeues. 9 commits, gate green throughout, zero reverts.
+
+Floor: **0/0 PSSA + 518 Pester / 23 skip / lib 11.1%** → **0/0 PSSA + 712 Pester / 55 skip / lib 28.3%.**
+
+### Architecture callouts
+
+#### `.claude/` filter on PSSA + gating lib coverage at 11.0%
+**Replaces N future "main is green when run inside its worktree" debugging sessions.** A fresh main checkout failed the gate immediately because PSSA's `-Path . -Recurse` walked the sibling worktree under `.claude/worktrees/affectionate-brown-b61d86/` (older commits, stale formatting). Wrong fix: `git worktree remove` the other branch. Right fix: gate script filters `ScriptPath -notmatch '[\\/]\.claude[\\/]'` so future stale worktrees never poison the gate. Same commit promotes the prior session's coverage instrumentation from informational-only to gating — `-LibCoverageFloor 11.0` is the new floor with the same revert-don't-fix-forward semantics as PSSA.
+
+#### Dual coverage scopes — lib (gating) + scripts (baseline)
+**Replaces 0 informational signals with 1 informational signal AND 1 gate.** Per the session prompt's "instrument and measure scripts coverage for baseline." Implementation buckets every `CommandsExecuted` + `CommandsMissed` record by `$_.File -like '*<sep>lib<sep>*'` (using the platform `DirectorySeparatorChar` so the match works on macOS dev AND Windows CI). The scripts bucket reads 0% because Pester runs don't directly invoke script bodies — they exercise scripts via AST + invariant tests. This is the baseline that informs the next-session decision: "do we gate scripts coverage at all?" — see proposal below.
+
+#### log-wiring-unconditional invariant — AST defense-in-depth
+**Replaces N future "the static text-scan invariant passed but the call doesn't actually run" silent failures.** The existing `script-start-logging.Tests.ps1` is a text scan: it passes any script whose body CONTAINS the call. The new `log-wiring-unconditional.Tests.ps1` asserts the call EXECUTES by walking the AST parent chain and rejecting any call sitting inside `IfStatementAst` / `ForEachStatementAst` / `ForStatementAst` / `WhileStatementAst` / `DoUntilStatementAst` / `DoWhileStatementAst` / `SwitchStatementAst` / `FunctionDefinitionAst`. 60/60 mutators clean on first ship — every existing script places the call at top-level. Catches a future refactor that moves the call into `if ($Experimental) { Initialize-ToolkitState }` and silently breaks the audit trail.
+
+#### anti-cheat-header invariant — forced conscious decision
+**Replaces N future "wait, IS this anti-cheat safe?" support tickets.** Every mutator must contain a header line matching `(?im)anti-cheat\s+impact:` in its first 120 lines. The value (NONE / Low / High with rationale) is freeform; the point is the forced conscious decision at script-creation time. Shipped with `$AntiCheatGaps = @(52 entries)`; first-batch drain backfilled 18 obvious-NONE scripts in the same commit, ending at 28/60 compliant. Remaining 30 entries are either case-by-case (Spectre/VBS/Defender/timer-resolution/SMT) or orchestrators where the impact is the union of bundled phases. Next-session drainage queue.
+
+### Priority-by-priority breakdown
+
+| Priority | Status | Outcome |
+|---|---|---|
+| 1 — lift lib coverage from 11.1% toward 15% | ✅ exceeded | **11.1% → 28.3%** (+17.2 pp via three behavioral test files: ui-helpers 19 tests, version-manifest 11, gpu-detection 13). Also fixed a cross-platform load bug in `lib/version-manifest.ps1` surfaced by writing the test. |
+| 2 — new invariant: every mutator wires Write-ToolkitLog | ✅ | `log-wiring-unconditional.Tests.ps1` — 60/60 clean. AST-based, complements the existing static text-scan invariant. |
+| 3 — new invariant: anti-cheat impact in every mutator header | ✅ | `anti-cheat-header.Tests.ps1` — shipped with 52-entry gap list; 18 drained same commit; 30 still gap-tracked. 28/60 compliant after the power-plan drain. |
+| 4 — Phase C per-component telemetry granularity | ✅ | Three independent paired toggles: `disable-diagtrack` (service layer), `disable-allow-telemetry` (GPO layer), `disable-ceip` (legacy SQM layer). Each pair stands alone; users mix-and-match. |
+| 5 — Phase C MSI mode utility | ✅ read-only | `check-msi-mode.ps1` audit script — enumerates MSI state for GPU + Net + NVMe per the user's "audit-first" framing. Bulk-mutate utility for Net/NVMe queued behind a System-Restore-point gate. |
+| 6 — Phase C power plan + processor parking pair | ✅ | `configure-power.ps1` + `revert-power.ps1` got the full Phase C polish: prior-plan capture-to-sidecar, before/after metric in log, Microsoft Learn citation, anti-cheat NONE statement. Bugfixed a never-matching regex in revert-power. |
+
+### Coverage floor proposal for next session
+
+**Lib floor: raise from 11.0% → 25.0% gating.** Three sessions of data now:
+- Session 3 end: 10.2% (baseline measurement)
+- Session 4 end: 11.1% (lifted by adding `lib/gpu-uninstall.ps1` with tests)
+- Session 5 end: **28.3%** (lifted by behavioral tests on ui-helpers / version-manifest / gpu-detection)
+
+Raising the floor from 11.0 to 25.0 still leaves a 3.3 pp safety margin below today's 28.3, which absorbs reasonable refactor churn without forcing every commit to add tests. The point is to ratchet — let the floor follow real lifts rather than sit indefinitely at the starting baseline.
+
+**Scripts floor: do NOT gate yet — keep informational only.** The baseline this session is **0%**. That's accurate: Pester runs exercise scripts via AST + invariant tests, not by invoking script bodies. Even if a future test does directly invoke a script body via `pwsh -File ...`, the registry hives those scripts touch don't exist on dev macOS, so a meaningful runtime-execution coverage measure requires Windows CI. Recommendation: defer scripts gating until either (a) Windows CI runs Pester behaviorally on real registry hives, or (b) a sandbox-via-PSDrive test rig is built. Neither is a current priority.
+
+### Standard work this loop
+
+| Tier | Commit | Outcome |
+|---|---|---|
+| arch | `bf75c83` | Gate hardening: `.claude/` filter + dual coverage + 11.0% lib floor gating |
+| test | `ca0ed1c` | 19 behavioral tests for ui-helpers (lib 11.1 → 18.8) |
+| test | `14bf8c0` | 11 behavioral tests for version-manifest + cross-platform load bugfix (lib 18.8 → 22.8) |
+| test | `3cdef87` | 13 behavioral tests for gpu-detection (lib 22.8 → 28.3) |
+| arch | `29fdb98` | Invariant: log-wiring-unconditional (60/60 clean) |
+| arch | `61ed7c1` | Invariant: anti-cheat-header + first-batch drain (18 backfills) |
+| feat | `fc803bf` | Telemetry trio: DiagTrack / AllowTelemetry / CEIP pairs |
+| feat | `13e1ac8` | Read-only MSI mode audit (GPU + Net + NVMe) |
+| feat | `7697377` | Power-plan Phase C polish: sidecar restore + before/after metric |
+
+### Net loop impact
+
+| Metric | Loop start | Loop end | Δ |
+|---|---|---|---|
+| PSScriptAnalyzer Errors | 0 | 0 | 0 |
+| PSScriptAnalyzer Warnings | 0 | 0 | 0 |
+| Pester passing | 518 | 712 | +194 |
+| Pester skipped (gap-tracked) | 23 | 55 | +32 (new anti-cheat invariant added gap list; partial drain) |
+| Lib coverage (gating) | 11.1% | **28.3%** | +17.2 pp |
+| Scripts coverage (informational) | (not measured) | 0% | first measurement |
+| Invariant Pester suites | 4 | **6** | +log-wiring-unconditional, +anti-cheat-header |
+| New user-facing scripts | — | 7 | DiagTrack pair, AllowTelemetry pair, CEIP pair, check-msi-mode |
+| Architecture promotions | — | 4 | .claude/ filter + dual coverage gate, log-wiring AST invariant, anti-cheat header invariant, power-plan sidecar restore pattern |
+| Cross-platform bugs caught + fixed | — | 1 | `lib/version-manifest.ps1` Join-Path null on macOS dev |
+| Test-time bugs caught + fixed | — | 1 | `revert-power.ps1` active-plan regex never matched (stray `\+`) |
+
+### Decisions made under autonomous defaults
+
+- **Architecture pre-check applied AGAIN, this time at the gate level.** Hit the `.claude/` worktree poisoning issue on first gate run after branching. Wrong fix: clean up the other worktree. Right fix: gate script filters `.claude/` paths so future stale worktrees never recur. Same architecture-over-wiring pattern that's paid out in prior sessions.
+- **PSSA whitespace lesson reinforced (twice).** Caught `$profile` shadowing in ui-helpers test + aligned-column whitespace in check-msi-mode hashtable + switch blocks. Both already documented in CLAUDE.md from prior sessions; the gotchas section is doing its job of catching me before the gate does.
+- **Anti-cheat invariant ships with 52-entry gap list, not 0-entry first-perfect.** The CLAUDE.md "shrink, don't silence" rule means populating the gap list with real existing violations is correct — the invariant is the discipline, the drain is the work. 20 backfilled this session; 30 remain for case-by-case review.
+- **MSI utility shipped read-only first.** The session prompt was explicit ("audit-first mode (read-only listing... per device class) plus opt-in mutate mode"). Read-only audit shipped; mutate utility deferred behind a System-Restore-point gate per the prompt's safety framing.
+- **Power-plan sidecar reuses the established lib/toolkit-state.ps1 helpers** (Save-ToolkitSidecar / Read-ToolkitSidecar / Remove-ToolkitSidecar) rather than rolling new code. The sidecar pattern has 4+ callers now (RSS, IM, write-cache-flush, mmagent, and now power-plan); the lib promotion from prior session continues to pay out.
+- **Coverage floor proposal grounded in three sessions of data.** Not a guess. Proposed lib floor of 25.0% with 3.3 pp safety below today's 28.3% is achievable with the current test suite and leaves room for the inevitable lib-extracted-but-not-yet-tested commit. Scripts gating deferred for technical reasons documented in the proposal.
+
+### Suggested next-loop queue
+
+1. **Drain the simple-NONE anti-cheat remainder** — ~8 obvious scripts (mobsync pair, explorer-affinity pair, windows-update pair, install-runtimes) in one commit. Brings invariant compliance from 28/60 to ~36/60.
+2. **Review the GPU vendor + complex scripts for anti-cheat impact** — needs vendor docs; output is per-script header backfill + driver-version-specific caveats where relevant.
+3. **Raise lib coverage floor to 25.0%** per the proposal above — first gate decision of the next loop.
+4. **Bulk-mutate MSI utility for Net + NVMe** behind System-Restore-point gate. The audit script (`check-msi-mode.ps1`) is the read-only foundation; this is the opt-in mutator.
+5. **Coverage lift on `lib/gpu-download.ps1`** (still 0%) and `lib/toolkit-state.ps1` (14.4%, lots of room). Pushes lib floor higher.
+6. **Restore-Toolkit* family behavioral tests** — carried forward from prior session.
+7. **Spawned-task: install-runtimes.ps1 `continue`-outside-loop bug** — still open from prior session.
+
+### anti-cheat-header invariant: 28/60 (gap-tracked)
+
+Per `$AntiCheatGaps` in `tests/invariants/anti-cheat-header.Tests.ps1`. 30 entries remain after first-batch drain + power-plan pair drain.
+
+### log-wiring-unconditional invariant: 60/60 (CLEAN)
+
+Empty `$LogWiringGaps = @()` per `29fdb98`. Every mutator places the script-start log call at script-body scope.
+
+Loop closed clean — gate green, two new invariants live, three Phase C features shipped, lib coverage almost tripled, and the discipline produced two real bugfixes (cross-platform load + never-matching regex) that the test-writing process surfaced organically.
+

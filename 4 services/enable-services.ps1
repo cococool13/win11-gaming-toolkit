@@ -15,6 +15,10 @@
 #
 # Pair with: disable-services.ps1
 # Must be run as Administrator.
+#
+# Anti-cheat impact: NONE — restorer for user-mode services;
+# pair-symmetric with disable-services.ps1. Services restored are
+# all user-mode telemetry/UX, no game-process surface.
 # ============================================================
 
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"

@@ -17,6 +17,11 @@
 # the same effect with less risk. This script is the registry
 # equivalent for systems where you cannot use NVCP (Server, IoT,
 # debloated images).
+#
+# Anti-cheat impact: NONE — PerfLevelSrc / DisableDynamicPstate are
+# NVIDIA driver registry hints at the adapter's Display Class GUID
+# subkey; equivalent to NVCP's "Prefer maximum performance" setting.
+# Not inspected by BattlEye / EAC / Vanguard.
 # ============================================================
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"

@@ -19,6 +19,12 @@
 .NOTES
     Tier: Advanced
     Pair: revert-mmagent.ps1
+    Anti-cheat impact: NONE — MMAgent (Memory Manager Agent) features
+        are kernel memory-manager hints (page combining, prelaunch, etc.).
+        No documented anti-cheat vendor inspection of MMAgent state;
+        BattlEye / EAC / Vanguard care about hooked APIs and DKOM,
+        not about whether MemoryCompression is on. Researched: no
+        regression reports through 2025 across vendor changelogs.
     Source: FR33THYFR33THY/Ultimate — 8 Advanced/6 MMAgent Features.ps1
             + 3 Setup/2 Memory Compression.ps1
 #>

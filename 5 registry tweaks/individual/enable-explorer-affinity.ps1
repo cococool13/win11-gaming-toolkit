@@ -12,6 +12,8 @@
 .NOTES
     Tier: Safe (restores OS default)
     Pair: disable-explorer-affinity.ps1
+    Anti-cheat impact: NONE — restorer for an IFEO registry value
+        targeting explorer.exe; no game-process surface.
     Must be run as Administrator.
 #>
 

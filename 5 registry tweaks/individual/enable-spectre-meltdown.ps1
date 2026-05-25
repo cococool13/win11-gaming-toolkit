@@ -5,6 +5,9 @@
 # Restores the CPU side-channel mitigations from the manifest.
 # Falls back to removing the override values so Windows uses
 # its inbox defaults (which on supported CPUs is to mitigate).
+#
+# Anti-cheat impact: NONE — restorer for FeatureSettingsOverride;
+# returns to OS-default speculative-execution mitigation state.
 # ============================================================
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"

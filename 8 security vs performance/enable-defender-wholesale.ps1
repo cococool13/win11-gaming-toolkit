@@ -8,6 +8,10 @@
 # Restores every reg:Defender* manifest entry. Falls back to direct
 # Remove-ItemProperty for keys not in the manifest.
 #
+# Anti-cheat impact: NONE — restorer for Defender state; returns to
+# OS default. Re-enabling Defender carries no anti-cheat vendor
+# policy risk (vendors don't refuse to launch based on Defender on).
+#
 # Must be run as Administrator.
 # ============================================================
 

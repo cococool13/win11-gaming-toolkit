@@ -38,11 +38,17 @@
     is passed: CoverageLibPct (gating) and CoverageScriptsPct (report).
 
 .PARAMETER LibCoverageFloor
-    Minimum lib/*.ps1 coverage % the gate accepts. Default 11.0 — just
-    below the 11.1% baseline established 2026-05-24 to absorb refactor
-    churn. Falling below this fires GATE: FAIL with the same severity
-    as a Pester failure. Push the floor up actively, don't let it drift
-    down. Only effective when -Coverage is also passed.
+    Minimum lib/*.ps1 coverage % the gate accepts. Default 25.0 — set
+    just below the 28.3% baseline at the start of the overnight run
+    (2026-05-24, session 6). The ~3pp safety margin absorbs refactor
+    churn without forcing every commit to add tests. Push the floor up
+    actively, don't let it drift down. Falling below fires GATE: FAIL
+    with the same severity as a Pester failure (revert-don't-fix-forward
+    per the standing rule). Only effective when -Coverage is also passed.
+
+    Floor history:
+      11.0 — introduced session 4 (baseline 11.1%)
+      25.0 — raised session 6 start (baseline 28.3% after session 5 lift)
 
 .EXAMPLE
     PS> pwsh -File tools/Invoke-ToolkitGate.ps1
@@ -65,7 +71,7 @@ param(
     [switch]$SkipTests,
     [switch]$SkipAnalyzer,
     [switch]$Coverage,
-    [double]$LibCoverageFloor = 11.0
+    [double]$LibCoverageFloor = 25.0
 )
 
 $ErrorActionPreference = 'Stop'

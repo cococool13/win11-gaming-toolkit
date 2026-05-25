@@ -5,6 +5,9 @@
 # Restores the CscService startup mode captured by
 # mobsync-disable.ps1. If no manifest entry exists, falls back to
 # Manual startup, which is the conservative non-running default.
+#
+# Anti-cheat impact: NONE — CscService restore mirrors mobsync-disable;
+# the service has no anti-cheat surface.
 # ============================================================
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"

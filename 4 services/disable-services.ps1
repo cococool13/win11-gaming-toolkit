@@ -10,6 +10,13 @@
 #
 # Replaces: apply-all.bat, individual/*.bat
 # Must be run as Administrator.
+#
+# Anti-cheat impact: NONE — the disabled service list (DiagTrack,
+# Connected Devices Platform Service, Geolocation Service, Map Broker,
+# Print Spooler when no printers, etc.) consists of user-mode
+# telemetry/UX services with no game-process surface. None are
+# inspected by BattlEye / EAC / Vanguard. The pair (enable-services.ps1)
+# restores prior state from the manifest.
 # ============================================================
 
 . "$PSScriptRoot\..\lib\toolkit-state.ps1"

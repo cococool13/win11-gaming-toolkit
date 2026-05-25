@@ -4,6 +4,12 @@
 # ============================================================
 # Requires: lib/download-helpers.ps1, lib/toolkit-state.ps1
 # Called by: 6 gpu/install-gpu-driver.ps1
+#
+# Anti-cheat impact: NONE — installs NVIDIA's official signed driver
+# package. The -Components filter only EXCLUDES bloat (GeForce
+# Experience, NVIDIA Container telemetry, etc.); the core Display.Driver
+# is byte-identical to a manual install from nvidia.com. Anti-cheat
+# layers see the same driver state either way.
 # ============================================================
 
 param(

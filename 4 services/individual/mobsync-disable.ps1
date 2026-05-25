@@ -6,6 +6,10 @@
 # ============================================================
 # Sync Center uses the Offline Files service, CscService. `mobsync`
 # is the client executable name, not the service name.
+#
+# Anti-cheat impact: NONE — CscService (Offline Files) is the legacy
+# corporate-redirected-folders feature; no kernel hooks, no game-
+# process awareness. Not inspected by BattlEye / EAC / Vanguard.
 # ============================================================
 
 . "$PSScriptRoot\..\..\lib\toolkit-state.ps1"

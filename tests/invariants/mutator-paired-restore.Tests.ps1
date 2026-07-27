@@ -115,6 +115,18 @@ Describe 'Invariant: every mutator has a paired sibling (apply/revert)' {
         $dir = Split-Path -Parent $FullPath
         $stem = [System.IO.Path]::GetFileNameWithoutExtension($FullPath)
 
+        # Case-insensitive sibling lookup. Test-Path is case-SENSITIVE on
+        # Linux runners, so the generated candidate 'revert-EVERYTHING.ps1'
+        # would never find the real 'REVERT-EVERYTHING.ps1' — a pair that
+        # resolves fine on Windows/macOS. Snapshot the directory once and
+        # compare names case-insensitively so the invariant means the same
+        # thing on every platform.
+        $siblings = [System.Collections.Generic.HashSet[string]]::new(
+            [System.StringComparer]::OrdinalIgnoreCase)
+        foreach ($s in (Get-ChildItem -LiteralPath $dir -File -ErrorAction SilentlyContinue)) {
+            [void]$siblings.Add($s.Name)
+        }
+
         # Normalize APPLY-EVERYTHING / REVERT-EVERYTHING (uppercase).
         # Also handles mobsync-disable (suffix-style verb) by checking both.
         $verbMatched = $false
@@ -128,9 +140,9 @@ Describe 'Invariant: every mutator has a paired sibling (apply/revert)' {
                 $tail = $matches[1]
                 foreach ($inverse in $pairPrefixMap[$prefix]) {
                     foreach ($ext in @('.ps1', '.bat')) {
-                        $candidate = Join-Path $dir "$inverse-$tail$ext"
-                        $tried += $candidate
-                        if (Test-Path -LiteralPath $candidate) {
+                        $candidate = "$inverse-$tail$ext"
+                        $tried += (Join-Path $dir $candidate)
+                        if ($siblings.Contains($candidate)) {
                             $foundPair = $true
                             break
                         }
@@ -144,9 +156,9 @@ Describe 'Invariant: every mutator has a paired sibling (apply/revert)' {
                 $head = $matches[1]
                 foreach ($inverse in $pairPrefixMap[$prefix]) {
                     foreach ($ext in @('.ps1', '.bat')) {
-                        $candidate = Join-Path $dir "$head-$inverse$ext"
-                        $tried += $candidate
-                        if (Test-Path -LiteralPath $candidate) {
+                        $candidate = "$head-$inverse$ext"
+                        $tried += (Join-Path $dir $candidate)
+                        if ($siblings.Contains($candidate)) {
                             $foundPair = $true
                             break
                         }

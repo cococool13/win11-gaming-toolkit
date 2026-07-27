@@ -47,6 +47,10 @@ $script:LauncherCategories = @(
     [PSCustomObject]@{ Key = "10"; Title = "Verify"; Tier = "Safe"; Folder = "10 verify"; StepPrefixes = @() }
     [PSCustomObject]@{ Key = "11"; Title = "Hardware checks"; Tier = "Safe"; Folder = "11 hardware checks"; StepPrefixes = @() }
     [PSCustomObject]@{ Key = "12"; Title = "Hardware"; Tier = "Safe"; Folder = "12 hardware"; StepPrefixes = @() }
+    # Launchers for signed third-party GUIs. No StepPrefixes: these run
+    # someone else's tool rather than applying a tracked toolkit step, so
+    # they never appear in the manifest or in REVERT-EVERYTHING.
+    [PSCustomObject]@{ Key = "13"; Title = "External tools"; Tier = "Advanced"; Folder = "13 external tools"; StepPrefixes = @() }
 )
 
 $script:LauncherQuickActions = @(

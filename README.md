@@ -125,6 +125,30 @@ Thirty+ per-component paired toggles. The most-used:
 | `check-ram` | DIMM inventory + WHEA error counts (corrected / uncorrected) |
 | `show-mouse-info` | Connected mice + reported polling rates |
 
+### External tools (13 external tools/) — launchers, not bundles
+
+Three third-party GUIs that cover ground this toolkit deliberately doesn't.
+Nothing is vendored: each script downloads the tool at runtime, **verifies its
+Authenticode signature against the expected publisher, and refuses to execute
+on a mismatch** — the same abort-never-warn rule the rest of the toolkit uses.
+Downloads are deleted on exit unless you pass `-KeepDownload`.
+
+| Script | Tool | Verified publisher | Covers |
+|---|---|---|---|
+| `launch-shutup10` | O&O ShutUp10++ | O&O Software GmbH | Telemetry / privacy toggles as one checklist |
+| `launch-autoruns` | Sysinternals Autoruns | Microsoft Corporation | Every auto-start location, well past Task Manager |
+| `launch-device-cleanup` | DeviceCleanup | Uwe Sieber | Stale non-present devices after hardware swaps |
+
+These are verified by publisher signature rather than a pinned SHA-256:
+all three ship from rolling "latest" URLs, so a pinned hash would break the
+download on the vendor's next release while proving nothing extra. Tools with
+a versioned URL (DDU, WinUtil, 7-Zip) stay SHA-256 pinned in `versions.json`.
+
+> Changes you make **inside** these tools are not toolkit steps: they are not
+> written to the manifest and `REVERT-EVERYTHING` will not undo them. Each
+> tool owns its own undo (ShutUp10's restore point, re-ticking an Autoruns
+> entry, reattaching hardware).
+
 ### Security trade-offs (8 security vs performance/)
 
 Opt-in only. Each has a paired restorer.

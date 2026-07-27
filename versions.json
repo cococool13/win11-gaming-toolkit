@@ -36,6 +36,27 @@
       "version": "23.01",
       "url": "https://www.7-zip.org/a/7z2301-x64.exe",
       "sha256": "c37b3078d4a0643a6a58bf9ff91a4e1e6bab61a8cd0e1e0034a42e7bb2f4a5a2"
+    },
+
+    "shutup10": {
+      "version": "latest",
+      "url": "https://dl5.oo-software.com/files/ooshutup10/OOSU10.exe",
+      "signerCN": "O&O Software GmbH",
+      "note": "Vendor publishes only an unversioned 'latest' URL, so there is no stable hash to pin. Authenticode on the publisher survives their updates; a sha256 here would break on every release."
+    },
+    "autoruns": {
+      "version": "latest",
+      "url": "https://download.sysinternals.com/files/Autoruns.zip",
+      "signerCN": "Microsoft Corporation",
+      "archiveEntry": "Autoruns64.exe",
+      "note": "Sysinternals ships a rolling Autoruns.zip. Same reasoning as shutup10."
+    },
+    "deviceCleanup": {
+      "version": "latest",
+      "url": "https://www.uwe-sieber.de/files/DeviceCleanup.zip",
+      "signerCN": "Uwe Sieber",
+      "archiveEntry": "DeviceCleanup.exe",
+      "note": "Rolling archive from the author's site. Same reasoning as shutup10."
     }
   }
 }

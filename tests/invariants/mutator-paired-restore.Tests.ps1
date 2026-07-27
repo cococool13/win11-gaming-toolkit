@@ -52,6 +52,15 @@ BeforeDiscovery {
         'DduManual.ps1'
         '0 prerequisites/install-runtimes.ps1'
         '9 cleanup/cleanup-temp.ps1'
+        # 13 external tools/*: launchers for signed third-party GUIs. They
+        # download, verify, and start someone else's tool; the toolkit makes
+        # no change of its own, so there is nothing for a revert sibling to
+        # undo. Each tool owns its own undo (ShutUp10 restore points,
+        # re-ticking an Autoruns entry, reattaching hardware). They land here
+        # rather than in $PairGaps because the pair is meaningless, not missing.
+        '13 external tools/launch-shutup10.ps1'
+        '13 external tools/launch-autoruns.ps1'
+        '13 external tools/launch-device-cleanup.ps1'
     )
 
     # Pair-stem gaps: scripts whose inverse-prefix sibling is missing.

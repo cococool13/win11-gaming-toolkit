@@ -146,7 +146,11 @@ function Test-ToolkitInvariants {
         $head = ($content -split "`n" | Select-Object -First 120) -join "`n"
         $isMutator = $content -match '(Set-Toolkit|Set-Tracked|Set-ItemProperty|sc\.exe config|Remove-Item|New-ItemProperty|Stop-Service|Disable-)'
         [PSCustomObject]@{
-            Path = $f.FullName.Substring($RepoRoot.Length + 1)
+            # Always report forward slashes. Every caller's exclusion list
+            # ($KnownUnpairable, $KnownGaps) is authored with '/', so a raw
+            # native separator makes those -contains checks silently miss on
+            # Windows runners and re-flag acknowledged exclusions as failures.
+            Path = $f.FullName.Substring($RepoRoot.Length + 1) -replace '\\', '/'
             HasTier = $head -match 'Tier:\s+(Safe|Advanced|Security Trade-off)'
             HasAdminGuard = ($head -match 'UI-RequireAdmin') -or ($head -match 'IsInRole.*Administrator')
             IsMutator = $isMutator

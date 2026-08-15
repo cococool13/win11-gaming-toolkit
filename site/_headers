@@ -1,0 +1,22 @@
+# Win11 Gaming Toolkit — response headers, ported from the Netlify config.
+#
+# The original netlify.toml is not retrievable through the API (it returns
+# metadata, not the body), so these were reconstructed from the headers the
+# live Netlify site actually served: /assets/* immutable, everything else on
+# the platform default. Verified by reading responses for .css, .js, .png and
+# .svg before writing this.
+#
+# Rules must not overlap. Cloudflare applies every match and concatenates
+# them, so two rules setting Cache-Control on one path produce a header with
+# two max-ages.
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Added, not ported: Netlify served no security headers here beyond its
+# automatic HSTS. These cost nothing on a static page and match what the other
+# Spiral sites send.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin

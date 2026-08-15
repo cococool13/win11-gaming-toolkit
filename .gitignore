@@ -22,3 +22,7 @@ coverage.xml
 # overrides; don't ship with the repo).
 .claude/
 .cursorrules
+
+# Wrangler's local cache for site/ deploys. Holds an account-scoped
+# credential blob — never commit it.
+.wrangler/

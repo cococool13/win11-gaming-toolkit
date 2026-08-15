@@ -1,0 +1,169 @@
+@media (max-width: 1020px) {
+  .site-header {
+    grid-template-columns: 1fr auto;
+  }
+
+  .nav-links {
+    display: none;
+  }
+
+  .hero {
+    min-height: auto;
+    padding-bottom: 360px;
+  }
+
+  .hero-panel {
+    left: 18px;
+    right: 18px;
+    bottom: 26px;
+    width: auto;
+  }
+
+  .intro-band,
+  .tweak-grid,
+  .proof-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .promise:nth-child(2) {
+    border-right: 0;
+  }
+
+  .promise:last-child {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--line);
+  }
+
+  .path-content,
+  .safety-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .safety-layout h2,
+  .proof > h2,
+  .faq h2 {
+    max-width: 14ch;
+  }
+}
+
+@media (max-width: 720px) {
+  .site-header {
+    min-height: 64px;
+    gap: 12px;
+  }
+
+  .brand small {
+    display: none;
+  }
+
+  .brand-mark {
+    width: 38px;
+    height: 38px;
+  }
+
+  .header-action {
+    padding: 9px 12px;
+    font-size: 0.78rem;
+  }
+
+  .hero {
+    padding-top: 62px;
+    padding-bottom: 44px;
+  }
+
+  .hero-image {
+    object-position: 70% center;
+  }
+
+  .hero-shade {
+    background:
+      linear-gradient(90deg, rgba(7, 9, 8, 0.98), rgba(7, 9, 8, 0.72)),
+      linear-gradient(180deg, rgba(7, 9, 8, 0.12), rgba(7, 9, 8, 0.78));
+  }
+
+  .hero-panel {
+    display: none;
+  }
+
+  h1 {
+    max-width: 9ch;
+  }
+
+  .command-line {
+    grid-template-columns: 1fr;
+  }
+
+  .command-line code {
+    white-space: normal;
+  }
+
+  .metric-grid div {
+    min-height: 82px;
+    padding: 14px;
+  }
+
+  .metric-grid strong {
+    font-size: 1.42rem;
+  }
+
+  .intro-band,
+  .tweak-grid,
+  .proof-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .promise,
+  .promise:nth-child(2) {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .promise:last-child {
+    border-bottom: 0;
+  }
+
+  .section-head.split {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .text-link {
+    justify-self: start;
+  }
+
+  .path-tabs {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .path-content {
+    padding: 20px;
+  }
+
+  .command-card {
+    min-width: 0;
+  }
+
+  .tweak-card {
+    min-height: 220px;
+  }
+
+  .rail-item {
+    grid-template-columns: 1fr;
+  }
+
+  .rail-item span {
+    grid-row: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
